@@ -228,6 +228,7 @@ protected:
   mutable std::size_t denseDrawCountBuffers = 0;
   mutable std::size_t sparseDrawCountMaps = 0;
   mutable std::size_t metalCpuFallbackApplications = 0;
+  mutable std::size_t threeQubitRowSparseApplications = 0;
 #endif
 
 #if defined(MKLQ_ENABLE_METAL_RUNTIME)
@@ -581,6 +582,28 @@ protected:
     const auto first = std::min(firstBit, secondBit);
     const auto second = std::max(firstBit, secondBit);
     return insertZeroBit(insertZeroBit(block, first), second);
+  }
+
+  static std::size_t
+  indexWithThreeZeroBits(std::size_t block,
+                         const std::array<std::size_t, 3> &sortedTargets) {
+    auto result = block;
+    for (auto target : sortedTargets)
+      result = insertZeroBit(result, target);
+    return result;
+  }
+
+  static std::size_t
+  indexWithThreeTargetBits(std::size_t base, std::size_t targetBits,
+                           const std::array<std::size_t, 3> &targetMasks) {
+    auto result = base;
+    if (targetBits & 1)
+      result |= targetMasks[0];
+    if (targetBits & 2)
+      result |= targetMasks[1];
+    if (targetBits & 4)
+      result |= targetMasks[2];
+    return result;
   }
 
   void applySingleQubitGate(const std::vector<complexd> &matrix,
@@ -1073,6 +1096,71 @@ protected:
 #endif
   }
 
+  bool applyRowSparseThreeQubitGate(const std::vector<complexd> &matrix,
+                                    const std::vector<std::size_t> &controls,
+                                    const std::vector<std::size_t> &targets) {
+    static constexpr std::size_t subspaceDim = 8;
+
+    std::array<std::size_t, subspaceDim> sourceColumns{};
+    std::array<complexd, subspaceDim> coefficients{};
+    std::array<bool, subspaceDim> hasCoefficient{};
+    for (std::size_t row = 0; row < subspaceDim; ++row) {
+      for (std::size_t column = 0; column < subspaceDim; ++column) {
+        const auto coefficient = matrix[row * subspaceDim + column];
+        if (coefficient == complexd{0.0, 0.0})
+          continue;
+        if (hasCoefficient[row])
+          return false;
+        hasCoefficient[row] = true;
+        sourceColumns[row] = column;
+        coefficients[row] = coefficient;
+      }
+    }
+
+    const std::array<std::size_t, 3> targetMasks{
+        qubitMask(targets[0]),
+        qubitMask(targets[1]),
+        qubitMask(targets[2]),
+    };
+    std::array<std::size_t, 3> sortedTargets{
+        targets[0],
+        targets[1],
+        targets[2],
+    };
+    std::sort(sortedTargets.begin(), sortedTargets.end());
+
+    const auto blockCount = stateDimension >> 3;
+#if defined(_OPENMP)
+    const auto threadCount = parallelThreadCount();
+#pragma omp parallel for num_threads(                                          \
+        threadCount) if (threadCount > 1 &&                                    \
+                             stateDimension >= parallelStateThreshold)
+#endif
+    for (std::size_t block = 0; block < blockCount; ++block) {
+      const auto base = indexWithThreeZeroBits(block, sortedTargets);
+      if (!controlsSatisfied(base, controls))
+        continue;
+
+      std::array<complexd, subspaceDim> amplitudes;
+      for (std::size_t column = 0; column < subspaceDim; ++column)
+        amplitudes[column] =
+            state[indexWithThreeTargetBits(base, column, targetMasks)];
+
+      for (std::size_t row = 0; row < subspaceDim; ++row) {
+        const auto updated =
+            hasCoefficient[row]
+                ? coefficients[row] * amplitudes[sourceColumns[row]]
+                : complexd{0.0, 0.0};
+        state[indexWithThreeTargetBits(base, row, targetMasks)] = updated;
+      }
+    }
+
+#if defined(MKLQ_ENABLE_TEST_ACCESSORS)
+    ++threeQubitRowSparseApplications;
+#endif
+    return true;
+  }
+
   void applyGate(const GateApplicationTask &task) override {
     if (state.empty())
       throw std::runtime_error(MKLQ_SIMULATOR_DIAGNOSTIC_PREFIX
@@ -1127,6 +1215,10 @@ protected:
     synchronizeHostStateFromMetal();
     invalidateMetalResidentState();
 #endif
+
+    if (targetCount == 3 &&
+        applyRowSparseThreeQubitGate(task.matrix, task.controls, task.targets))
+      return;
 
     std::vector<std::size_t> targetMasks;
     targetMasks.reserve(targetCount);
