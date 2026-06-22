@@ -314,6 +314,33 @@ def test_mklq_summary_generator_builds_sanitized_summary(tmp_path):
     assert elapsed["sample_full_register_q20_1024_shots"] == 1.0
 
 
+def test_mklq_summary_renderer_orders_crz_distance_signals_numerically():
+    module = _load_summary_renderer_module()
+
+    signals = module.comparison_signals([{
+        "summary_id": "local-crz-distance-sweep-test",
+        "comparison": {
+            "clean_worktree_cross_target_ratio": {
+                "qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_1":
+                    1.0,
+                "qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_10":
+                    10.0,
+                "qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_2":
+                    2.0,
+            }
+        },
+    }])
+
+    assert [signal["metric"] for signal in signals] == [
+        "clean_worktree_cross_target_ratio."
+        "qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_1",
+        "clean_worktree_cross_target_ratio."
+        "qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_2",
+        "clean_worktree_cross_target_ratio."
+        "qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_10",
+    ]
+
+
 def test_mklq_summary_generator_accepts_extra_interpretation_fields(tmp_path):
     module = _load_summary_generator_module()
     raw_path = tmp_path / "metal.json"

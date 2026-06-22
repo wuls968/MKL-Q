@@ -8,6 +8,7 @@
 
 import argparse
 import json
+import re
 from collections import Counter
 from pathlib import Path
 from typing import Any
@@ -15,6 +16,7 @@ from typing import Any
 
 SUMMARY_SCHEMA_VERSION = "mklq-benchmark-summary-v1"
 DEFAULT_REPORTS_DIR = Path(__file__).resolve().parent / "reports"
+DISTANCE_METRIC_RE = re.compile(r"^(.*_distance_)(\d+)(.*)$")
 
 
 def markdown_escape(value: object) -> str:
@@ -191,7 +193,16 @@ def comparison_signals(
                 "metric": metric_name,
                 "value": format_metric_value(metric_name, value),
             })
-    return signals
+    return sorted(signals, key=comparison_signal_sort_key)
+
+
+def comparison_signal_sort_key(signal: dict[str, str]) -> tuple[Any, ...]:
+    metric = str(signal.get("metric", ""))
+    match = DISTANCE_METRIC_RE.match(metric)
+    if not match:
+        return (str(signal.get("summary_id", "")), metric)
+    prefix, distance, suffix = match.groups()
+    return (str(signal.get("summary_id", "")), prefix, int(distance), suffix)
 
 
 def metal_path_label_signals(
