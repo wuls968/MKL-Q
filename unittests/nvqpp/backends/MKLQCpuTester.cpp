@@ -137,6 +137,10 @@ public:
     return specializedSingleQubitApplications;
   }
 
+  std::size_t specializedSingleControlQubitApplicationsForTest() const {
+    return specializedSingleControlQubitApplications;
+  }
+
   std::size_t accelerateProbabilityFillApplicationsForTest() const {
     return accelerateProbabilityFillApplications;
   }
@@ -876,6 +880,67 @@ CUDAQ_TEST(MKLQCpuTester, ControlledBuiltInSingleQubitFastPathsMatchMatrices) {
                                       testCase.matrix, testCase.controls));
     EXPECT_EQ(sim.specializedSingleQubitApplicationsForTest(), 1);
   }
+}
+
+CUDAQ_TEST(MKLQCpuTester,
+           SingleControlBuiltInSingleQubitGatesUseDedicatedFastPath) {
+  const std::vector<std::complex<double>> initial{
+      {1.0, 0.0},   {2.0, -1.0}, {0.5, 0.25}, {-3.0, 0.5},
+      {0.25, -0.5}, {1.5, 0.5},  {-2.0, 1.0}, {0.75, -1.25},
+  };
+  constexpr double angle = 0.375;
+
+  struct Case {
+    std::string_view name;
+    std::function<void(MklqCpuCircuitSimulatorTester &)> apply;
+    std::array<std::complex<double>, 4> matrix;
+  };
+
+  const std::vector<Case> cases{
+      {"ch", [](auto &sim) { sim.h({0}, 2); }, hMatrixForTest()},
+      {"cy", [](auto &sim) { sim.y({0}, 2); }, yMatrixForTest()},
+      {"crx", [&](auto &sim) { sim.rx(angle, {0}, 2); },
+       rxMatrixForTest(angle)},
+      {"cry", [&](auto &sim) { sim.ry(angle, {0}, 2); },
+       ryMatrixForTest(angle)},
+      {"crz", [&](auto &sim) { sim.rz(angle, {0}, 2); },
+       rzMatrixForTest(angle)},
+  };
+
+  for (const auto &testCase : cases) {
+    SCOPED_TRACE(testCase.name);
+    MklqCpuCircuitSimulatorTester sim;
+    sim.setStateForTest(initial);
+
+    testCase.apply(sim);
+    sim.flushGateQueue();
+
+    expectStateNear(sim.stateVectorForTest(),
+                    applySingleQubitMatrixForTest(initial, 2,
+                                                  testCase.matrix, {0}));
+    EXPECT_EQ(sim.specializedSingleQubitApplicationsForTest(), 1);
+    EXPECT_EQ(sim.specializedSingleControlQubitApplicationsForTest(), 1);
+  }
+}
+
+CUDAQ_TEST(MKLQCpuTester,
+           MultiControlBuiltInSingleQubitGatesKeepGenericSpecializedPath) {
+  const std::vector<std::complex<double>> initial{
+      {1.0, 0.0},   {2.0, -1.0}, {0.5, 0.25}, {-3.0, 0.5},
+      {0.25, -0.5}, {1.5, 0.5},  {-2.0, 1.0}, {0.75, -1.25},
+  };
+
+  MklqCpuCircuitSimulatorTester sim;
+  sim.setStateForTest(initial);
+
+  sim.h({0, 1}, 2);
+  sim.flushGateQueue();
+
+  expectStateNear(sim.stateVectorForTest(),
+                  applySingleQubitMatrixForTest(initial, 2, hMatrixForTest(),
+                                                {0, 1}));
+  EXPECT_EQ(sim.specializedSingleQubitApplicationsForTest(), 1);
+  EXPECT_EQ(sim.specializedSingleControlQubitApplicationsForTest(), 0);
 }
 
 CUDAQ_TEST(MKLQCpuTester,

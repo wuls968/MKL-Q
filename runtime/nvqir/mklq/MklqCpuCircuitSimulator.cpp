@@ -222,6 +222,7 @@ protected:
   mutable std::size_t bitFlipApplications = 0;
   mutable std::size_t phaseApplications = 0;
   mutable std::size_t specializedSingleQubitApplications = 0;
+  mutable std::size_t specializedSingleControlQubitApplications = 0;
   mutable std::size_t accelerateProbabilityFillApplications = 0;
   mutable std::size_t swapApplications = 0;
   mutable std::size_t denseDrawCountBuffers = 0;
@@ -447,6 +448,33 @@ protected:
     return true;
   }
 
+  template <typename PairUpdater>
+  void applySingleControlSingleQubitPairs(std::size_t control,
+                                          std::size_t target,
+                                          PairUpdater updatePair) {
+    const auto targetMask = qubitMask(target);
+    const auto controlMask = qubitMask(control);
+    const auto blockCount = stateDimension >> 2;
+
+#if defined(_OPENMP)
+    const auto threadCount = parallelThreadCount();
+#pragma omp parallel for num_threads(                                          \
+        threadCount) if (threadCount > 1 &&                                    \
+                             stateDimension >= parallelStateThreshold)
+#endif
+    for (std::size_t block = 0; block < blockCount; ++block) {
+      const auto zeroIndex =
+          indexWithTwoZeroBits(block, target, control) | controlMask;
+      const auto oneIndex = zeroIndex | targetMask;
+      updatePair(zeroIndex, oneIndex);
+    }
+
+#if defined(MKLQ_ENABLE_TEST_ACCESSORS)
+    ++specializedSingleQubitApplications;
+    ++specializedSingleControlQubitApplications;
+#endif
+  }
+
   void addQubitToState() override { addQubitsToState(1); }
 
   void addQubitsToState(std::size_t qubitCount,
@@ -650,6 +678,18 @@ protected:
 
   void applyYGate(const std::vector<std::size_t> &controls,
                   std::size_t target) {
+    if (controls.size() == 1) {
+      applySingleControlSingleQubitPairs(
+          controls[0], target, [&](std::size_t zeroIndex,
+                                   std::size_t oneIndex) {
+            const auto zeroAmplitude = state[zeroIndex];
+            const auto oneAmplitude = state[oneIndex];
+            state[zeroIndex] = {oneAmplitude.imag(), -oneAmplitude.real()};
+            state[oneIndex] = {-zeroAmplitude.imag(), zeroAmplitude.real()};
+          });
+      return;
+    }
+
     const auto mask = qubitMask(target);
     const auto lowMask = mask - 1;
     const auto pairCount = stateDimension >> 1;
@@ -680,10 +720,22 @@ protected:
   void applyHadamardGate(const std::vector<complexd> &matrix,
                          const std::vector<std::size_t> &controls,
                          std::size_t target) {
+    const auto scale = matrix[0].real();
+    if (controls.size() == 1) {
+      applySingleControlSingleQubitPairs(
+          controls[0], target, [&](std::size_t zeroIndex,
+                                   std::size_t oneIndex) {
+            const auto zeroAmplitude = state[zeroIndex];
+            const auto oneAmplitude = state[oneIndex];
+            state[zeroIndex] = scale * (zeroAmplitude + oneAmplitude);
+            state[oneIndex] = scale * (zeroAmplitude - oneAmplitude);
+          });
+      return;
+    }
+
     const auto mask = qubitMask(target);
     const auto lowMask = mask - 1;
     const auto pairCount = stateDimension >> 1;
-    const auto scale = matrix[0].real();
 
 #if defined(_OPENMP)
     const auto threadCount = parallelThreadCount();
@@ -711,9 +763,6 @@ protected:
   void applyRxGate(const std::vector<complexd> &matrix,
                    const std::vector<std::size_t> &controls,
                    std::size_t target) {
-    const auto mask = qubitMask(target);
-    const auto lowMask = mask - 1;
-    const auto pairCount = stateDimension >> 1;
     const auto cosine = matrix[0].real();
     const auto imaginarySine = matrix[1].imag();
 
@@ -721,6 +770,26 @@ protected:
                                       complexd amplitude) -> complexd {
       return {-imaginary * amplitude.imag(), imaginary * amplitude.real()};
     };
+
+    if (controls.size() == 1) {
+      applySingleControlSingleQubitPairs(
+          controls[0], target, [&](std::size_t zeroIndex,
+                                   std::size_t oneIndex) {
+            const auto zeroAmplitude = state[zeroIndex];
+            const auto oneAmplitude = state[oneIndex];
+            state[zeroIndex] =
+                cosine * zeroAmplitude +
+                multiplyByPureImaginary(imaginarySine, oneAmplitude);
+            state[oneIndex] =
+                multiplyByPureImaginary(imaginarySine, zeroAmplitude) +
+                cosine * oneAmplitude;
+          });
+      return;
+    }
+
+    const auto mask = qubitMask(target);
+    const auto lowMask = mask - 1;
+    const auto pairCount = stateDimension >> 1;
 
 #if defined(_OPENMP)
     const auto threadCount = parallelThreadCount();
@@ -750,11 +819,24 @@ protected:
   void applyRyGate(const std::vector<complexd> &matrix,
                    const std::vector<std::size_t> &controls,
                    std::size_t target) {
+    const auto cosine = matrix[0].real();
+    const auto sine = matrix[2].real();
+
+    if (controls.size() == 1) {
+      applySingleControlSingleQubitPairs(
+          controls[0], target, [&](std::size_t zeroIndex,
+                                   std::size_t oneIndex) {
+            const auto zeroAmplitude = state[zeroIndex];
+            const auto oneAmplitude = state[oneIndex];
+            state[zeroIndex] = cosine * zeroAmplitude - sine * oneAmplitude;
+            state[oneIndex] = sine * zeroAmplitude + cosine * oneAmplitude;
+          });
+      return;
+    }
+
     const auto mask = qubitMask(target);
     const auto lowMask = mask - 1;
     const auto pairCount = stateDimension >> 1;
-    const auto cosine = matrix[0].real();
-    const auto sine = matrix[2].real();
 
 #if defined(_OPENMP)
     const auto threadCount = parallelThreadCount();
@@ -782,11 +864,22 @@ protected:
   void applyRzGate(const std::vector<complexd> &matrix,
                    const std::vector<std::size_t> &controls,
                    std::size_t target) {
+    const auto zeroPhase = matrix[0];
+    const auto onePhase = matrix[3];
+
+    if (controls.size() == 1) {
+      applySingleControlSingleQubitPairs(
+          controls[0], target, [&](std::size_t zeroIndex,
+                                   std::size_t oneIndex) {
+            state[zeroIndex] *= zeroPhase;
+            state[oneIndex] *= onePhase;
+          });
+      return;
+    }
+
     const auto mask = qubitMask(target);
     const auto lowMask = mask - 1;
     const auto pairCount = stateDimension >> 1;
-    const auto zeroPhase = matrix[0];
-    const auto onePhase = matrix[3];
 
 #if defined(_OPENMP)
     const auto threadCount = parallelThreadCount();
