@@ -171,6 +171,18 @@ def _load_metal_runtime_counter_summary_module():
     return module
 
 
+def _load_metal_runtime_counter_docs_module():
+    repo_root = Path(__file__).resolve().parents[3]
+    script = repo_root / "benchmarks" / "mklq" / (
+        "check_metal_runtime_counter_docs.py")
+    spec = importlib.util.spec_from_file_location(
+        "check_metal_runtime_counter_docs", script)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    return module
+
+
 def _raw_benchmark_report(dirty=False, cases=None, results=None):
     cases = cases or ["y-state"]
     results = results or []
@@ -683,6 +695,7 @@ def test_mklq_public_healthcheck_plan_lists_escalating_gates(tmp_path):
         "performance_evidence_guard",
         "metal_evidence_guard",
         "metal_runtime_counter_probe_parse",
+        "metal_runtime_counter_docs",
         "benchmark_helper_py_compile",
         "example_source_files",
         "markdown_links",
@@ -1507,6 +1520,35 @@ def test_mklq_metal_runtime_counter_summary_cli_writes_markdown(monkeypatch,
     assert output.exists()
     assert "MKL-Q Metal Runtime Counter Summary" in output.read_text(
         encoding="utf-8")
+
+
+def test_mklq_metal_runtime_counter_docs_guard_detects_stale_markdown(
+        tmp_path):
+    guard = _load_metal_runtime_counter_docs_module()
+    summary_module = _load_metal_runtime_counter_summary_module()
+    report_dir = tmp_path / "reports"
+    report_dir.mkdir()
+    report = report_dir / "probe.counter.json"
+    doc = tmp_path / "metal-runtime-counters.md"
+    report.write_text(json.dumps(_runtime_counter_summary_fixture()),
+                      encoding="utf-8")
+    doc.write_text(
+        summary_module.render_markdown(summary_module.build_summary([report])),
+        encoding="utf-8")
+
+    result = guard.check_docs(report_inputs=[report_dir], doc_path=doc)
+
+    assert result["status"] == "passed"
+    assert result["details"]["expected"] == doc.as_posix()
+    assert result["details"]["report_count"] == 1
+
+    doc.write_text("stale counter docs\n", encoding="utf-8")
+
+    result = guard.check_docs(report_inputs=[report_dir], doc_path=doc)
+
+    assert result["status"] == "failed"
+    assert "differs" in result["message"]
+    assert result["details"]["summary_status"] == "passed"
 
 
 def test_mklq_public_healthcheck_parses_metal_runtime_counter_probe(tmp_path):

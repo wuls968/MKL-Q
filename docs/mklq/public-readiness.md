@@ -129,14 +129,14 @@ The latest public local validation evidence is recorded in
 [`validation.md`](validation.md):
 
 - latest validation refresh date: 2026-06-22;
-- source commit used for the latest clean-worktree runtime validation gate:
-  `a3533cad0b89268e08099e6714454d6559bd015d`;
+- source state: the ignored raw healthcheck JSON records the exact local Git
+  state for the latest runtime validation gate;
 - install-prefix build: passed;
-- full public healthcheck: passed with 15/15 steps passed;
+- full public healthcheck: passed with 16/16 steps passed;
 - one-command correctness gate: passed with 4/4 steps passed, including
   `metal_runtime_counter_probe`;
 - public example smoke gate: passed with 30/30 steps passed;
-- current benchmark harness tests: `81 passed`;
+- current benchmark harness tests: `82 passed`;
 - standalone install-prefix Python subset: `35 passed`;
 - `python_target_smoke`: `57 passed`;
 - `nvqpp_smoke`: `2 passed`;
@@ -160,6 +160,9 @@ The current public healthcheck also includes the static
 `check_metal_evidence.py` guard for tracked `mklq-metal` summaries. That guard
 checks local tuning provenance, ignored raw payload paths, successful Metal
 rows, and wording that keeps the experimental mixed-path/host boundary clear.
+It also includes `check_metal_runtime_counter_docs.py`, which fails if the
+public Metal runtime counter summary drifts from the tracked bounded counter
+reports.
 
 ## No Tags Or Releases
 

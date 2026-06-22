@@ -203,8 +203,8 @@ The default mode checks Git remotes and shallow state, tracked artifact hygiene,
 public metadata and banned tokens, sanitized benchmark summary JSON, the static
 clean CPU performance evidence guard, the static experimental Metal evidence
 boundary guard, bounded Metal runtime counter probe JSON, helper syntax, local
-markdown links, regenerated benchmark-evidence consistency, and the benchmark
-harness tests. It writes an ignored JSON report under
+markdown links, regenerated benchmark-evidence and Metal counter docs
+consistency, and the benchmark harness tests. It writes an ignored JSON report under
 `benchmarks/mklq/results/`.
 
 Before describing a commit as public-ready, run the heavier local gate:
@@ -296,6 +296,19 @@ probability/sampling, measurement/reset, and unsupported-gate fallback
 categories. It preserves the same boundary as the raw probe report: runtime
 counter evidence only, not release sign-off, not timing evidence, and not proof
 that every operation stayed on Metal.
+
+## Metal Runtime Counter Docs Guard
+
+Check that the tracked public counter summary still matches the tracked
+bounded counter reports:
+
+```bash
+python3 benchmarks/mklq/check_metal_runtime_counter_docs.py
+```
+
+The guard does not run ctest or collect new Metal evidence. It regenerates the
+Markdown summary from `benchmarks/mklq/reports/*.counter.json` in memory and
+fails if `docs/mklq/metal-runtime-counters.md` is stale.
 
 ## Tracked Accepted Local Benchmark Evidence
 
