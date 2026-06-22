@@ -102,6 +102,9 @@ METAL_PATH_CASES = {
     "crz-distance-state":
         ("mklq_metal_resident_controlled_gate_state_host_readback",
          METAL_CONTROLLED_GATE_SCOPE),
+    "crz-distance-sweep-state":
+        ("mklq_metal_resident_controlled_gate_state_host_readback",
+         METAL_CONTROLLED_GATE_SCOPE),
     "seeded-clifford-state":
         ("mklq_metal_mixed_composite_state_host_readback",
          METAL_COMPOSITE_SCOPE),
@@ -180,6 +183,7 @@ DEFAULT_CASES = (
     "three-qubit-state",
     "qft-like-state",
     "crz-distance-state",
+    "crz-distance-sweep-state",
     "seeded-clifford-state",
 )
 DEFAULT_QUBITS = (4, 8, 12)
@@ -596,6 +600,40 @@ def build_crz_distance_state_kernel(
           distance_histogram, qubits - 1, average_distance)
 
 
+def build_crz_fixed_distance_state_kernel(
+    cudaq: Any, qubits: int,
+    layers: int, distance: int) -> tuple[Any, int, int, int, int]:
+  if qubits < 2:
+    raise ValueError("crz-distance benchmarks require at least 2 qubits")
+  if distance < 1 or distance >= qubits:
+    raise ValueError(
+        f"crz-distance sweep requires distance in [1, {qubits - 1}], "
+        f"got {distance}")
+
+  kernel = cudaq.make_kernel()
+  q = kernel.qalloc(qubits)
+  state_prep_gate_count = 0
+  crz_gate_count = 0
+  pair_count = qubits - distance
+
+  for index in range(qubits):
+    theta = 0.043 + 0.0017 * index
+    kernel.ry(theta, q[index])
+    kernel.rz(-0.5 * theta, q[index])
+    state_prep_gate_count += 2
+
+  angle = math.pi / float(1 << (distance + 1))
+  for _ in range(layers):
+    for target in range(pair_count):
+      control = target + distance
+      kernel.crz(angle, q[control], q[target])
+      crz_gate_count += 1
+
+  gate_count = state_prep_gate_count + crz_gate_count
+  return (kernel, gate_count, state_prep_gate_count, crz_gate_count,
+          pair_count)
+
+
 def build_seeded_clifford_state_kernel(
     cudaq: Any,
     qubits: int,
@@ -723,8 +761,10 @@ def summarize_timings(timings: list[float]) -> dict[str, float]:
 
 
 def result_template(target: str, case: str, qubits: int, shots: int,
-                    repeats: int) -> dict[str, Any]:
-  return {
+                    repeats: int,
+                    distance: int | None = None) -> dict[str, Any]:
+  metrics = metal_path_metrics(target, case)
+  row = {
       "target": target,
       "case": case,
       "qubits": qubits,
@@ -732,13 +772,36 @@ def result_template(target: str, case: str, qubits: int, shots: int,
       "repeats": repeats,
       "estimated_state_bytes": estimated_state_bytes(qubits),
       "status": "planned",
-      "metrics": metal_path_metrics(target, case),
+      "metrics": metrics,
   }
+  if distance is not None:
+    row["distance"] = distance
+    metrics["crz_distance"] = distance
+  return row
+
+
+def crz_distance_sweep_values(
+    case: str, qubits: int,
+    requested_distance: int | None) -> list[int | None]:
+  if requested_distance is not None and case != "crz-distance-sweep-state":
+    raise ValueError("--crz-distance only supports crz-distance-sweep-state")
+  if case != "crz-distance-sweep-state":
+    return [None]
+  if qubits < 2:
+    raise ValueError("crz-distance sweep benchmarks require at least 2 qubits")
+  if requested_distance is not None:
+    if requested_distance < 1 or requested_distance >= qubits:
+      raise ValueError(
+          f"crz-distance sweep requires distance in [1, {qubits - 1}], "
+          f"got {requested_distance}")
+    return [requested_distance]
+  return list(range(1, qubits))
 
 
 def run_case(cudaq: Any, target: str, case: str, qubits: int, shots: int,
-             repeats: int, warmups: int, layers: int) -> dict[str, Any]:
-  row = result_template(target, case, qubits, shots, repeats)
+             repeats: int, warmups: int, layers: int,
+             distance: int | None = None) -> dict[str, Any]:
+  row = result_template(target, case, qubits, shots, repeats, distance)
   row["status"] = "ok"
   row["warmups"] = warmups
 
@@ -917,6 +980,28 @@ def run_case(cudaq: Any, target: str, case: str, qubits: int, shots: int,
           "crz_distance_state_throughput_per_second": crz_gate_count / median
           if median > 0 else None,
       })
+    elif case == "crz-distance-sweep-state":
+      if distance is None:
+        raise ValueError("crz-distance-sweep-state requires a distance")
+      (kernel, gate_count, state_prep_gate_count, crz_gate_count,
+       pair_count) = build_crz_fixed_distance_state_kernel(
+           cudaq, qubits, layers, distance)
+      action = lambda: cudaq.get_state(kernel)
+      for _ in range(warmups):
+        action()
+      timings = timed_repeats(action, repeats)
+      metrics = summarize_timings(timings)
+      median = metrics["elapsed_seconds_median"]
+      metrics.update({
+          "gate_count": gate_count,
+          "state_prep_gate_count": state_prep_gate_count,
+          "crz_distance": distance,
+          "crz_distance_pair_count": pair_count,
+          "crz_distance_gate_count": crz_gate_count,
+          "layers": layers,
+          "crz_distance_state_throughput_per_second": crz_gate_count / median
+          if median > 0 else None,
+      })
     elif case == "seeded-clifford-state":
       kernel, gate_count, single_gate_count, two_qubit_gate_count = (
           build_seeded_clifford_state_kernel(cudaq, qubits, layers))
@@ -1016,7 +1101,8 @@ def run_case(cudaq: Any, target: str, case: str, qubits: int, shots: int,
 
 
 def run_isolated_case(args: argparse.Namespace, target: str, case: str,
-                      qubits: int, shots: int | None = None) -> dict[str, Any]:
+                      qubits: int, shots: int | None = None,
+                      distance: int | None = None) -> dict[str, Any]:
   shots = args.shots if shots is None else shots
 
   def isolated_process_payload() -> dict[str, Any]:
@@ -1027,7 +1113,7 @@ def run_isolated_case(args: argparse.Namespace, target: str, case: str,
     }
 
   def isolated_error(message: str) -> dict[str, Any]:
-    row = result_template(target, case, qubits, shots, args.repeats)
+    row = result_template(target, case, qubits, shots, args.repeats, distance)
     row["status"] = "error"
     row["error"] = message
     row["isolated_process"] = isolated_process_payload()
@@ -1056,6 +1142,8 @@ def run_isolated_case(args: argparse.Namespace, target: str, case: str,
         "--output",
         str(output),
     ]
+    if distance is not None:
+      command.extend(["--crz-distance", str(distance)])
     completed = subprocess.run(command, capture_output=True, text=True)
 
     if output.exists():
@@ -1100,6 +1188,7 @@ def normalized_shot_counts(args: argparse.Namespace) -> list[int]:
 
 def build_report(args: argparse.Namespace) -> dict[str, Any]:
   shot_counts = normalized_shot_counts(args)
+  requested_distance = getattr(args, "crz_distance", None)
   report = {
       "schema_version": SCHEMA_VERSION,
       "created_at_utc": datetime.now(timezone.utc).isoformat(),
@@ -1131,8 +1220,11 @@ def build_report(args: argparse.Namespace) -> dict[str, Any]:
       for case in args.cases:
         for qubits in args.qubits:
           for shots in shot_counts:
-            report["results"].append(
-              result_template(target, case, qubits, shots, args.repeats))
+            for distance in crz_distance_sweep_values(
+                case, qubits, requested_distance):
+              report["results"].append(
+                  result_template(target, case, qubits, shots, args.repeats,
+                                  distance))
     return report
 
   if args.isolate_rows:
@@ -1140,8 +1232,11 @@ def build_report(args: argparse.Namespace) -> dict[str, Any]:
       for case in args.cases:
         for qubits in args.qubits:
           for shots in shot_counts:
-            report["results"].append(
-                run_isolated_case(args, target, case, qubits, shots))
+            for distance in crz_distance_sweep_values(
+                case, qubits, requested_distance):
+              report["results"].append(
+                  run_isolated_case(args, target, case, qubits, shots,
+                                    distance))
     return report
 
   import cudaq  # Delayed import keeps --dry-run independent of CUDA-Q setup.
@@ -1151,9 +1246,11 @@ def build_report(args: argparse.Namespace) -> dict[str, Any]:
     for case in args.cases:
       for qubits in args.qubits:
         for shots in shot_counts:
-          report["results"].append(
-              run_case(cudaq, target, case, qubits, shots, args.repeats,
-                       args.warmups, args.layers))
+          for distance in crz_distance_sweep_values(case, qubits,
+                                                    requested_distance):
+            report["results"].append(
+                run_case(cudaq, target, case, qubits, shots, args.repeats,
+                         args.warmups, args.layers, distance))
   return report
 
 
@@ -1194,6 +1291,7 @@ def make_parser() -> argparse.ArgumentParser:
                             "controlled-state,ch-state,cy-state,crx-state,cry-state,crz-state,"
                             "cz-state,two-qubit-state,three-qubit-state,"
                             "qft-like-state,crz-distance-state,"
+                            "crz-distance-sweep-state,"
                             "seeded-clifford-state."))
   parser.add_argument("--qubits",
                       type=parse_qubits,
@@ -1225,8 +1323,13 @@ def make_parser() -> argparse.ArgumentParser:
                             "crz-state/cz-state/two-qubit-state/"
                             "three-qubit-state/"
                             "qft-like-state/crz-distance-state/"
+                            "crz-distance-sweep-state/"
                             "seeded-clifford-state "
                             "benchmarks."))
+  parser.add_argument("--crz-distance",
+                      type=positive_int,
+                      default=None,
+                      help=argparse.SUPPRESS)
   parser.add_argument("--output",
                       help="JSON output path. Defaults to stdout.")
   parser.add_argument("--dry-run",

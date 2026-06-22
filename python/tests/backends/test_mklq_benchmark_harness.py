@@ -3043,6 +3043,50 @@ def test_mklq_benchmark_dry_run_accepts_composite_state_cases(tmp_path):
     assert {row["estimated_state_bytes"] for row in rows} == {16 * (1 << 4)}
 
 
+def test_mklq_benchmark_dry_run_expands_crz_distance_sweep_case(tmp_path):
+    repo_root = Path(__file__).resolve().parents[3]
+    script = repo_root / "benchmarks" / "mklq" / "bench_mklq_targets.py"
+    output = tmp_path / "dry-run-crz-distance-sweep.json"
+    env = os.environ.copy()
+    env.pop("PYTHONPATH", None)
+
+    subprocess.run([
+        sys.executable,
+        str(script),
+        "--dry-run",
+        "--targets",
+        "mklq-metal",
+        "--cases",
+        "crz-distance-sweep-state",
+        "--qubits",
+        "4",
+        "--layers",
+        "2",
+        "--output",
+        str(output),
+    ],
+                   check=True,
+                   capture_output=True,
+                   text=True,
+                   env=env)
+
+    report = json.loads(output.read_text(encoding="utf-8"))
+    assert report["config"]["cases"] == ["crz-distance-sweep-state"]
+    rows = report["results"]
+    assert len(rows) == 3
+    assert [row["distance"] for row in rows] == [1, 2, 3]
+    assert {row["status"] for row in rows} == {"planned"}
+    assert {row["case"] for row in rows} == {"crz-distance-sweep-state"}
+    assert {row["estimated_state_bytes"] for row in rows} == {16 * (1 << 4)}
+
+    for row in rows:
+        metrics = row["metrics"]
+        assert metrics["crz_distance"] == row["distance"]
+        assert metrics["metal_path_label"] == (
+            "mklq_metal_resident_controlled_gate_state_host_readback")
+        assert metrics["metal_runtime_counter"] is False
+
+
 def test_mklq_benchmark_qft_like_case_records_composite_metrics(monkeypatch):
     module = _load_benchmark_module()
 
@@ -3201,6 +3245,88 @@ def test_mklq_benchmark_crz_distance_case_records_distance_metrics(
     assert len(crz_operations) == 12
     assert [(operation[2] - operation[3]) for operation in crz_operations] == [
         1, 1, 1, 2, 2, 3, 1, 1, 1, 2, 2, 3
+    ]
+
+
+def test_mklq_benchmark_crz_distance_sweep_case_records_single_distance_metrics(
+        monkeypatch):
+    module = _load_benchmark_module()
+
+    class FakeKernel:
+
+        def __init__(self):
+            self.operations = []
+
+        def qalloc(self, qubits):
+            return list(range(qubits))
+
+        def ry(self, theta, target):
+            self.operations.append(("ry", theta, target))
+
+        def rz(self, theta, target):
+            self.operations.append(("rz", theta, target))
+
+        def crz(self, theta, control, target):
+            self.operations.append(("crz", theta, control, target))
+
+    class FakeCudaq:
+
+        def __init__(self):
+            self.kernels = []
+
+        def reset_target(self):
+            pass
+
+        def set_target(self, target):
+            assert target == "mklq-cpu"
+
+        def set_random_seed(self, seed):
+            assert seed == 13
+
+        def make_kernel(self):
+            kernel = FakeKernel()
+            self.kernels.append(kernel)
+            return kernel
+
+        def get_state(self, kernel):
+            return object()
+
+    def fake_timed_repeats(action, repeats):
+        assert repeats == 1
+        action()
+        return [0.25]
+
+    monkeypatch.setattr(module, "timed_repeats", fake_timed_repeats)
+    monkeypatch.setattr(module, "process_max_rss_bytes", lambda: 12288)
+
+    fake_cudaq = FakeCudaq()
+    row = module.run_case(fake_cudaq,
+                          "mklq-cpu",
+                          "crz-distance-sweep-state",
+                          qubits=4,
+                          shots=16,
+                          repeats=1,
+                          warmups=0,
+                          layers=2,
+                          distance=2)
+
+    assert row["status"] == "ok"
+    assert row["distance"] == 2
+    metrics = row["metrics"]
+    assert metrics["state_prep_gate_count"] == 8
+    assert metrics["crz_distance"] == 2
+    assert metrics["crz_distance_pair_count"] == 2
+    assert metrics["crz_distance_gate_count"] == 4
+    assert metrics["gate_count"] == 12
+    assert metrics["layers"] == 2
+    assert metrics["crz_distance_state_throughput_per_second"] == 16
+    assert metrics["process_max_rss_bytes_cumulative"] == 12288
+    operations = fake_cudaq.kernels[0].operations
+    crz_operations = [operation for operation in operations
+                      if operation[0] == "crz"]
+    assert len(crz_operations) == 4
+    assert [(operation[2] - operation[3]) for operation in crz_operations] == [
+        2, 2, 2, 2
     ]
 
 
