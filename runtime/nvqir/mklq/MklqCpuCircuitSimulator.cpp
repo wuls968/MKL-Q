@@ -476,6 +476,31 @@ protected:
 #endif
   }
 
+  void applySingleControlRzPhaseGate(complexd zeroPhase, complexd onePhase,
+                                     std::size_t control,
+                                     std::size_t target) {
+    const auto controlMask = qubitMask(control);
+    const auto targetMask = qubitMask(target);
+
+#if defined(_OPENMP)
+    const auto threadCount = parallelThreadCount();
+#pragma omp parallel for num_threads(                                          \
+        threadCount) if (threadCount > 1 &&                                    \
+                             stateDimension >= parallelStateThreshold)
+#endif
+    for (std::size_t basis = 0; basis < stateDimension; ++basis) {
+      if ((basis & controlMask) == 0)
+        continue;
+      state[basis] *= (basis & targetMask) ? onePhase : zeroPhase;
+    }
+
+#if defined(MKLQ_ENABLE_TEST_ACCESSORS)
+    ++specializedSingleQubitApplications;
+    ++specializedSingleControlQubitApplications;
+    ++phaseApplications;
+#endif
+  }
+
   void addQubitToState() override { addQubitsToState(1); }
 
   void addQubitsToState(std::size_t qubitCount,
@@ -891,12 +916,7 @@ protected:
     const auto onePhase = matrix[3];
 
     if (controls.size() == 1) {
-      applySingleControlSingleQubitPairs(
-          controls[0], target, [&](std::size_t zeroIndex,
-                                   std::size_t oneIndex) {
-            state[zeroIndex] *= zeroPhase;
-            state[oneIndex] *= onePhase;
-          });
+      applySingleControlRzPhaseGate(zeroPhase, onePhase, controls[0], target);
       return;
     }
 
