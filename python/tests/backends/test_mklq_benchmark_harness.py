@@ -770,6 +770,7 @@ def test_mklq_public_healthcheck_plan_lists_escalating_gates(tmp_path):
         "public_metadata",
         "benchmark_summary_parse",
         "performance_evidence_guard",
+        "crz_distance_evidence_guard",
         "metal_evidence_guard",
         "metal_runtime_counter_probe_parse",
         "metal_runtime_counter_docs",
@@ -784,6 +785,46 @@ def test_mklq_public_healthcheck_plan_lists_escalating_gates(tmp_path):
         "clean_cpu_benchmark",
     ]
     assert not config.output.exists()
+
+
+def test_mklq_public_healthcheck_plans_crz_distance_guard(tmp_path):
+    module = _load_public_healthcheck_module()
+    config = _public_healthcheck_config(module, tmp_path, plan_only=True)
+
+    report = module.run_healthcheck(config)
+    steps = [step["name"] for step in report["steps"]]
+
+    assert "crz_distance_evidence_guard" in steps
+    assert steps.index("performance_evidence_guard") < steps.index(
+        "crz_distance_evidence_guard")
+    assert steps.index("crz_distance_evidence_guard") < steps.index(
+        "metal_evidence_guard")
+
+
+def test_mklq_public_healthcheck_runs_crz_distance_guard(monkeypatch,
+                                                        tmp_path):
+    module = _load_public_healthcheck_module()
+    config = _public_healthcheck_config(module, tmp_path)
+    seen = {}
+
+    def fake_run_command(config, command, env_overlay=None):
+        seen["command"] = command
+        return {"returncode": 0, "command": command}
+
+    monkeypatch.setattr(module, "run_command", fake_run_command)
+
+    result = module.run_crz_distance_evidence_check(config)
+
+    assert result["status"] == "passed"
+    command = seen["command"]
+    assert command[1].endswith("check_performance_evidence.py")
+    assert command[command.index("--summary-id") + 1] == (
+        module.CRZ_DISTANCE_SUMMARY_ID)
+    required = command[command.index("--required-ratios") + 1].split(",")
+    assert required == [
+        f"crz_distance_sweep_state_q20_distance_{distance}"
+        for distance in range(1, 20)
+    ]
 
 
 def test_mklq_public_healthcheck_rejects_tracked_artifacts(monkeypatch,

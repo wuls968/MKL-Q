@@ -10,7 +10,7 @@ Caveat: these entries are local benchmark evidence from development or release-p
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | local-clean-cpu-q20-2026-06-21 | clean_local_benchmark_evidence | Apple M5, 10 logical cores, 16 GiB RAM, macOS 26.5.1 | qpp-cpu, mklq-cpu | y-state, cy-state, cz-state, qft-like-state, seeded-clifford-state, sample-full-register, sample-partial-register | 20 | shot_counts=1024, 65536; repeats=2; warmups=1; layers=8; isolate_rows=true | ok=18 | benchmarks/mklq/results/local-clean-cpu-gate-y-cy-cz-q20-2026-06-21.json sha256=2b438094b63b; benchmarks/mklq/results/local-clean-cpu-composite-qft-like-seeded-clifford-q20-2026-06-21.json sha256=b07b3ba92b83; benchmarks/mklq/results/local-clean-cpu-sampling-q20-2026-06-21.json sha256=167b5c4adef8 |
 | local-counts-only-sampling-shot-scaling-q20-2026-06-19 | local_tuning_evidence | Apple M5, 10 logical cores, 16 GiB RAM, macOS 26.5.1 | qpp-cpu, mklq-cpu, mklq-metal | sample-full-register, sample-partial-register | 20 | shot_counts=256, 1024, 8192, 65536; repeats=2; warmups=1; layers=8; isolate_rows=true | ok=24 | benchmarks/mklq/results/local-counts-only-sampling-shot-scaling-q20-2026-06-19.json sha256=ef9846673b46 |
-| local-crz-distance-sweep-cpu-q20-2026-06-22 | clean_local_benchmark_evidence | Apple M5, 10 logical cores, 16 GiB RAM, macOS 26.5.1 | qpp-cpu, mklq-cpu | crz-distance-sweep-state | 20 | shot_counts=1024; repeats=2; warmups=1; layers=8; isolate_rows=true | ok=38 | benchmarks/mklq/results/local-clean-cpu-crz-distance-sweep-q20-2026-06-22.json sha256=401656f5b546 |
+| local-crz-distance-sweep-cpu-q20-2026-06-22 | clean_local_benchmark_evidence | Apple M5, 10 logical cores, 16 GiB RAM, macOS 26.5.1 | qpp-cpu, mklq-cpu | crz-distance-sweep-state | 20 | shot_counts=1024; repeats=2; warmups=1; layers=8; isolate_rows=true | ok=38 | benchmarks/mklq/results/local-clean-cpu-crz-distance-sweep-q20-2026-06-22.json sha256=64f9d0b4f709 |
 | local-current-sampling-fullprob-gated-q20-2026-06-19 | local_tuning_evidence | Apple M5, 10 logical cores, 16 GiB RAM, macOS 26.5.1 | qpp-cpu, mklq-cpu, mklq-metal | sample-full-register, sample-partial-register | 20 | shots=1024; repeats=2; warmups=1; layers=4; isolate_rows=true | ok=6 | benchmarks/mklq/results/local-current-sampling-fullprob-gated-q20-2026-06-19.json sha256=8ca6a4f7a7ae; benchmarks/mklq/results/local-current-sampling-shot-scaling-q20-2026-06-19.json sha256=9c15c0c1d566 |
 | local-metal-composite-mixed-path-q20-2026-06-21 | local_tuning_evidence | Apple M5, 10 logical cores, 16 GiB RAM, macOS 26.5.1 | qpp-cpu, mklq-cpu, mklq-metal | qft-like-state, seeded-clifford-state | 20 | shot_counts=1024; repeats=2; warmups=1; layers=8; isolate_rows=true | ok=6 | benchmarks/mklq/results/local-metal-composite-mixed-path-q20-2026-06-21.json sha256=ef58b5922221 |
 | local-metal-path-labels-q20-2026-06-22 | local_tuning_evidence | Apple M5, 10 logical cores, 16 GiB RAM, macOS 26.5.1 | mklq-metal | y-state, cy-state, qft-like-state, seeded-clifford-state, sample-full-register, sample-partial-register | 20 | shot_counts=1024, 65536; repeats=2; warmups=1; layers=8; isolate_rows=true | ok=8 | benchmarks/mklq/results/local-metal-path-labels-state-q20-2026-06-22.json sha256=5c44e7772c48; benchmarks/mklq/results/local-metal-path-labels-sampling-q20-2026-06-22.json sha256=0087e0be2ca9 |
@@ -46,44 +46,44 @@ The values below are copied from each summary's bounded `comparison` object. Kee
 | local-counts-only-sampling-shot-scaling-q20-2026-06-19 | `q20_65536_shot_elapsed_ratio_qpp_cpu_over_mklq_cpu.sample_partial_register` | 83.64x |
 | local-counts-only-sampling-shot-scaling-q20-2026-06-19 | `q20_65536_shot_elapsed_ratio_qpp_cpu_over_mklq_metal.sample_full_register` | 27.94x |
 | local-counts-only-sampling-shot-scaling-q20-2026-06-19 | `q20_65536_shot_elapsed_ratio_qpp_cpu_over_mklq_metal.sample_partial_register` | 38.01x |
-| local-crz-distance-sweep-cpu-q20-2026-06-22 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_1` | 69.38x |
-| local-crz-distance-sweep-cpu-q20-2026-06-22 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_2` | 70.01x |
-| local-crz-distance-sweep-cpu-q20-2026-06-22 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_3` | 49.29x |
-| local-crz-distance-sweep-cpu-q20-2026-06-22 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_4` | 69.23x |
-| local-crz-distance-sweep-cpu-q20-2026-06-22 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_5` | 79.82x |
-| local-crz-distance-sweep-cpu-q20-2026-06-22 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_6` | 76.52x |
-| local-crz-distance-sweep-cpu-q20-2026-06-22 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_7` | 71.98x |
-| local-crz-distance-sweep-cpu-q20-2026-06-22 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_8` | 73.48x |
-| local-crz-distance-sweep-cpu-q20-2026-06-22 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_9` | 81.38x |
-| local-crz-distance-sweep-cpu-q20-2026-06-22 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_10` | 75.09x |
-| local-crz-distance-sweep-cpu-q20-2026-06-22 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_11` | 91.75x |
-| local-crz-distance-sweep-cpu-q20-2026-06-22 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_12` | 66.21x |
-| local-crz-distance-sweep-cpu-q20-2026-06-22 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_13` | 75.42x |
-| local-crz-distance-sweep-cpu-q20-2026-06-22 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_14` | 80.43x |
-| local-crz-distance-sweep-cpu-q20-2026-06-22 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_15` | 85.41x |
-| local-crz-distance-sweep-cpu-q20-2026-06-22 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_16` | 84.23x |
-| local-crz-distance-sweep-cpu-q20-2026-06-22 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_17` | 72.36x |
-| local-crz-distance-sweep-cpu-q20-2026-06-22 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_18` | 81.73x |
-| local-crz-distance-sweep-cpu-q20-2026-06-22 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_19` | 72.72x |
-| local-crz-distance-sweep-cpu-q20-2026-06-22 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_1` | 0.0722466 s |
-| local-crz-distance-sweep-cpu-q20-2026-06-22 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_2` | 0.07292 s |
-| local-crz-distance-sweep-cpu-q20-2026-06-22 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_3` | 0.102189 s |
-| local-crz-distance-sweep-cpu-q20-2026-06-22 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_4` | 0.070424 s |
-| local-crz-distance-sweep-cpu-q20-2026-06-22 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_5` | 0.0600982 s |
-| local-crz-distance-sweep-cpu-q20-2026-06-22 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_6` | 0.0552929 s |
-| local-crz-distance-sweep-cpu-q20-2026-06-22 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_7` | 0.0558776 s |
-| local-crz-distance-sweep-cpu-q20-2026-06-22 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_8` | 0.056267 s |
-| local-crz-distance-sweep-cpu-q20-2026-06-22 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_9` | 0.0481169 s |
-| local-crz-distance-sweep-cpu-q20-2026-06-22 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_10` | 0.0449639 s |
-| local-crz-distance-sweep-cpu-q20-2026-06-22 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_11` | 0.0405981 s |
-| local-crz-distance-sweep-cpu-q20-2026-06-22 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_12` | 0.0491225 s |
-| local-crz-distance-sweep-cpu-q20-2026-06-22 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_13` | 0.04079 s |
-| local-crz-distance-sweep-cpu-q20-2026-06-22 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_14` | 0.0374689 s |
-| local-crz-distance-sweep-cpu-q20-2026-06-22 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_15` | 0.0303341 s |
-| local-crz-distance-sweep-cpu-q20-2026-06-22 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_16` | 0.0283577 s |
-| local-crz-distance-sweep-cpu-q20-2026-06-22 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_17` | 0.0292731 s |
-| local-crz-distance-sweep-cpu-q20-2026-06-22 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_18` | 0.0234298 s |
-| local-crz-distance-sweep-cpu-q20-2026-06-22 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_19` | 0.0212267 s |
+| local-crz-distance-sweep-cpu-q20-2026-06-22 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_1` | 65.93x |
+| local-crz-distance-sweep-cpu-q20-2026-06-22 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_2` | 65.23x |
+| local-crz-distance-sweep-cpu-q20-2026-06-22 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_3` | 65.65x |
+| local-crz-distance-sweep-cpu-q20-2026-06-22 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_4` | 65.60x |
+| local-crz-distance-sweep-cpu-q20-2026-06-22 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_5` | 66.49x |
+| local-crz-distance-sweep-cpu-q20-2026-06-22 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_6` | 68.96x |
+| local-crz-distance-sweep-cpu-q20-2026-06-22 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_7` | 67.14x |
+| local-crz-distance-sweep-cpu-q20-2026-06-22 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_8` | 69.03x |
+| local-crz-distance-sweep-cpu-q20-2026-06-22 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_9` | 70.04x |
+| local-crz-distance-sweep-cpu-q20-2026-06-22 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_10` | 71.75x |
+| local-crz-distance-sweep-cpu-q20-2026-06-22 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_11` | 76.41x |
+| local-crz-distance-sweep-cpu-q20-2026-06-22 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_12` | 69.08x |
+| local-crz-distance-sweep-cpu-q20-2026-06-22 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_13` | 78.59x |
+| local-crz-distance-sweep-cpu-q20-2026-06-22 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_14` | 77.75x |
+| local-crz-distance-sweep-cpu-q20-2026-06-22 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_15` | 77.30x |
+| local-crz-distance-sweep-cpu-q20-2026-06-22 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_16` | 78.32x |
+| local-crz-distance-sweep-cpu-q20-2026-06-22 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_17` | 71.83x |
+| local-crz-distance-sweep-cpu-q20-2026-06-22 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_18` | 73.04x |
+| local-crz-distance-sweep-cpu-q20-2026-06-22 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_19` | 68.00x |
+| local-crz-distance-sweep-cpu-q20-2026-06-22 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_1` | 0.0742748 s |
+| local-crz-distance-sweep-cpu-q20-2026-06-22 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_2` | 0.0706062 s |
+| local-crz-distance-sweep-cpu-q20-2026-06-22 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_3` | 0.0697185 s |
+| local-crz-distance-sweep-cpu-q20-2026-06-22 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_4` | 0.0656998 s |
+| local-crz-distance-sweep-cpu-q20-2026-06-22 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_5` | 0.0631273 s |
+| local-crz-distance-sweep-cpu-q20-2026-06-22 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_6` | 0.0600961 s |
+| local-crz-distance-sweep-cpu-q20-2026-06-22 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_7` | 0.0566415 s |
+| local-crz-distance-sweep-cpu-q20-2026-06-22 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_8` | 0.053566 s |
+| local-crz-distance-sweep-cpu-q20-2026-06-22 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_9` | 0.0509577 s |
+| local-crz-distance-sweep-cpu-q20-2026-06-22 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_10` | 0.0468659 s |
+| local-crz-distance-sweep-cpu-q20-2026-06-22 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_11` | 0.0438885 s |
+| local-crz-distance-sweep-cpu-q20-2026-06-22 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_12` | 0.0448066 s |
+| local-crz-distance-sweep-cpu-q20-2026-06-22 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_13` | 0.0387231 s |
+| local-crz-distance-sweep-cpu-q20-2026-06-22 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_14` | 0.0357577 s |
+| local-crz-distance-sweep-cpu-q20-2026-06-22 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_15` | 0.0334365 s |
+| local-crz-distance-sweep-cpu-q20-2026-06-22 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_16` | 0.0308791 s |
+| local-crz-distance-sweep-cpu-q20-2026-06-22 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_17` | 0.0294991 s |
+| local-crz-distance-sweep-cpu-q20-2026-06-22 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_18` | 0.0246605 s |
+| local-crz-distance-sweep-cpu-q20-2026-06-22 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_19` | 0.0223731 s |
 | local-current-sampling-fullprob-gated-q20-2026-06-19 | `pre_gate_probe.mklq_metal_sample_full_register_q20_seconds` | 0.0313161 s |
 | local-current-sampling-fullprob-gated-q20-2026-06-19 | `pre_gate_probe.mklq_metal_sample_partial_register_q20_seconds` | 0.255697 s |
 | local-current-sampling-fullprob-gated-q20-2026-06-19 | `pre_gate_probe.repeats` | 1 |
