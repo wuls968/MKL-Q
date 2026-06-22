@@ -44,13 +44,13 @@ output; these raw payloads are not tracked as public evidence.
 - One-command correctness gate: passed with 4 steps passed, 0 failed, and 0
   skipped, including the Metal runtime counter probe.
 - Public example smoke gate: passed, with 30 steps passed and 0 failed.
-- Current `benchmark_harness_tests`: `75 passed`.
+- Current `benchmark_harness_tests`: `81 passed`.
 - Standalone install-prefix Python subset: `35 passed`.
 - `python_target_smoke`: `57 passed`.
 - `nvqpp_smoke`: `2 passed`.
-- Current `target_config_ctest`: `71/71 passed`.
-- Current `metal_runtime_counter_probe`: 19 expected, 19 selected, 0 missing,
-  and 19 passed, with each counter ctest run independently.
+- Current `target_config_ctest`: `72/72 passed`.
+- Current `metal_runtime_counter_probe`: 20 expected, 20 selected, 0 missing,
+  and 20 passed, with each counter ctest run independently.
 - Clean CPU benchmark gate: passed, with 18 q20 `qpp-cpu`/`mklq-cpu` rows and
   18 rows reporting `status == "ok"`.
 
@@ -89,7 +89,7 @@ ctest --test-dir build-python \
   --output-on-failure
 ```
 
-Result in the latest correctness refresh: `69/69 passed`.
+Result in the latest focused refresh: `72/72 passed`.
 
 ```bash
 PYTHONPATH=/Users/a0000/Documents/MKL-Q/build-python/python \
@@ -136,13 +136,14 @@ skipped. The step-level results were:
 
 - `python_target_smoke`: `57 passed`.
 - `nvqpp_smoke`: `2 passed`.
-- `target_config_ctest`: `71/71 passed`.
-- `metal_runtime_counter_probe`: 19 expected, 19 selected, 0 missing, and 19
+- `target_config_ctest`: `72/72 passed`.
+- `metal_runtime_counter_probe`: 20 expected, 20 selected, 0 missing, and 20
   independently executed passing counter ctests, including the resident
-  built-in Rx/Ry/Rz, controlled-Rx/Ry/Rz, and phase-family S/T/Sdg/Tdg
-  fixtures, plus the multi-control single-qubit resident fixture and the
-  resident three-target gate fixture plus the four-or-more-target unsupported
-  gate fallback/reupload boundary fixture.
+  direct three-target runtime fixture, built-in Rx/Ry/Rz,
+  controlled-Rx/Ry/Rz, and phase-family S/T/Sdg/Tdg fixtures, plus the
+  multi-control single-qubit resident fixture, the simulator resident
+  three-target gate fixture, and the four-or-more-target unsupported gate
+  fallback/reupload boundary fixture.
 
 The Python smoke step includes the MKL-Q API smoke tests, the CPU correctness
 fixture suite, the limited experimental Metal correctness fixture suite, and
@@ -188,7 +189,7 @@ public example smoke gate.
 
 This latest full result was collected after `main` advanced to
 `a3533cad0b89268e08099e6714454d6559bd015d`; the benchmark harness step reported
-`75 passed`, and the public example smoke step reported 30 passed and 0 failed.
+`81 passed`, and the public example smoke step reported 30 passed and 0 failed.
 
 ## Benchmark Evidence
 

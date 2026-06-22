@@ -1229,6 +1229,7 @@ def test_mklq_metal_runtime_counter_probe_selects_counter_tests():
     listing = """
 Test project /repo/build-python
   Test #787: mklq_metal_MKLQMetalTester.MetalRuntimeKeepsResidentStateAcrossGateSequence
+  Test #788: mklq_metal_MKLQMetalTester.MetalRuntimeAppliesResidentThreeQubitGate
   Test #789: mklq_metal_MKLQMetalTester.MetalRuntimeFillsResidentProbabilitiesWithoutStateReadback
   Test #792: mklq_metal_MKLQMetalTester.SimulatorKeepsSupportedGateSequenceResidentUntilReadback
   Test #795: mklq_metal_MKLQMetalTester.SimulatorSamplesResidentDenseStateWithoutReadback
@@ -1240,6 +1241,7 @@ Test project /repo/build-python
 
     assert tests == [
         "mklq_metal_MKLQMetalTester.MetalRuntimeKeepsResidentStateAcrossGateSequence",
+        "mklq_metal_MKLQMetalTester.MetalRuntimeAppliesResidentThreeQubitGate",
         "mklq_metal_MKLQMetalTester.MetalRuntimeFillsResidentProbabilitiesWithoutStateReadback",
         "mklq_metal_MKLQMetalTester.SimulatorKeepsSupportedGateSequenceResidentUntilReadback",
         "mklq_metal_MKLQMetalTester.SimulatorSamplesResidentDenseStateWithoutReadback",
