@@ -81,6 +81,9 @@ METAL_PATH_CASES = {
     "controlled-state":
         ("mklq_metal_mixed_controlled_gate_state_host_readback",
          METAL_CONTROLLED_GATE_SCOPE),
+    "multi-control-state":
+        ("mklq_metal_resident_multi_control_gate_state_host_readback",
+         METAL_CONTROLLED_GATE_SCOPE),
     "ch-state": ("mklq_metal_resident_controlled_gate_state_host_readback",
                  METAL_CONTROLLED_GATE_SCOPE),
     "cy-state": ("mklq_metal_resident_controlled_gate_state_host_readback",
@@ -173,6 +176,7 @@ DEFAULT_CASES = (
     "ry-state",
     "rz-state",
     "controlled-state",
+    "multi-control-state",
     "ch-state",
     "cy-state",
     "crx-state",
@@ -400,6 +404,35 @@ def build_controlled_state_kernel(cudaq: Any, qubits: int,
       gate_count += 3
 
   return kernel, gate_count
+
+
+def build_multi_control_state_kernel(
+    cudaq: Any, qubits: int, layers: int) -> tuple[Any, int, int, int]:
+  if qubits < 3:
+    raise ValueError("multi-control benchmarks require at least 3 qubits")
+
+  kernel = cudaq.make_kernel()
+  q = kernel.qalloc(qubits)
+  state_prep_gate_count = 0
+  multi_control_gate_count = 0
+
+  for index in range(qubits):
+    theta = 0.043 + 0.0017 * index
+    kernel.ry(theta, q[index])
+    kernel.rz(-0.5 * theta, q[index])
+    state_prep_gate_count += 2
+
+  for layer in range(layers):
+    theta = 0.125 + layer * 0.001
+    for target in range(2, qubits):
+      controls = [q[target - 2], q[target - 1]]
+      kernel.crx(theta, controls, q[target])
+      kernel.cx(controls, q[target])
+      kernel.cz(controls, q[target])
+      multi_control_gate_count += 3
+
+  gate_count = state_prep_gate_count + multi_control_gate_count
+  return (kernel, gate_count, state_prep_gate_count, multi_control_gate_count)
 
 
 def build_controlled_gate_state_kernel(
@@ -872,6 +905,23 @@ def run_case(cudaq: Any, target: str, case: str, qubits: int, shots: int,
           "controlled_gate_state_throughput_per_second": gate_count / median
           if median > 0 else None,
       })
+    elif case == "multi-control-state":
+      kernel, gate_count, state_prep_gate_count, multi_control_gate_count = (
+          build_multi_control_state_kernel(cudaq, qubits, layers))
+      action = lambda: cudaq.get_state(kernel)
+      for _ in range(warmups):
+        action()
+      timings = timed_repeats(action, repeats)
+      metrics = summarize_timings(timings)
+      median = metrics["elapsed_seconds_median"]
+      metrics.update({
+          "gate_count": gate_count,
+          "state_prep_gate_count": state_prep_gate_count,
+          "multi_control_gate_count": multi_control_gate_count,
+          "layers": layers,
+          "multi_control_gate_state_throughput_per_second":
+              multi_control_gate_count / median if median > 0 else None,
+      })
     elif case in CONTROLLED_GATE_STATE_CASES:
       gate_name, count_key, throughput_key = CONTROLLED_GATE_STATE_CASES[case]
       kernel, gate_count, state_prep_gate_count, controlled_gate_count = (
@@ -1288,7 +1338,8 @@ def make_parser() -> argparse.ArgumentParser:
                             "sample-ghz,sample-full-register,"
                             "sample-partial-register,single-qubit-state,"
                             "h-state,y-state,rx-state,ry-state,rz-state,"
-                            "controlled-state,ch-state,cy-state,crx-state,cry-state,crz-state,"
+                            "controlled-state,multi-control-state,"
+                            "ch-state,cy-state,crx-state,cry-state,crz-state,"
                             "cz-state,two-qubit-state,three-qubit-state,"
                             "qft-like-state,crz-distance-state,"
                             "crz-distance-sweep-state,"
@@ -1319,7 +1370,8 @@ def make_parser() -> argparse.ArgumentParser:
                       default=16,
                       help=("Layer count for gate-state and "
                             "single-qubit-state/h-state/rx-state/ry-state/"
-                            "rz-state/y-state/controlled-state/ch-state/cy-state/crx-state/cry-state/"
+                            "rz-state/y-state/controlled-state/"
+                            "multi-control-state/ch-state/cy-state/crx-state/cry-state/"
                             "crz-state/cz-state/two-qubit-state/"
                             "three-qubit-state/"
                             "qft-like-state/crz-distance-state/"

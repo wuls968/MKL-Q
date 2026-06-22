@@ -3049,6 +3049,127 @@ def test_mklq_benchmark_dry_run_accepts_controlled_case(tmp_path):
     assert rows[0]["estimated_state_bytes"] == 16 * (1 << 4)
 
 
+def test_mklq_benchmark_dry_run_accepts_multi_control_case(tmp_path):
+    repo_root = Path(__file__).resolve().parents[3]
+    script = repo_root / "benchmarks" / "mklq" / "bench_mklq_targets.py"
+    output = tmp_path / "dry-run-multi-control.json"
+    env = os.environ.copy()
+    env.pop("PYTHONPATH", None)
+
+    subprocess.run([
+        sys.executable,
+        str(script),
+        "--dry-run",
+        "--targets",
+        "mklq-metal",
+        "--cases",
+        "multi-control-state",
+        "--qubits",
+        "4",
+        "--output",
+        str(output),
+    ],
+                   check=True,
+                   capture_output=True,
+                   text=True,
+                   env=env)
+
+    report = json.loads(output.read_text(encoding="utf-8"))
+    assert report["config"]["cases"] == ["multi-control-state"]
+    rows = report["results"]
+    assert len(rows) == 1
+    assert rows[0]["status"] == "planned"
+    assert rows[0]["case"] == "multi-control-state"
+    assert rows[0]["estimated_state_bytes"] == 16 * (1 << 4)
+    metrics = rows[0]["metrics"]
+    assert metrics["metal_path_label"] == (
+        "mklq_metal_resident_multi_control_gate_state_host_readback")
+    assert metrics["metal_path_label_source"] == (
+        "benchmark_harness_static_case_map")
+    assert metrics["metal_runtime_counter"] is False
+
+
+def test_mklq_benchmark_multi_control_case_records_gate_metrics(monkeypatch):
+    module = _load_benchmark_module()
+
+    class FakeKernel:
+
+        def __init__(self):
+            self.operations = []
+
+        def qalloc(self, qubits):
+            return list(range(qubits))
+
+        def ry(self, theta, target):
+            self.operations.append(("ry", theta, target))
+
+        def rz(self, theta, target):
+            self.operations.append(("rz", theta, target))
+
+        def cx(self, controls, target):
+            self.operations.append(("cx", tuple(controls), target))
+
+        def cz(self, controls, target):
+            self.operations.append(("cz", tuple(controls), target))
+
+        def crx(self, theta, controls, target):
+            self.operations.append(("crx", theta, tuple(controls), target))
+
+    class FakeCudaq:
+
+        def __init__(self):
+            self.kernels = []
+
+        def reset_target(self):
+            pass
+
+        def set_target(self, target):
+            assert target == "mklq-cpu"
+
+        def set_random_seed(self, seed):
+            assert seed == 13
+
+        def make_kernel(self):
+            kernel = FakeKernel()
+            self.kernels.append(kernel)
+            return kernel
+
+        def get_state(self, kernel):
+            return object()
+
+    def fake_timed_repeats(action, repeats):
+        assert repeats == 1
+        action()
+        return [0.5]
+
+    monkeypatch.setattr(module, "timed_repeats", fake_timed_repeats)
+    monkeypatch.setattr(module, "process_max_rss_bytes", lambda: 8192)
+
+    fake_cudaq = FakeCudaq()
+    row = module.run_case(fake_cudaq,
+                          "mklq-cpu",
+                          "multi-control-state",
+                          qubits=4,
+                          shots=16,
+                          repeats=1,
+                          warmups=0,
+                          layers=2)
+
+    assert row["status"] == "ok"
+    metrics = row["metrics"]
+    assert metrics["state_prep_gate_count"] == 8
+    assert metrics["multi_control_gate_count"] == 12
+    assert metrics["gate_count"] == 20
+    assert metrics["layers"] == 2
+    assert metrics["multi_control_gate_state_throughput_per_second"] == 24
+    assert metrics["process_max_rss_bytes_cumulative"] == 8192
+    assert len(fake_cudaq.kernels) == 1
+    operations = fake_cudaq.kernels[0].operations
+    assert sum(1 for operation in operations if operation[0] == "crx") == 4
+    assert sum(1 for operation in operations if operation[0] == "cx") == 4
+    assert sum(1 for operation in operations if operation[0] == "cz") == 4
+
+
 def test_mklq_benchmark_dry_run_accepts_cz_case(tmp_path):
     repo_root = Path(__file__).resolve().parents[3]
     script = repo_root / "benchmarks" / "mklq" / "bench_mklq_targets.py"

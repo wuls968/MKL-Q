@@ -35,7 +35,7 @@ counters or release sign-off.
 python3 benchmarks/mklq/bench_mklq_targets.py \
   --dry-run \
   --targets qpp-cpu,mklq-cpu,mklq-metal \
-  --cases gate-state,sample-basis,sample-ghz,sample-full-register,sample-partial-register,single-qubit-state,h-state,y-state,rx-state,ry-state,rz-state,controlled-state,ch-state,cy-state,crx-state,cry-state,crz-state,cz-state,two-qubit-state,three-qubit-state,qft-like-state,crz-distance-state,crz-distance-sweep-state,seeded-clifford-state \
+  --cases gate-state,sample-basis,sample-ghz,sample-full-register,sample-partial-register,single-qubit-state,h-state,y-state,rx-state,ry-state,rz-state,controlled-state,multi-control-state,ch-state,cy-state,crx-state,cry-state,crz-state,cz-state,two-qubit-state,three-qubit-state,qft-like-state,crz-distance-state,crz-distance-sweep-state,seeded-clifford-state \
   --qubits 4,8,12 \
   --shot-counts 256,1024,8192 \
   --output /tmp/mklq-benchmark-plan.json
@@ -49,7 +49,7 @@ Use the built Python tree when running from the repository:
 PYTHONPATH="$(pwd)/build-python/python" \
 python3 benchmarks/mklq/bench_mklq_targets.py \
   --targets qpp-cpu,mklq-cpu,mklq-metal \
-  --cases gate-state,sample-basis,sample-ghz,sample-full-register,sample-partial-register,single-qubit-state,h-state,y-state,rx-state,ry-state,rz-state,controlled-state,ch-state,cy-state,crx-state,cry-state,crz-state,cz-state,two-qubit-state,three-qubit-state,qft-like-state,crz-distance-state,crz-distance-sweep-state,seeded-clifford-state \
+  --cases gate-state,sample-basis,sample-ghz,sample-full-register,sample-partial-register,single-qubit-state,h-state,y-state,rx-state,ry-state,rz-state,controlled-state,multi-control-state,ch-state,cy-state,crx-state,cry-state,crz-state,cz-state,two-qubit-state,three-qubit-state,qft-like-state,crz-distance-state,crz-distance-sweep-state,seeded-clifford-state \
   --qubits 4 \
   --shots 32 \
   --repeats 1 \
@@ -76,7 +76,7 @@ PYTHONPATH="$(pwd)/build-python/python" \
 python3 benchmarks/mklq/bench_mklq_targets.py \
   --isolate-rows \
   --targets mklq-cpu \
-  --cases gate-state,sample-basis,sample-ghz,sample-full-register,sample-partial-register,single-qubit-state,h-state,y-state,rx-state,ry-state,rz-state,controlled-state,ch-state,cy-state,crx-state,cry-state,crz-state,cz-state,two-qubit-state,three-qubit-state,qft-like-state,crz-distance-state,crz-distance-sweep-state,seeded-clifford-state \
+  --cases gate-state,sample-basis,sample-ghz,sample-full-register,sample-partial-register,single-qubit-state,h-state,y-state,rx-state,ry-state,rz-state,controlled-state,multi-control-state,ch-state,cy-state,crx-state,cry-state,crz-state,cz-state,two-qubit-state,three-qubit-state,qft-like-state,crz-distance-state,crz-distance-sweep-state,seeded-clifford-state \
   --qubits 15,16,17,18,19,20 \
   --shots 1024 \
   --repeats 2 \
@@ -103,8 +103,8 @@ The JSON report includes:
 
 `single-qubit-state`, `h-state`, `y-state`, `rx-state`, `ry-state`,
 `rz-state`,
-`controlled-state`, `ch-state`, `cy-state`, `crx-state`, `cry-state`, `crz-state`,
-`cz-state`, and
+`controlled-state`, `multi-control-state`, `ch-state`, `cy-state`,
+`crx-state`, `cry-state`, `crz-state`, `cz-state`, and
 `two-qubit-state` are focused state-vector update microbenchmarks. The dedicated
 H/Y/Rx/Ry/Rz cases initialize a non-uniform state, then apply layers of one
 built-in single-qubit gate; their elapsed times include the state-preparation
@@ -115,7 +115,11 @@ CH/CY/CRX/CRY/CRZ cases initialize a non-uniform state, then apply layers of one
 built-in controlled single-qubit gate; their elapsed times include the
 state-preparation gates, while the controlled-gate throughput fields use only
 the repeated target-gate count. Use those rows as evidence for built-in
-controlled-gate hot paths, not custom controlled operations. The `cz-state` case
+controlled-gate hot paths, not custom controlled operations.
+The `multi-control-state` case initializes a non-uniform state, then applies
+two-control CRX/CX/CZ layers; use it as evidence for multi-control gate-loop
+cost and control-mask handling, not as a claim about arbitrary controlled
+custom operations. The `cz-state` case
 initializes a
 non-uniform state, then applies CZ-only layers; use it as evidence for the CZ
 phase fast path, not as a general claim about every controlled single-qubit
