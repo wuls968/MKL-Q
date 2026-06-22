@@ -77,6 +77,11 @@ PUBLIC_MARKDOWN_FILES = (
     "examples/mklq/README.md",
 )
 
+CRZ_DISTANCE_SUMMARY_ID = "local-crz-distance-sweep-cpu-q20-2026-06-22"
+CRZ_DISTANCE_REQUIRED_RATIOS = tuple(
+    f"crz_distance_sweep_state_q20_distance_{distance}"
+    for distance in range(1, 20))
+
 
 @dataclass(frozen=True)
 class HealthcheckConfig:
@@ -371,6 +376,27 @@ def run_performance_evidence_check(config: HealthcheckConfig) -> dict[str, Any]:
     result = run_command(config, command)
     if result["returncode"] != 0:
         return failed("performance evidence guard failed", result)
+    return passed(result)
+
+
+def run_crz_distance_evidence_check(config: HealthcheckConfig) -> dict[str, Any]:
+    script = config.repo_root / "benchmarks" / "mklq" / (
+        "check_performance_evidence.py")
+    command = [
+        config.python_executable,
+        str(script),
+        "--reports",
+        "benchmarks/mklq/reports",
+        "--pattern",
+        "*.summary.json",
+        "--summary-id",
+        CRZ_DISTANCE_SUMMARY_ID,
+        "--required-ratios",
+        ",".join(CRZ_DISTANCE_REQUIRED_RATIOS),
+    ]
+    result = run_command(config, command)
+    if result["returncode"] != 0:
+        return failed("CRZ distance evidence guard failed", result)
     return passed(result)
 
 
@@ -686,6 +712,9 @@ def build_steps(config: HealthcheckConfig) -> list[Step]:
         Step("performance_evidence_guard",
              "Check accepted clean CPU benchmark evidence ratios.",
              run_performance_evidence_check),
+        Step("crz_distance_evidence_guard",
+             "Check accepted CRZ distance-sweep CPU benchmark evidence ratios.",
+             run_crz_distance_evidence_check),
         Step("metal_evidence_guard",
              "Check experimental Metal benchmark evidence boundaries.",
              run_metal_evidence_check),
