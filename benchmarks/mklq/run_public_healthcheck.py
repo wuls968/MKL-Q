@@ -81,6 +81,8 @@ CRZ_DISTANCE_SUMMARY_ID = "local-crz-distance-sweep-cpu-q20-2026-06-22"
 CRZ_DISTANCE_REQUIRED_RATIOS = tuple(
     f"crz_distance_sweep_state_q20_distance_{distance}"
     for distance in range(1, 20))
+MULTI_CONTROL_SUMMARY_ID = "local-multi-control-cpu-q20-2026-06-22"
+MULTI_CONTROL_REQUIRED_RATIOS = ("multi_control_state_q20",)
 
 
 @dataclass(frozen=True)
@@ -400,6 +402,28 @@ def run_crz_distance_evidence_check(config: HealthcheckConfig) -> dict[str, Any]
     return passed(result)
 
 
+def run_multi_control_evidence_check(
+        config: HealthcheckConfig) -> dict[str, Any]:
+    script = config.repo_root / "benchmarks" / "mklq" / (
+        "check_performance_evidence.py")
+    command = [
+        config.python_executable,
+        str(script),
+        "--reports",
+        "benchmarks/mklq/reports",
+        "--pattern",
+        "*.summary.json",
+        "--summary-id",
+        MULTI_CONTROL_SUMMARY_ID,
+        "--required-ratios",
+        ",".join(MULTI_CONTROL_REQUIRED_RATIOS),
+    ]
+    result = run_command(config, command)
+    if result["returncode"] != 0:
+        return failed("multi-control evidence guard failed", result)
+    return passed(result)
+
+
 def run_metal_evidence_check(config: HealthcheckConfig) -> dict[str, Any]:
     script = config.repo_root / "benchmarks" / "mklq" / (
         "check_metal_evidence.py")
@@ -715,6 +739,9 @@ def build_steps(config: HealthcheckConfig) -> list[Step]:
         Step("crz_distance_evidence_guard",
              "Check accepted CRZ distance-sweep CPU benchmark evidence ratios.",
              run_crz_distance_evidence_check),
+        Step("multi_control_evidence_guard",
+             "Check accepted multi-control CPU benchmark evidence ratios.",
+             run_multi_control_evidence_check),
         Step("metal_evidence_guard",
              "Check experimental Metal benchmark evidence boundaries.",
              run_metal_evidence_check),

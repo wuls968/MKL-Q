@@ -16,6 +16,7 @@ Caveat: these entries are local benchmark evidence from development or release-p
 | local-metal-path-labels-q20-2026-06-22 | local_tuning_evidence | Apple M5, 10 logical cores, 16 GiB RAM, macOS 26.5.1 | mklq-metal | y-state, cy-state, qft-like-state, seeded-clifford-state, sample-full-register, sample-partial-register | 20 | shot_counts=1024, 65536; repeats=2; warmups=1; layers=8; isolate_rows=true | ok=8 | benchmarks/mklq/results/local-metal-path-labels-state-q20-2026-06-22.json sha256=5c44e7772c48; benchmarks/mklq/results/local-metal-path-labels-sampling-q20-2026-06-22.json sha256=0087e0be2ca9 |
 | local-metal-three-qubit-resident-q20-2026-06-22 | local_tuning_evidence | Apple M5, 10 logical cores, 16 GiB RAM, macOS 26.5.1 | qpp-cpu, mklq-cpu, mklq-metal | three-qubit-state | 20 | shot_counts=1024; repeats=2; warmups=1; layers=8; isolate_rows=true | ok=3 | benchmarks/mklq/results/local-metal-three-qubit-resident-q20-2026-06-22.json sha256=daed4c1deb2d |
 | local-metal-y-cy-resident-isolated-q20-2026-06-19 | local_tuning_evidence | Apple M5, 10 logical cores, 16 GiB RAM, macOS 26.5.1 | qpp-cpu, mklq-cpu, mklq-metal | y-state, cy-state | 20 | shots=1024; repeats=2; warmups=1; layers=8; isolate_rows=true | ok=6 | benchmarks/mklq/results/local-metal-y-cy-resident-isolated-q20-2026-06-19.json sha256=84891e8f907c |
+| local-multi-control-cpu-q20-2026-06-22 | clean_local_benchmark_evidence | Apple M5, 10 logical cores, 16 GiB RAM, macOS 26.5.1 | qpp-cpu, mklq-cpu | multi-control-state | 20 | shot_counts=1024; repeats=5; warmups=2; layers=8; isolate_rows=true | ok=2 | benchmarks/mklq/results/local-clean-cpu-multi-control-q20-2026-06-22.json sha256=6c483e023c90 |
 | local-y-cy-fastpath-isolated-q20-2026-06-19 | local_tuning_evidence | Apple M5, 10 logical cores, 16 GiB RAM, macOS 26.5.1 | qpp-cpu, mklq-cpu | y-state, cy-state | 20 | shots=1024; repeats=2; warmups=1; layers=8; isolate_rows=true | ok=4 | benchmarks/mklq/results/local-y-cy-fastpath-isolated-q20-2026-06-19.json sha256=93bce3b77fcc |
 
 ## Comparison Signals
@@ -107,6 +108,8 @@ The values below are copied from each summary's bounded `comparison` object. Kee
 | local-metal-y-cy-resident-isolated-q20-2026-06-19 | `same_day_cross_target_ratio.mklq_metal_over_mklq_cpu_y_state_q20` | 2.13x |
 | local-metal-y-cy-resident-isolated-q20-2026-06-19 | `same_day_cross_target_ratio.qpp_cpu_over_mklq_metal_cy_state_q20` | 53.20x |
 | local-metal-y-cy-resident-isolated-q20-2026-06-19 | `same_day_cross_target_ratio.qpp_cpu_over_mklq_metal_y_state_q20` | 56.16x |
+| local-multi-control-cpu-q20-2026-06-22 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_multi_control_state_q20` | 45.09x |
+| local-multi-control-cpu-q20-2026-06-22 | `mklq_cpu_elapsed_seconds_median.multi_control_state_q20` | 0.174905 s |
 | local-y-cy-fastpath-isolated-q20-2026-06-19 | `same_day_cross_target_ratio.qpp_cpu_over_mklq_cpu_cy_state_q20` | 103.85x |
 | local-y-cy-fastpath-isolated-q20-2026-06-19 | `same_day_cross_target_ratio.qpp_cpu_over_mklq_cpu_y_state_q20` | 167.38x |
 

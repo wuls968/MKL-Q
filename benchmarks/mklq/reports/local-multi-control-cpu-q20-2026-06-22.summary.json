@@ -1,0 +1,146 @@
+{
+  "comparison": {
+    "clean_worktree_cross_target_ratio": {
+      "qpp_cpu_over_mklq_cpu_multi_control_state_q20": 45.09240551157245
+    },
+    "mklq_cpu_elapsed_seconds_median": {
+      "multi_control_state_q20": 0.17490466599701904
+    }
+  },
+  "config": {
+    "cases": [
+      "multi-control-state"
+    ],
+    "commands": [
+      [
+        "benchmarks/mklq/bench_mklq_targets.py",
+        "--isolate-rows",
+        "--targets",
+        "qpp-cpu,mklq-cpu",
+        "--cases",
+        "multi-control-state",
+        "--qubits",
+        "20",
+        "--shots",
+        "1024",
+        "--repeats",
+        "5",
+        "--warmups",
+        "2",
+        "--layers",
+        "8",
+        "--output",
+        "benchmarks/mklq/results/local-clean-cpu-multi-control-q20-2026-06-22.json"
+      ]
+    ],
+    "isolate_rows": true,
+    "layers": 8,
+    "qubits": [
+      20
+    ],
+    "repeats": 5,
+    "shot_counts": [
+      1024
+    ],
+    "shots": 1024,
+    "targets": [
+      "qpp-cpu",
+      "mklq-cpu"
+    ],
+    "warmups": 2
+  },
+  "environment": {
+    "DYLD_LIBRARY_PATH": null,
+    "MKL_NUM_THREADS": null,
+    "OMP_DYNAMIC": "false",
+    "OMP_NUM_THREADS": "10",
+    "OMP_PLACES": null,
+    "OMP_PROC_BIND": "close",
+    "PYTHONPATH": "/Users/a0000/.cudaq-mklq",
+    "VECLIB_MAXIMUM_THREADS": "1"
+  },
+  "evidence_kind": "clean_local_benchmark_evidence",
+  "git": {
+    "branch": "main",
+    "commit": "4ece8d2396e8feee1c59a04e58324c529564f487",
+    "dirty": false,
+    "root": "/Users/a0000/Documents/MKL-Q",
+    "status_short": []
+  },
+  "interpretation": {
+    "clean_worktree": true,
+    "performance_claim_scope": "local Apple M5 q20 CPU target comparison only; not a cross-machine release benchmark",
+    "raw_json_files_are_ignored": true,
+    "runtime_build_note": "The CUDA-Q Python runtime and source provenance are recorded from the raw benchmark report generated after installing the current MKL-Q build to /Users/a0000/.cudaq-mklq.",
+    "summary": "Clean-worktree local run comparing qpp-cpu and mklq-cpu for q20 two-control CRX/CX/CZ multi-control state-vector updates."
+  },
+  "machine": {
+    "cpu_brand": "Apple M5",
+    "logical_cores": 10,
+    "machine": "arm64",
+    "macos_version": "26.5.1",
+    "memory_bytes": 17179869184,
+    "platform": "macOS-26.5.1-arm64-arm-64bit",
+    "processor": "arm",
+    "python": "3.12.2",
+    "python_executable": "/opt/anaconda3/bin/python3"
+  },
+  "raw_results": [
+    {
+      "path": "benchmarks/mklq/results/local-clean-cpu-multi-control-q20-2026-06-22.json",
+      "sha256": "6c483e023c9010c46c455c295fad5be0f7a5ae46cd79384a38dde47846b7e017",
+      "status_rows": {
+        "ok": 2
+      },
+      "tracked": false
+    }
+  ],
+  "rows": [
+    {
+      "case": "multi-control-state",
+      "elapsed_seconds_max": 8.14422633301001,
+      "elapsed_seconds_median": 7.88687212500372,
+      "elapsed_seconds_min": 7.620452957984526,
+      "estimated_state_bytes": 16777216,
+      "gate_count": 472,
+      "layers": 8,
+      "multi_control_gate_count": 432,
+      "multi_control_gate_state_throughput_per_second": 54.774566285971865,
+      "process_max_rss_bytes_cumulative": 220430336,
+      "qubits": 20,
+      "repeats": 5,
+      "shots": 1024,
+      "state_prep_gate_count": 40,
+      "status": "ok",
+      "target": "qpp-cpu",
+      "warmups": 2
+    },
+    {
+      "case": "multi-control-state",
+      "elapsed_seconds_max": 0.19028012501075864,
+      "elapsed_seconds_median": 0.17490466599701904,
+      "elapsed_seconds_min": 0.1688763340061996,
+      "estimated_state_bytes": 16777216,
+      "gate_count": 472,
+      "layers": 8,
+      "multi_control_gate_count": 432,
+      "multi_control_gate_state_throughput_per_second": 2469.9169546875482,
+      "process_max_rss_bytes_cumulative": 223100928,
+      "qubits": 20,
+      "repeats": 5,
+      "shots": 1024,
+      "state_prep_gate_count": 40,
+      "status": "ok",
+      "target": "mklq-cpu",
+      "warmups": 2
+    }
+  ],
+  "runtime": {
+    "cudaq_module_file": "/Users/a0000/.cudaq-mklq/cudaq/__init__.py",
+    "cudaq_version": "CUDA-Q Version  (https://github.com/NVIDIA/cuda-quantum b0b1978f680a9ea2d625cedaf8aac0e99ff6f3ec)",
+    "module_from_build_tree": false,
+    "python_prefix": "/opt/anaconda3"
+  },
+  "schema_version": "mklq-benchmark-summary-v1",
+  "summary_id": "local-multi-control-cpu-q20-2026-06-22"
+}
