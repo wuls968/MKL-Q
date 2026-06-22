@@ -10,10 +10,10 @@ Caveat: this is runtime counter evidence from selected build-tree ctest cases. I
 | --- | --- |
 | `status` | passed |
 | `report_count` | 1 |
-| `expected` | 19 |
-| `selected` | 19 |
+| `expected` | 20 |
+| `selected` | 20 |
 | `missing` | 0 |
-| `passed` | 19 |
+| `passed` | 20 |
 | `failed` | 0 |
 
 ## Evidence Boundary
@@ -32,7 +32,7 @@ Caveat: this is runtime counter evidence from selected build-tree ctest cases. I
 | fallback_boundary | 1 | 0 | 0 | Unsupported-gate fallback and reupload boundary tests |
 | measurement_reset | 3 | 0 | 0 | Measurement, collapse, and reset counter tests |
 | probability_sampling | 5 | 0 | 0 | Resident probability fill and sampling counter tests |
-| resident_gate | 10 | 0 | 0 | Resident Metal gate/update counter tests |
+| resident_gate | 11 | 0 | 0 | Resident Metal gate/update counter tests |
 
 ## Counter Tests
 
@@ -47,6 +47,7 @@ Caveat: this is runtime counter evidence from selected build-tree ctest cases. I
 | probability_sampling | `mklq_metal_MKLQMetalTester.SimulatorSamplesLargeResidentPartialRegisterThroughFullProbability` |
 | probability_sampling | `mklq_metal_MKLQMetalTester.SimulatorSamplesResidentDenseStateWithoutReadback` |
 | probability_sampling | `mklq_metal_MKLQMetalTester.SimulatorSamplesSmallResidentPartialRegisterThroughMarginalProbability` |
+| resident_gate | `mklq_metal_MKLQMetalTester.MetalRuntimeAppliesResidentThreeQubitGate` |
 | resident_gate | `mklq_metal_MKLQMetalTester.MetalRuntimeKeepsResidentStateAcrossGateSequence` |
 | resident_gate | `mklq_metal_MKLQMetalTester.SimulatorKeepsBuiltInPhaseFamilyResidentUntilReadback` |
 | resident_gate | `mklq_metal_MKLQMetalTester.SimulatorKeepsBuiltInRxAndControlledRxResidentUntilReadback` |
@@ -62,7 +63,7 @@ Caveat: this is runtime counter evidence from selected build-tree ctest cases. I
 
 | Report | Created | Status | Expected | Selected | Missing | Passed | Failed |
 | --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
-| benchmarks/mklq/reports/local-metal-runtime-counter-probe-2026-06-22.counter.json | 2026-06-22T07:25:49.516754+00:00 | passed | 19 | 19 | 0 | 19 | 0 |
+| benchmarks/mklq/reports/local-metal-runtime-counter-probe-2026-06-22.counter.json | 2026-06-22T08:03:57.120763+00:00 | passed | 20 | 20 | 0 | 20 | 0 |
 
 Regenerate with:
 

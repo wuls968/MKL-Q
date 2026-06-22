@@ -440,6 +440,36 @@ CUDAQ_TEST(MKLQMetalTester, MetalRuntimeAppliesControlledTwoQubitGate) {
   EXPECT_EQ(executor.twoQubitGateApplications(), 1);
 }
 
+CUDAQ_TEST(MKLQMetalTester, MetalRuntimeAppliesResidentThreeQubitGate) {
+  nvqir::mklq::MetalStateVectorExecutor executor;
+
+  if (!expectMetalRuntimeReadyOrUnavailable(executor))
+    return;
+
+  std::vector<std::complex<double>> state(8, {0.0, 0.0});
+  state[0] = {1.0, 0.0};
+
+  std::array<std::complex<double>, 64> flipAllGate{};
+  for (std::size_t row = 0; row < 8; ++row)
+    flipAllGate[row * 8 + (7 - row)] = {1.0, 0.0};
+  const std::array<std::size_t, 3> targets{0, 1, 2};
+
+  ASSERT_TRUE(executor.uploadState(state.data(), state.size()))
+      << executor.lastError();
+  ASSERT_TRUE(executor.applyResidentThreeQubitGate(
+      flipAllGate.data(), nullptr, 0, targets.data()))
+      << executor.lastError();
+  ASSERT_TRUE(executor.downloadState(state.data(), state.size()))
+      << executor.lastError();
+
+  for (std::size_t index = 0; index + 1 < state.size(); ++index)
+    expectNear(state[index], {0.0, 0.0});
+  expectNear(state[7], {1.0, 0.0});
+  EXPECT_EQ(executor.residentStateUploads(), 1);
+  EXPECT_EQ(executor.residentStateDownloads(), 1);
+  EXPECT_EQ(executor.threeQubitGateApplications(), 1);
+}
+
 CUDAQ_TEST(MKLQMetalTester, MetalRuntimeFillsFullRegisterProbabilities) {
   nvqir::mklq::MetalStateVectorExecutor executor;
 

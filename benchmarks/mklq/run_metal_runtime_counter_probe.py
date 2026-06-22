@@ -28,6 +28,7 @@ COUNTER_SOURCE = (
 
 COUNTER_TEST_SUFFIXES = (
     "MetalRuntimeKeepsResidentStateAcrossGateSequence",
+    "MetalRuntimeAppliesResidentThreeQubitGate",
     "MetalRuntimeFillsResidentProbabilitiesWithoutStateReadback",
     "MetalRuntimeComputesAndCollapsesResidentQubitProbability",
     "SimulatorKeepsSupportedGateSequenceResidentUntilReadback",
