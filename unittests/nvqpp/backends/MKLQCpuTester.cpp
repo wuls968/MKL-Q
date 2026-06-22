@@ -152,6 +152,12 @@ public:
   std::size_t threeQubitRowSparseApplicationsForTest() const {
     return threeQubitRowSparseApplications;
   }
+
+  static std::size_t indexWithTwoZeroBitsForTest(std::size_t block,
+                                                 std::size_t firstBit,
+                                                 std::size_t secondBit) {
+    return indexWithTwoZeroBits(block, firstBit, secondBit);
+  }
 };
 
 static void expectRuntimeErrorContains(std::function<void()> action,
@@ -955,6 +961,43 @@ CUDAQ_TEST(MKLQCpuTester, SingleControlRzUsesDedicatedPhaseFastPath) {
   EXPECT_EQ(sim.specializedSingleQubitApplicationsForTest(), 1);
   EXPECT_EQ(sim.specializedSingleControlQubitApplicationsForTest(), 1);
   EXPECT_EQ(sim.phaseApplicationsForTest(), 1);
+}
+
+CUDAQ_TEST(MKLQCpuTester, TwoZeroBitIndexMappingClearsRequestedBits) {
+  auto insertZeroBitReference = [](std::size_t value, std::size_t bit) {
+    const auto lowMask = (1ULL << bit) - 1;
+    return ((value & ~lowMask) << 1) | (value & lowMask);
+  };
+
+  struct Case {
+    std::size_t block;
+    std::size_t firstBit;
+    std::size_t secondBit;
+  };
+
+  const std::vector<Case> cases{
+      {0b000000, 0, 1},
+      {0b111111, 0, 1},
+      {0b101011, 1, 4},
+      {0b111000, 4, 1},
+      {0b1010101, 2, 6},
+      {0b1010101, 6, 2},
+  };
+
+  for (const auto &testCase : cases) {
+    SCOPED_TRACE(testCase.block);
+    const auto mapped = MklqCpuCircuitSimulatorTester::
+        indexWithTwoZeroBitsForTest(testCase.block, testCase.firstBit,
+                                    testCase.secondBit);
+    const auto first = std::min(testCase.firstBit, testCase.secondBit);
+    const auto second = std::max(testCase.firstBit, testCase.secondBit);
+    const auto expected = insertZeroBitReference(
+        insertZeroBitReference(testCase.block, first), second);
+    EXPECT_EQ(mapped, expected);
+    EXPECT_EQ(mapped & (1ULL << testCase.firstBit), 0);
+    EXPECT_EQ(mapped & (1ULL << testCase.secondBit), 0);
+    EXPECT_EQ(std::popcount(mapped), std::popcount(testCase.block));
+  }
 }
 
 CUDAQ_TEST(MKLQCpuTester,
