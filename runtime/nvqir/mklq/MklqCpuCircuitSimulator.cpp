@@ -303,7 +303,16 @@ protected:
     }
   }
 
-  std::size_t qubitMask(std::size_t qubit) const { return 1ULL << qubit; }
+  static std::size_t qubitBit(std::size_t qubit) { return 1ULL << qubit; }
+
+  std::size_t qubitMask(std::size_t qubit) const { return qubitBit(qubit); }
+
+  static std::size_t controlMask(const std::vector<std::size_t> &controls) {
+    std::size_t mask = 0;
+    for (auto control : controls)
+      mask |= qubitBit(control);
+    return mask;
+  }
 
 #if defined(MKLQ_ENABLE_METAL_RUNTIME)
   bool ensureMetalResidentState() {
@@ -441,12 +450,8 @@ protected:
   }
 #endif
 
-  bool controlsSatisfied(std::size_t basis,
-                         const std::vector<std::size_t> &controls) const {
-    for (auto control : controls)
-      if ((basis & qubitMask(control)) == 0)
-        return false;
-    return true;
+  static bool controlsSatisfied(std::size_t basis, std::size_t controls) {
+    return (basis & controls) == controls;
   }
 
   template <typename PairUpdater>
@@ -700,6 +705,7 @@ protected:
                                   operationName, matrix, controls, target))
       return;
 
+    const auto controlBits = controlMask(controls);
 #if defined(_OPENMP)
     const auto threadCount = parallelThreadCount();
 #pragma omp parallel for num_threads(                                          \
@@ -708,7 +714,7 @@ protected:
 #endif
     for (std::size_t pair = 0; pair < pairCount; ++pair) {
       const auto zeroIndex = ((pair & ~lowMask) << 1) | (pair & lowMask);
-      if (!controlsSatisfied(zeroIndex, controls))
+      if (!controlsSatisfied(zeroIndex, controlBits))
         continue;
 
       const auto oneIndex = zeroIndex | mask;
@@ -763,6 +769,7 @@ protected:
     const auto mask = qubitMask(target);
     const auto lowMask = mask - 1;
     const auto pairCount = stateDimension >> 1;
+    const auto controlBits = controlMask(controls);
 
 #if defined(_OPENMP)
     const auto threadCount = parallelThreadCount();
@@ -772,7 +779,7 @@ protected:
 #endif
     for (std::size_t pair = 0; pair < pairCount; ++pair) {
       const auto zeroIndex = ((pair & ~lowMask) << 1) | (pair & lowMask);
-      if (!controls.empty() && !controlsSatisfied(zeroIndex, controls))
+      if (!controlsSatisfied(zeroIndex, controlBits))
         continue;
 
       const auto oneIndex = zeroIndex | mask;
@@ -806,6 +813,7 @@ protected:
     const auto mask = qubitMask(target);
     const auto lowMask = mask - 1;
     const auto pairCount = stateDimension >> 1;
+    const auto controlBits = controlMask(controls);
 
 #if defined(_OPENMP)
     const auto threadCount = parallelThreadCount();
@@ -815,7 +823,7 @@ protected:
 #endif
     for (std::size_t pair = 0; pair < pairCount; ++pair) {
       const auto zeroIndex = ((pair & ~lowMask) << 1) | (pair & lowMask);
-      if (!controls.empty() && !controlsSatisfied(zeroIndex, controls))
+      if (!controlsSatisfied(zeroIndex, controlBits))
         continue;
 
       const auto oneIndex = zeroIndex | mask;
@@ -860,6 +868,7 @@ protected:
     const auto mask = qubitMask(target);
     const auto lowMask = mask - 1;
     const auto pairCount = stateDimension >> 1;
+    const auto controlBits = controlMask(controls);
 
 #if defined(_OPENMP)
     const auto threadCount = parallelThreadCount();
@@ -869,7 +878,7 @@ protected:
 #endif
     for (std::size_t pair = 0; pair < pairCount; ++pair) {
       const auto zeroIndex = ((pair & ~lowMask) << 1) | (pair & lowMask);
-      if (!controls.empty() && !controlsSatisfied(zeroIndex, controls))
+      if (!controlsSatisfied(zeroIndex, controlBits))
         continue;
 
       const auto oneIndex = zeroIndex | mask;
@@ -907,6 +916,7 @@ protected:
     const auto mask = qubitMask(target);
     const auto lowMask = mask - 1;
     const auto pairCount = stateDimension >> 1;
+    const auto controlBits = controlMask(controls);
 
 #if defined(_OPENMP)
     const auto threadCount = parallelThreadCount();
@@ -916,7 +926,7 @@ protected:
 #endif
     for (std::size_t pair = 0; pair < pairCount; ++pair) {
       const auto zeroIndex = ((pair & ~lowMask) << 1) | (pair & lowMask);
-      if (!controls.empty() && !controlsSatisfied(zeroIndex, controls))
+      if (!controlsSatisfied(zeroIndex, controlBits))
         continue;
 
       const auto oneIndex = zeroIndex | mask;
@@ -945,6 +955,7 @@ protected:
     const auto mask = qubitMask(target);
     const auto lowMask = mask - 1;
     const auto pairCount = stateDimension >> 1;
+    const auto controlBits = controlMask(controls);
 
 #if defined(_OPENMP)
     const auto threadCount = parallelThreadCount();
@@ -954,7 +965,7 @@ protected:
 #endif
     for (std::size_t pair = 0; pair < pairCount; ++pair) {
       const auto zeroIndex = ((pair & ~lowMask) << 1) | (pair & lowMask);
-      if (!controls.empty() && !controlsSatisfied(zeroIndex, controls))
+      if (!controlsSatisfied(zeroIndex, controlBits))
         continue;
 
       const auto oneIndex = zeroIndex | mask;
@@ -1007,6 +1018,7 @@ protected:
 
     const auto blockCount = stateDimension >> 2;
     const auto indexMasks = twoZeroBitIndexMasks(targets[0], targets[1]);
+    const auto controlBits = controlMask(controls);
 #if defined(_OPENMP)
     const auto threadCount = parallelThreadCount();
 #pragma omp parallel for num_threads(                                          \
@@ -1015,7 +1027,7 @@ protected:
 #endif
     for (std::size_t block = 0; block < blockCount; ++block) {
       const auto base = indexWithTwoZeroBits(block, indexMasks);
-      if (!controlsSatisfied(base, controls))
+      if (!controlsSatisfied(base, controlBits))
         continue;
 
       const auto index0 = base;
@@ -1044,6 +1056,7 @@ protected:
     const auto mask = qubitMask(target);
     const auto lowMask = mask - 1;
     const auto pairCount = stateDimension >> 1;
+    const auto controlBits = controlMask(controls);
 
 #if defined(_OPENMP)
     const auto threadCount = parallelThreadCount();
@@ -1053,7 +1066,7 @@ protected:
 #endif
     for (std::size_t pair = 0; pair < pairCount; ++pair) {
       const auto zeroIndex = ((pair & ~lowMask) << 1) | (pair & lowMask);
-      if (!controlsSatisfied(zeroIndex, controls))
+      if (!controlsSatisfied(zeroIndex, controlBits))
         continue;
 
       const auto oneIndex = zeroIndex | mask;
@@ -1091,6 +1104,7 @@ protected:
       return;
     }
 
+    const auto controlBits = controlMask(controls);
 #if defined(_OPENMP)
     const auto threadCount = parallelThreadCount();
 #pragma omp parallel for num_threads(                                          \
@@ -1098,7 +1112,7 @@ protected:
                              stateDimension >= parallelStateThreshold)
 #endif
     for (std::size_t basis = 0; basis < stateDimension; ++basis) {
-      if ((basis & mask) == 0 || !controlsSatisfied(basis, controls))
+      if ((basis & mask) == 0 || !controlsSatisfied(basis, controlBits))
         continue;
       state[basis] = -state[basis];
     }
@@ -1168,6 +1182,7 @@ protected:
     std::sort(sortedTargets.begin(), sortedTargets.end());
 
     const auto blockCount = stateDimension >> 3;
+    const auto controlBits = controlMask(controls);
 #if defined(_OPENMP)
     const auto threadCount = parallelThreadCount();
 #pragma omp parallel for num_threads(                                          \
@@ -1176,7 +1191,7 @@ protected:
 #endif
     for (std::size_t block = 0; block < blockCount; ++block) {
       const auto base = indexWithThreeZeroBits(block, sortedTargets);
-      if (!controlsSatisfied(base, controls))
+      if (!controlsSatisfied(base, controlBits))
         continue;
 
       std::array<complexd, subspaceDim> amplitudes;
@@ -1268,6 +1283,7 @@ protected:
     }
 
     auto next = state;
+    const auto controlBits = controlMask(task.controls);
 #if defined(_OPENMP)
     const auto threadCount = parallelThreadCount();
 #pragma omp parallel num_threads(                                              \
@@ -1277,7 +1293,7 @@ protected:
       std::vector<complexd> amplitudes(subspaceDim);
 #pragma omp for schedule(static)
       for (std::size_t base = 0; base < stateDimension; ++base) {
-        if ((base & targetMask) != 0 || !controlsSatisfied(base, task.controls))
+        if ((base & targetMask) != 0 || !controlsSatisfied(base, controlBits))
           continue;
 
         for (std::size_t column = 0; column < subspaceDim; ++column)
@@ -1296,7 +1312,7 @@ protected:
 #else
     std::vector<complexd> amplitudes(subspaceDim);
     for (std::size_t base = 0; base < stateDimension; ++base) {
-      if ((base & targetMask) != 0 || !controlsSatisfied(base, task.controls))
+      if ((base & targetMask) != 0 || !controlsSatisfied(base, controlBits))
         continue;
 
       for (std::size_t column = 0; column < subspaceDim; ++column)
