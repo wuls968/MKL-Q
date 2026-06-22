@@ -136,8 +136,9 @@ target-marker output.
   regions at four worker threads while this backend is being tuned.
   Single-qubit gates use an in-place 2x2 update path; built-in uncontrolled
   and controlled H/Y/Rx/Ry/Rz use dedicated structured in-place fast paths,
-  with single-control variants using direct target/control pair enumeration
-  instead of a per-pair control predicate,
+  with most single-control variants using direct target/control pair
+  enumeration instead of a per-pair control predicate, and single-control Rz
+  using a phase-only state scan,
   built-in X/CNOT use a dedicated in-place bit-flip permutation fast path, and
   built-in controlled-Z/CZ use a dedicated in-place phase-sign fast path. Custom
   single-qubit operations still use the generic 2x2 path.
