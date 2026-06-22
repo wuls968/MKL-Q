@@ -53,6 +53,9 @@ output; these raw payloads are not tracked as public evidence.
   and 20 passed, with each counter ctest run independently.
 - Clean CPU benchmark gate: passed, with 18 q20 `qpp-cpu`/`mklq-cpu` rows and
   18 rows reporting `status == "ok"`.
+- Focused multi-control CPU benchmark evidence: passed, with 2 q20
+  `multi-control-state` rows reporting `status == "ok"` and a tracked
+  `qpp-cpu` over `mklq-cpu` median elapsed ratio of `45.09x`.
 
 ## Install-prefix Gate
 
@@ -226,6 +229,7 @@ Current tracked summaries include:
 - `local-metal-path-labels-q20-2026-06-22.summary.json`
 - `local-metal-y-cy-resident-isolated-q20-2026-06-19.summary.json`
 - `local-counts-only-sampling-shot-scaling-q20-2026-06-19.summary.json`
+- `local-multi-control-cpu-q20-2026-06-22.summary.json`
 
 The clean-worktree local benchmark summary was refreshed against
 `34f4b260d1c657ad626c526eed4e6b9d3a441be4` on 2026-06-21. The clean summary now
@@ -235,6 +239,13 @@ rows. These files include one clean-worktree local benchmark summary plus older
 dirty-worktree tuning summaries. Interpret each file through its
 `evidence_kind` and `interpretation` fields. Do not treat any local summary as
 cross-machine performance certification.
+
+The focused multi-control summary was generated against
+`4ece8d2396e8feee1c59a04e58324c529564f487` on 2026-06-22 after installing the
+current local MKL-Q build to `/Users/a0000/.cudaq-mklq`. It compares q20
+`qpp-cpu` and `mklq-cpu` on `multi-control-state` with `repeats=5`,
+`warmups=2`, `layers=8`, and isolated rows. The public healthcheck now includes
+a dedicated `multi_control_evidence_guard` for this summary.
 
 The Metal composite summary is local tuning evidence only. It records q20
 `qft-like-state` and `seeded-clifford-state` rows for `qpp-cpu`, `mklq-cpu`, and
