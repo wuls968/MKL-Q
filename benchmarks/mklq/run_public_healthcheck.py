@@ -34,6 +34,7 @@ BENCHMARK_HELPERS = (
     "benchmarks/mklq/bench_mklq_targets.py",
     "benchmarks/mklq/bench_probability_kernels.py",
     "benchmarks/mklq/check_metal_evidence.py",
+    "benchmarks/mklq/check_metal_runtime_counter_docs.py",
     "benchmarks/mklq/check_performance_evidence.py",
     "benchmarks/mklq/make_summary.py",
     "benchmarks/mklq/run_clean_cpu_benchmark.py",
@@ -275,10 +276,12 @@ def public_metadata_requirements() -> list[tuple[str, str]]:
         ("benchmarks/mklq/README.md", "Preflight Audit"),
         ("benchmarks/mklq/README.md", "Metal Runtime Counter Probe"),
         ("benchmarks/mklq/README.md", "Metal Runtime Counter Summary"),
+        ("benchmarks/mklq/README.md", "Metal Runtime Counter Docs Guard"),
         ("docs/mklq/metal-runtime-counters.md", "runtime counter evidence"),
         ("docs/mklq/testing-matrix.md", "check_performance_evidence.py"),
         ("docs/mklq/testing-matrix.md", "check_metal_evidence.py"),
         ("docs/mklq/testing-matrix.md", "run_metal_runtime_counter_probe.py"),
+        ("docs/mklq/testing-matrix.md", "check_metal_runtime_counter_docs.py"),
         ("docs/mklq/testing-matrix.md", "run_preflight_audit.py"),
         ("docs/mklq/testing-matrix.md", "summarize_metal_runtime_counters.py"),
         (".github/pull_request_template.md", "Compatibility Boundary"),
@@ -494,6 +497,24 @@ def run_metal_runtime_counter_probe_parse(
                   details) if failures else passed(details)
 
 
+def run_metal_runtime_counter_docs_check(
+        config: HealthcheckConfig) -> dict[str, Any]:
+    script = config.repo_root / "benchmarks" / "mklq" / (
+        "check_metal_runtime_counter_docs.py")
+    command = [
+        config.python_executable,
+        str(script),
+        "--reports",
+        "benchmarks/mklq/reports",
+        "--doc",
+        "docs/mklq/metal-runtime-counters.md",
+    ]
+    result = run_command(config, command)
+    if result["returncode"] != 0:
+        return failed("Metal runtime counter docs guard failed", result)
+    return passed(result)
+
+
 def run_py_compile(config: HealthcheckConfig) -> dict[str, Any]:
     command = [config.python_executable, "-m", "py_compile", *PY_COMPILE_FILES]
     result = run_command(config, command)
@@ -671,6 +692,9 @@ def build_steps(config: HealthcheckConfig) -> list[Step]:
         Step("metal_runtime_counter_probe_parse",
              "Parse bounded Metal runtime counter evidence.",
              run_metal_runtime_counter_probe_parse),
+        Step("metal_runtime_counter_docs",
+             "Compare tracked Metal counter docs with regenerated output.",
+             run_metal_runtime_counter_docs_check),
         Step("benchmark_helper_py_compile",
              "Compile public benchmark helper and example scripts.",
              run_py_compile),

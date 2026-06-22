@@ -40,11 +40,11 @@ and the temporary example-smoke payload embedded in the full healthcheck
 output; these raw payloads are not tracked as public evidence.
 
 - Install-prefix build: passed.
-- Full public healthcheck: passed, with 15 steps passed and 0 failed.
+- Full public healthcheck: passed, with 16 steps passed and 0 failed.
 - One-command correctness gate: passed with 4 steps passed, 0 failed, and 0
   skipped, including the Metal runtime counter probe.
 - Public example smoke gate: passed, with 30 steps passed and 0 failed.
-- Current `benchmark_harness_tests`: `81 passed`.
+- Current `benchmark_harness_tests`: `82 passed`.
 - Standalone install-prefix Python subset: `35 passed`.
 - `python_target_smoke`: `57 passed`.
 - `nvqpp_smoke`: `2 passed`.
@@ -179,17 +179,17 @@ python3 benchmarks/mklq/run_correctness_gate.py \
 python3 benchmarks/mklq/run_public_healthcheck.py --full --require-clean
 ```
 
-Latest 2026-06-22 result: `15/15` steps passed. This includes Git
+Latest 2026-06-22 result: `16/16` steps passed. This includes Git
 repository hygiene, tracked-artifact checks, public metadata checks, sanitized
 benchmark summary parsing, the clean CPU performance evidence guard, the Metal
-evidence boundary guard, bounded Metal runtime counter evidence parsing, helper
-`py_compile`, markdown links, benchmark evidence regeneration, benchmark
-harness tests, install-prefix build, the one-command correctness gate, and the
-public example smoke gate.
+evidence boundary guard, bounded Metal runtime counter evidence parsing, Metal
+counter docs drift detection, helper `py_compile`, markdown links, benchmark
+evidence regeneration, benchmark harness tests, install-prefix build, the
+one-command correctness gate, and the public example smoke gate.
 
-This latest full result was collected after `main` advanced to
-`a3533cad0b89268e08099e6714454d6559bd015d`; the benchmark harness step reported
-`81 passed`, and the public example smoke step reported 30 passed and 0 failed.
+The ignored raw healthcheck JSON records the exact Git state for this local
+run. The benchmark harness step reported `82 passed`, and the public example
+smoke step reported 30 passed and 0 failed.
 
 ## Benchmark Evidence
 
