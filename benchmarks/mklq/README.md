@@ -35,7 +35,7 @@ counters or release sign-off.
 python3 benchmarks/mklq/bench_mklq_targets.py \
   --dry-run \
   --targets qpp-cpu,mklq-cpu,mklq-metal \
-  --cases gate-state,sample-basis,sample-ghz,sample-full-register,sample-partial-register,single-qubit-state,h-state,y-state,rx-state,ry-state,rz-state,controlled-state,ch-state,cy-state,crx-state,cry-state,crz-state,cz-state,two-qubit-state,three-qubit-state,qft-like-state,seeded-clifford-state \
+  --cases gate-state,sample-basis,sample-ghz,sample-full-register,sample-partial-register,single-qubit-state,h-state,y-state,rx-state,ry-state,rz-state,controlled-state,ch-state,cy-state,crx-state,cry-state,crz-state,cz-state,two-qubit-state,three-qubit-state,qft-like-state,crz-distance-state,seeded-clifford-state \
   --qubits 4,8,12 \
   --shot-counts 256,1024,8192 \
   --output /tmp/mklq-benchmark-plan.json
@@ -49,7 +49,7 @@ Use the built Python tree when running from the repository:
 PYTHONPATH="$(pwd)/build-python/python" \
 python3 benchmarks/mklq/bench_mklq_targets.py \
   --targets qpp-cpu,mklq-cpu,mklq-metal \
-  --cases gate-state,sample-basis,sample-ghz,sample-full-register,sample-partial-register,single-qubit-state,h-state,y-state,rx-state,ry-state,rz-state,controlled-state,ch-state,cy-state,crx-state,cry-state,crz-state,cz-state,two-qubit-state,three-qubit-state,qft-like-state,seeded-clifford-state \
+  --cases gate-state,sample-basis,sample-ghz,sample-full-register,sample-partial-register,single-qubit-state,h-state,y-state,rx-state,ry-state,rz-state,controlled-state,ch-state,cy-state,crx-state,cry-state,crz-state,cz-state,two-qubit-state,three-qubit-state,qft-like-state,crz-distance-state,seeded-clifford-state \
   --qubits 4 \
   --shots 32 \
   --repeats 1 \
@@ -76,7 +76,7 @@ PYTHONPATH="$(pwd)/build-python/python" \
 python3 benchmarks/mklq/bench_mklq_targets.py \
   --isolate-rows \
   --targets mklq-cpu \
-  --cases gate-state,sample-basis,sample-ghz,sample-full-register,sample-partial-register,single-qubit-state,h-state,y-state,rx-state,ry-state,rz-state,controlled-state,ch-state,cy-state,crx-state,cry-state,crz-state,cz-state,two-qubit-state,three-qubit-state,qft-like-state,seeded-clifford-state \
+  --cases gate-state,sample-basis,sample-ghz,sample-full-register,sample-partial-register,single-qubit-state,h-state,y-state,rx-state,ry-state,rz-state,controlled-state,ch-state,cy-state,crx-state,cry-state,crz-state,cz-state,two-qubit-state,three-qubit-state,qft-like-state,crz-distance-state,seeded-clifford-state \
   --qubits 15,16,17,18,19,20 \
   --shots 1024 \
   --repeats 2 \
@@ -128,6 +128,11 @@ three-target path, not as a claim about every possible 8x8 unitary. The
 `qft-like-state` case prepares a nonzero basis state and applies layered
 H/CRZ/SWAP blocks shaped like the QFT fixtures; its
 gate-specific throughput excludes the two state-preparation X gates. The
+`crz-distance-state` case prepares a non-uniform state, then applies only the
+same increasing-distance CRZ pattern used inside the QFT-like fixture. It
+records a `crz_distance_histogram` so long-range controlled-RZ behavior can be
+separated from H/SWAP work; use it as diagnostic evidence for CRZ distance
+distribution, not as a broad QFT performance claim. The
 `seeded-clifford-state` case applies a deterministic seed-17 mixture of
 single-qubit Clifford gates and CX/CY/CZ/SWAP operations; use it as an
 end-to-end mixed-gate stress row, not as evidence for one isolated primitive.
