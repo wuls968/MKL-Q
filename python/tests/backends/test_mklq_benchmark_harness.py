@@ -2441,7 +2441,7 @@ def test_mklq_benchmark_dry_run_records_metal_path_metadata(tmp_path):
         "--targets",
         "mklq-metal",
         "--cases",
-        "y-state,cy-state,three-qubit-state,qft-like-state,sample-full-register",
+        "y-state,cy-state,three-qubit-state,qft-like-state,crz-distance-state,sample-full-register",
         "--qubits",
         "4",
         "--output",
@@ -2466,6 +2466,8 @@ def test_mklq_benchmark_dry_run_records_metal_path_metadata(tmp_path):
         "mklq_metal_resident_three_gate_state_host_readback")
     assert rows["qft-like-state"]["metrics"]["metal_path_label"] == (
         "mklq_metal_mixed_composite_state_host_readback")
+    assert rows["crz-distance-state"]["metrics"]["metal_path_label"] == (
+        "mklq_metal_resident_controlled_gate_state_host_readback")
     assert rows["sample-full-register"]["metrics"]["metal_path_label"] == (
         "mklq_metal_mixed_sampling_host_counts")
     for row in rows.values():
@@ -3011,7 +3013,7 @@ def test_mklq_benchmark_dry_run_accepts_composite_state_cases(tmp_path):
         "--targets",
         "mklq-cpu",
         "--cases",
-        "qft-like-state,seeded-clifford-state",
+        "qft-like-state,crz-distance-state,seeded-clifford-state",
         "--qubits",
         "4",
         "--layers",
@@ -3027,13 +3029,15 @@ def test_mklq_benchmark_dry_run_accepts_composite_state_cases(tmp_path):
     report = json.loads(output.read_text(encoding="utf-8"))
     assert report["config"]["cases"] == [
         "qft-like-state",
+        "crz-distance-state",
         "seeded-clifford-state",
     ]
     rows = report["results"]
-    assert len(rows) == 2
+    assert len(rows) == 3
     assert {row["status"] for row in rows} == {"planned"}
     assert {row["case"] for row in rows} == {
         "qft-like-state",
+        "crz-distance-state",
         "seeded-clifford-state",
     }
     assert {row["estimated_state_bytes"] for row in rows} == {16 * (1 << 4)}
@@ -3117,6 +3121,87 @@ def test_mklq_benchmark_qft_like_case_records_composite_metrics(monkeypatch):
     assert operations.count(("x", 0)) == 1
     assert operations.count(("x", 3)) == 1
     assert sum(1 for op in operations if op[0] == "crz") == 12
+
+
+def test_mklq_benchmark_crz_distance_case_records_distance_metrics(
+        monkeypatch):
+    module = _load_benchmark_module()
+
+    class FakeKernel:
+
+        def __init__(self):
+            self.operations = []
+
+        def qalloc(self, qubits):
+            return list(range(qubits))
+
+        def ry(self, theta, target):
+            self.operations.append(("ry", theta, target))
+
+        def rz(self, theta, target):
+            self.operations.append(("rz", theta, target))
+
+        def crz(self, theta, control, target):
+            self.operations.append(("crz", theta, control, target))
+
+    class FakeCudaq:
+
+        def __init__(self):
+            self.kernels = []
+
+        def reset_target(self):
+            pass
+
+        def set_target(self, target):
+            assert target == "mklq-cpu"
+
+        def set_random_seed(self, seed):
+            assert seed == 13
+
+        def make_kernel(self):
+            kernel = FakeKernel()
+            self.kernels.append(kernel)
+            return kernel
+
+        def get_state(self, kernel):
+            return object()
+
+    def fake_timed_repeats(action, repeats):
+        assert repeats == 1
+        action()
+        return [0.25]
+
+    monkeypatch.setattr(module, "timed_repeats", fake_timed_repeats)
+    monkeypatch.setattr(module, "process_max_rss_bytes", lambda: 12288)
+
+    fake_cudaq = FakeCudaq()
+    row = module.run_case(fake_cudaq,
+                          "mklq-cpu",
+                          "crz-distance-state",
+                          qubits=4,
+                          shots=16,
+                          repeats=1,
+                          warmups=0,
+                          layers=2)
+
+    assert row["status"] == "ok"
+    metrics = row["metrics"]
+    assert metrics["state_prep_gate_count"] == 8
+    assert metrics["crz_distance_gate_count"] == 12
+    assert metrics["crz_distance_histogram"] == {"1": 6, "2": 4, "3": 2}
+    assert metrics["crz_distance_max_distance"] == 3
+    assert metrics["crz_distance_weighted_average_distance"] == 20 / 12
+    assert metrics["gate_count"] == 20
+    assert metrics["layers"] == 2
+    assert metrics["crz_distance_state_throughput_per_second"] == 48
+    assert metrics["process_max_rss_bytes_cumulative"] == 12288
+    operations = fake_cudaq.kernels[0].operations
+    crz_operations = [operation for operation in operations
+                      if operation[0] == "crz"]
+    assert len(crz_operations) == 12
+    assert [(operation[2] - operation[3]) for operation in crz_operations] == [
+        1, 1, 1, 2, 2, 3, 1, 1, 1, 2, 2, 3
+    ]
 
 
 def test_mklq_benchmark_seeded_clifford_case_records_composite_metrics(

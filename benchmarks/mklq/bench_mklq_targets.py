@@ -99,6 +99,9 @@ METAL_PATH_CASES = {
                           METAL_THREE_QUBIT_SCOPE),
     "qft-like-state": ("mklq_metal_mixed_composite_state_host_readback",
                        METAL_COMPOSITE_SCOPE),
+    "crz-distance-state":
+        ("mklq_metal_resident_controlled_gate_state_host_readback",
+         METAL_CONTROLLED_GATE_SCOPE),
     "seeded-clifford-state":
         ("mklq_metal_mixed_composite_state_host_readback",
          METAL_COMPOSITE_SCOPE),
@@ -176,6 +179,7 @@ DEFAULT_CASES = (
     "two-qubit-state",
     "three-qubit-state",
     "qft-like-state",
+    "crz-distance-state",
     "seeded-clifford-state",
 )
 DEFAULT_QUBITS = (4, 8, 12)
@@ -556,6 +560,42 @@ def build_qft_like_state_kernel(
           state_prep_gate_count, h_gate_count, crz_gate_count, swap_gate_count)
 
 
+def build_crz_distance_state_kernel(
+    cudaq: Any, qubits: int,
+    layers: int) -> tuple[Any, int, int, int, dict[str, int], int, float]:
+  if qubits < 2:
+    raise ValueError("crz-distance benchmarks require at least 2 qubits")
+
+  kernel = cudaq.make_kernel()
+  q = kernel.qalloc(qubits)
+  state_prep_gate_count = 0
+  crz_gate_count = 0
+  distance_histogram = {str(distance): 0 for distance in range(1, qubits)}
+
+  for index in range(qubits):
+    theta = 0.043 + 0.0017 * index
+    kernel.ry(theta, q[index])
+    kernel.rz(-0.5 * theta, q[index])
+    state_prep_gate_count += 2
+
+  for layer in range(layers):
+    for distance in range(1, qubits):
+      for target in range(qubits - distance):
+        control = target + distance
+        angle = math.pi / float(1 << (distance + 1))
+        kernel.crz(angle, q[control], q[target])
+        crz_gate_count += 1
+        distance_histogram[str(distance)] += 1
+
+  weighted_distance = sum(int(distance) * count
+                          for distance, count in distance_histogram.items())
+  average_distance = (weighted_distance / crz_gate_count
+                      if crz_gate_count else 0.0)
+  gate_count = state_prep_gate_count + crz_gate_count
+  return (kernel, gate_count, state_prep_gate_count, crz_gate_count,
+          distance_histogram, qubits - 1, average_distance)
+
+
 def build_seeded_clifford_state_kernel(
     cudaq: Any,
     qubits: int,
@@ -856,6 +896,27 @@ def run_case(cudaq: Any, target: str, case: str, qubits: int, shots: int,
           "qft_like_state_throughput_per_second": qft_like_gate_count / median
           if median > 0 else None,
       })
+    elif case == "crz-distance-state":
+      (kernel, gate_count, state_prep_gate_count, crz_gate_count,
+       distance_histogram, max_distance, average_distance) = (
+           build_crz_distance_state_kernel(cudaq, qubits, layers))
+      action = lambda: cudaq.get_state(kernel)
+      for _ in range(warmups):
+        action()
+      timings = timed_repeats(action, repeats)
+      metrics = summarize_timings(timings)
+      median = metrics["elapsed_seconds_median"]
+      metrics.update({
+          "gate_count": gate_count,
+          "state_prep_gate_count": state_prep_gate_count,
+          "crz_distance_gate_count": crz_gate_count,
+          "crz_distance_histogram": distance_histogram,
+          "crz_distance_max_distance": max_distance,
+          "crz_distance_weighted_average_distance": average_distance,
+          "layers": layers,
+          "crz_distance_state_throughput_per_second": crz_gate_count / median
+          if median > 0 else None,
+      })
     elif case == "seeded-clifford-state":
       kernel, gate_count, single_gate_count, two_qubit_gate_count = (
           build_seeded_clifford_state_kernel(cudaq, qubits, layers))
@@ -1132,7 +1193,7 @@ def make_parser() -> argparse.ArgumentParser:
                             "h-state,y-state,rx-state,ry-state,rz-state,"
                             "controlled-state,ch-state,cy-state,crx-state,cry-state,crz-state,"
                             "cz-state,two-qubit-state,three-qubit-state,"
-                            "qft-like-state,"
+                            "qft-like-state,crz-distance-state,"
                             "seeded-clifford-state."))
   parser.add_argument("--qubits",
                       type=parse_qubits,
@@ -1163,7 +1224,8 @@ def make_parser() -> argparse.ArgumentParser:
                             "rz-state/y-state/controlled-state/ch-state/cy-state/crx-state/cry-state/"
                             "crz-state/cz-state/two-qubit-state/"
                             "three-qubit-state/"
-                            "qft-like-state/seeded-clifford-state "
+                            "qft-like-state/crz-distance-state/"
+                            "seeded-clifford-state "
                             "benchmarks."))
   parser.add_argument("--output",
                       help="JSON output path. Defaults to stdout.")
