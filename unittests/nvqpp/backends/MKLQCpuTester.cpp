@@ -234,6 +234,15 @@ static std::array<std::complex<double>, 4> rzMatrixForTest(double angle) {
            {std::cos(angle / 2.0), std::sin(angle / 2.0)}}};
 }
 
+CUDAQ_TEST(MKLQCpuTester, BackendUnitTestCompilesOpenMpBranchesWhenAvailable) {
+#if defined(HAS_OPENMP) && !defined(_OPENMP)
+  FAIL() << "HAS_OPENMP is defined, but _OPENMP is not; MKL-Q backend unit "
+            "tests are not compiling the simulator OpenMP branches.";
+#else
+  SUCCEED();
+#endif
+}
+
 CUDAQ_TEST(MKLQCpuTester, RejectsOutOfRangeMeasureResetAndSampleQubits) {
   MklqCpuCircuitSimulatorTester sim;
   auto q0 = sim.allocateQubit();

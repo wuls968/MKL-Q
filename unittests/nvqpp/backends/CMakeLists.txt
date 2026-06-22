@@ -191,6 +191,13 @@ if (CUDAQ_ENABLE_MKLQ_BACKEND AND CUDAQ_MKLQ_APPLE_SILICON_TARGET AND
       CUDAQ_SIMULATION_SCALAR_FP64
       MKLQ_APPLE_SILICON_CPU_BASELINE
       MKLQ_ENABLE_TEST_ACCESSORS)
+  set(MKLQ_CPU_BACKEND_TEST_DEPENDENCIES)
+  add_openmp_configurations(test_mklq_cpu_backend
+    MKLQ_CPU_BACKEND_TEST_DEPENDENCIES)
+  if(MKLQ_CPU_BACKEND_TEST_DEPENDENCIES)
+    target_link_libraries(test_mklq_cpu_backend
+      PRIVATE ${MKLQ_CPU_BACKEND_TEST_DEPENDENCIES})
+  endif()
   sign_mklq_backend_test(test_mklq_cpu_backend)
   gtest_discover_tests(test_mklq_cpu_backend DISCOVERY_TIMEOUT 120)
 
@@ -209,6 +216,13 @@ if (CUDAQ_ENABLE_MKLQ_BACKEND AND CUDAQ_MKLQ_APPLE_SILICON_TARGET AND
       MKLQ_ENABLE_METAL_RUNTIME
       MKLQ_ENABLE_TEST_ACCESSORS
       MKLQ_METAL_EXPERIMENTAL_CPU_ORACLE)
+  set(MKLQ_METAL_BACKEND_TEST_DEPENDENCIES)
+  add_openmp_configurations(test_mklq_metal_backend
+    MKLQ_METAL_BACKEND_TEST_DEPENDENCIES)
+  if(MKLQ_METAL_BACKEND_TEST_DEPENDENCIES)
+    target_link_libraries(test_mklq_metal_backend
+      PRIVATE ${MKLQ_METAL_BACKEND_TEST_DEPENDENCIES})
+  endif()
   if(APPLE)
     target_link_libraries(test_mklq_metal_backend
       PRIVATE ${MKLQ_TEST_METAL_FRAMEWORK} ${MKLQ_TEST_FOUNDATION_FRAMEWORK})
