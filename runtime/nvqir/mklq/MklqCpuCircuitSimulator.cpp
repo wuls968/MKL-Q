@@ -455,6 +455,7 @@ protected:
                                           PairUpdater updatePair) {
     const auto targetMask = qubitMask(target);
     const auto controlMask = qubitMask(control);
+    const auto indexMasks = twoZeroBitIndexMasks(target, control);
     const auto blockCount = stateDimension >> 2;
 
 #if defined(_OPENMP)
@@ -465,7 +466,7 @@ protected:
 #endif
     for (std::size_t block = 0; block < blockCount; ++block) {
       const auto zeroIndex =
-          indexWithTwoZeroBits(block, target, control) | controlMask;
+          indexWithTwoZeroBits(block, indexMasks) | controlMask;
       const auto oneIndex = zeroIndex | targetMask;
       updatePair(zeroIndex, oneIndex);
     }
@@ -601,12 +602,33 @@ protected:
     return ((value & ~lowMask) << 1) | (value & lowMask);
   }
 
+  struct TwoZeroBitIndexMasks {
+    std::size_t lowMask;
+    std::size_t middleMask;
+    std::size_t highMask;
+  };
+
+  static TwoZeroBitIndexMasks twoZeroBitIndexMasks(std::size_t firstBit,
+                                                   std::size_t secondBit) {
+    const auto first = std::min(firstBit, secondBit);
+    const auto second = std::max(firstBit, secondBit);
+    const auto lowMask = (1ULL << first) - 1;
+    const auto middleMask = ((1ULL << (second - 1)) - 1) & ~lowMask;
+    const auto highMask = ~((1ULL << (second - 1)) - 1);
+    return {lowMask, middleMask, highMask};
+  }
+
+  static std::size_t indexWithTwoZeroBits(
+      std::size_t block, const TwoZeroBitIndexMasks &masks) {
+    return (block & masks.lowMask) | ((block & masks.middleMask) << 1) |
+           ((block & masks.highMask) << 2);
+  }
+
   static std::size_t indexWithTwoZeroBits(std::size_t block,
                                           std::size_t firstBit,
                                           std::size_t secondBit) {
-    const auto first = std::min(firstBit, secondBit);
-    const auto second = std::max(firstBit, secondBit);
-    return insertZeroBit(insertZeroBit(block, first), second);
+    return indexWithTwoZeroBits(block,
+                                twoZeroBitIndexMasks(firstBit, secondBit));
   }
 
   static std::size_t
@@ -945,12 +967,6 @@ protected:
 #endif
   }
 
-  std::size_t
-  indexWithTwoZeroTargetBits(std::size_t block,
-                             const std::vector<std::size_t> &targets) const {
-    return indexWithTwoZeroBits(block, targets[0], targets[1]);
-  }
-
   void applyTwoQubitGate(const std::vector<complexd> &matrix,
                          const std::vector<std::size_t> &controls,
                          const std::vector<std::size_t> &targets,
@@ -990,6 +1006,7 @@ protected:
     }
 
     const auto blockCount = stateDimension >> 2;
+    const auto indexMasks = twoZeroBitIndexMasks(targets[0], targets[1]);
 #if defined(_OPENMP)
     const auto threadCount = parallelThreadCount();
 #pragma omp parallel for num_threads(                                          \
@@ -997,7 +1014,7 @@ protected:
                              stateDimension >= parallelStateThreshold)
 #endif
     for (std::size_t block = 0; block < blockCount; ++block) {
-      const auto base = indexWithTwoZeroTargetBits(block, targets);
+      const auto base = indexWithTwoZeroBits(block, indexMasks);
       if (!controlsSatisfied(base, controls))
         continue;
 
@@ -1055,6 +1072,7 @@ protected:
       const auto control = controls[0];
       const auto phaseMask = mask | qubitMask(control);
       const auto blockCount = stateDimension >> 2;
+      const auto indexMasks = twoZeroBitIndexMasks(target, control);
 
 #if defined(_OPENMP)
       const auto threadCount = parallelThreadCount();
@@ -1063,8 +1081,7 @@ protected:
                              stateDimension >= parallelStateThreshold)
 #endif
       for (std::size_t block = 0; block < blockCount; ++block) {
-        const auto basis =
-            indexWithTwoZeroBits(block, target, control) | phaseMask;
+        const auto basis = indexWithTwoZeroBits(block, indexMasks) | phaseMask;
         state[basis] = -state[basis];
       }
 
@@ -1098,6 +1115,7 @@ protected:
       targetMasks.push_back(qubitMask(target));
 
     const auto blockCount = stateDimension >> 2;
+    const auto indexMasks = twoZeroBitIndexMasks(targets[0], targets[1]);
 #if defined(_OPENMP)
     const auto threadCount = parallelThreadCount();
 #pragma omp parallel for num_threads(                                          \
@@ -1105,7 +1123,7 @@ protected:
                              stateDimension >= parallelStateThreshold)
 #endif
     for (std::size_t block = 0; block < blockCount; ++block) {
-      const auto base = indexWithTwoZeroTargetBits(block, targets);
+      const auto base = indexWithTwoZeroBits(block, indexMasks);
       const auto index1 = indexWithTargetBits(base, 1, targetMasks);
       const auto index2 = indexWithTargetBits(base, 2, targetMasks);
       std::swap(state[index1], state[index2]);
