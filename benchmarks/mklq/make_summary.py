@@ -181,9 +181,23 @@ def collect_rows(reports: list[dict[str, Any]]) -> list[dict[str, Any]]:
 def metric_key(row: dict[str, Any], include_shots: bool) -> str:
     case = str(row["case"]).replace("-", "_")
     key = f"{case}_q{row['qubits']}"
+    distance = comparison_distance(row)
+    if distance is not None:
+        key += f"_distance_{distance}"
     if include_shots:
         key += f"_{row['shots']}_shots"
     return key
+
+
+def comparison_distance(row: dict[str, Any]) -> int | float | None:
+    value = row.get("crz_distance")
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float) and math.isfinite(value):
+        return int(value) if value.is_integer() else value
+    return None
 
 
 def should_include_shots(row: dict[str, Any],
@@ -205,15 +219,16 @@ def elapsed_median(row: dict[str, Any]) -> float | None:
     return None
 
 
+def comparison_row_key(row: dict[str, Any]) -> tuple[Any, Any, Any, Any, Any]:
+    return (row.get("target"), row.get("case"), row.get("qubits"),
+            row.get("shots"), comparison_distance(row))
+
+
 def build_comparison(rows: list[dict[str, Any]],
                      reference_target: str,
                      candidate_target: str,
                      ratio_group: str | None) -> dict[str, Any]:
-    by_key = {
-        (row.get("target"), row.get("case"), row.get("qubits"), row.get("shots")):
-            row
-        for row in rows
-    }
+    by_key = {comparison_row_key(row): row for row in rows}
     ratios: dict[str, float] = {}
     candidate_elapsed: dict[str, float] = {}
 
@@ -226,9 +241,9 @@ def build_comparison(rows: list[dict[str, Any]],
         include_shots = should_include_shots(row, rows)
         label = metric_key(row, include_shots)
         candidate_elapsed[label] = candidate_value
-        reference = by_key.get(
-            (reference_target, row.get("case"), row.get("qubits"),
-             row.get("shots")))
+        reference = by_key.get((reference_target, row.get("case"),
+                                row.get("qubits"), row.get("shots"),
+                                comparison_distance(row)))
         if reference is None:
             continue
         reference_value = elapsed_median(reference)

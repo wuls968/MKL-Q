@@ -370,6 +370,56 @@ def test_mklq_summary_generator_accepts_extra_interpretation_fields(tmp_path):
     assert metal_summary_row["metal_runtime_counter"] is False
 
 
+def test_mklq_summary_generator_keeps_crz_distance_sweep_comparison_keys(
+        tmp_path):
+    module = _load_summary_generator_module()
+    raw_path = tmp_path / "crz-sweep.json"
+
+    def sweep_row(target, distance, elapsed):
+        row = _benchmark_row(target,
+                             "crz-distance-sweep-state",
+                             elapsed,
+                             shots=1024)
+        row["metrics"].update({
+            "crz_distance": distance,
+            "crz_distance_pair_count": 20 - distance,
+            "crz_distance_gate_count": (20 - distance) * 8,
+        })
+        return row
+
+    raw_path.write_text(json.dumps(
+        _raw_benchmark_report(cases=["crz-distance-sweep-state"],
+                              results=[
+                                  sweep_row("qpp-cpu", 1, 8.0),
+                                  sweep_row("mklq-cpu", 1, 2.0),
+                                  sweep_row("qpp-cpu", 2, 12.0),
+                                  sweep_row("mklq-cpu", 2, 3.0),
+                              ])),
+                        encoding="utf-8")
+
+    summary = module.build_summary(
+        raw_paths=[raw_path],
+        summary_id="local-clean-crz-distance-sweep-test",
+        evidence_kind="clean_local_benchmark_evidence",
+        reference_target="qpp-cpu",
+        candidate_target="mklq-cpu",
+        ratio_group="clean_worktree_cross_target_ratio",
+        performance_scope="local test only",
+        summary_text="Synthetic CRZ distance sweep summary.",
+    )
+
+    ratios = summary["comparison"]["clean_worktree_cross_target_ratio"]
+    assert ratios[
+        "qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_1"
+    ] == 4.0
+    assert ratios[
+        "qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_2"
+    ] == 4.0
+    elapsed = summary["comparison"]["mklq_cpu_elapsed_seconds_median"]
+    assert elapsed["crz_distance_sweep_state_q20_distance_1"] == 2.0
+    assert elapsed["crz_distance_sweep_state_q20_distance_2"] == 3.0
+
+
 def test_mklq_summary_generator_rejects_dirty_by_default(tmp_path):
     module = _load_summary_generator_module()
     raw_path = tmp_path / "dirty.json"
