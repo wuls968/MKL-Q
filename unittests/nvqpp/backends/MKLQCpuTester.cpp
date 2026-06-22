@@ -158,6 +158,11 @@ public:
                                                  std::size_t secondBit) {
     return indexWithTwoZeroBits(block, firstBit, secondBit);
   }
+
+  static std::size_t
+  controlMaskForTest(const std::vector<std::size_t> &controls) {
+    return controlMask(controls);
+  }
 };
 
 static void expectRuntimeErrorContains(std::function<void()> action,
@@ -998,6 +1003,15 @@ CUDAQ_TEST(MKLQCpuTester, TwoZeroBitIndexMappingClearsRequestedBits) {
     EXPECT_EQ(mapped & (1ULL << testCase.secondBit), 0);
     EXPECT_EQ(std::popcount(mapped), std::popcount(testCase.block));
   }
+}
+
+CUDAQ_TEST(MKLQCpuTester, ControlMaskAggregatesRequestedControls) {
+  EXPECT_EQ(MklqCpuCircuitSimulatorTester::controlMaskForTest({}), 0);
+  EXPECT_EQ(MklqCpuCircuitSimulatorTester::controlMaskForTest({0}), 0b1);
+  EXPECT_EQ(MklqCpuCircuitSimulatorTester::controlMaskForTest({0, 2, 5}),
+            0b100101);
+  EXPECT_EQ(MklqCpuCircuitSimulatorTester::controlMaskForTest({5, 0, 2}),
+            0b100101);
 }
 
 CUDAQ_TEST(MKLQCpuTester,
