@@ -69,6 +69,18 @@ def _load_clean_benchmark_gate_module():
     return module
 
 
+def _load_cpu_scaling_benchmark_gate_module():
+    repo_root = Path(__file__).resolve().parents[3]
+    script = repo_root / "benchmarks" / "mklq" / (
+        "run_cpu_scaling_benchmark.py")
+    spec = importlib.util.spec_from_file_location("run_cpu_scaling_benchmark",
+                                                  script)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    return module
+
+
 def _load_correctness_gate_module():
     repo_root = Path(__file__).resolve().parents[3]
     script = repo_root / "benchmarks" / "mklq" / "run_correctness_gate.py"
@@ -583,6 +595,62 @@ def test_mklq_clean_cpu_gate_skip_benchmark_runs_summary_only(monkeypatch,
     assert calls[0][2] == tmp_path
 
 
+def test_mklq_cpu_scaling_gate_plan_uses_multi_qubit_clean_evidence(tmp_path):
+    module = _load_cpu_scaling_benchmark_gate_module()
+    config = module.ScalingConfig(
+        repo_root=tmp_path,
+        pythonpath="/tmp/cudaq-runtime",
+        stamp="2026-06-22",
+        qubits=[18, 20, 22],
+        threads=10,
+        repeats=3,
+        warmups=1,
+        layers=8,
+        shots=1024,
+        results_dir=tmp_path / "results",
+        reports_dir=tmp_path / "reports",
+        evidence_output=tmp_path / "benchmark-evidence.md",
+        targets="qpp-cpu,mklq-cpu",
+        cases="multi-control-state",
+        summary_id="local-scaling-cpu-multi-control-q18-q22-2026-06-22",
+        evidence_kind="clean_local_benchmark_evidence",
+        ratio_group="clean_worktree_cross_target_ratio",
+        performance_scope="local test only",
+        summary_text="Synthetic CPU scaling benchmark gate.",
+        runtime_note="synthetic runtime note",
+        allow_dirty=False,
+        skip_benchmark=False,
+        refresh_evidence=True,
+    )
+
+    plan = module.build_plan(config)
+
+    assert plan["environment"] == {
+        "OMP_NUM_THREADS": "10",
+        "OMP_PROC_BIND": "close",
+        "OMP_DYNAMIC": "false",
+        "VECLIB_MAXIMUM_THREADS": "1",
+        "PYTHONPATH": "/tmp/cudaq-runtime",
+    }
+    assert plan["paths"]["raw"].endswith(
+        "local-scaling-cpu-multi-control-q18-q22-2026-06-22.json")
+    assert plan["paths"]["summary"].endswith(
+        "local-scaling-cpu-multi-control-q18-q22-2026-06-22.summary.json")
+    benchmark_command = plan["commands"]["raw"]
+    assert "--isolate-rows" in benchmark_command
+    assert benchmark_command[benchmark_command.index("--targets") + 1] == (
+        "qpp-cpu,mklq-cpu")
+    assert benchmark_command[benchmark_command.index("--cases") + 1] == (
+        "multi-control-state")
+    assert benchmark_command[benchmark_command.index("--qubits") + 1] == (
+        "18,20,22")
+    summary_command = plan["commands"]["summary"]
+    assert summary_command.count("--raw") == 1
+    assert summary_command[summary_command.index("--ratio-group") + 1] == (
+        "clean_worktree_cross_target_ratio")
+    assert "--allow-dirty" not in summary_command
+
+
 def _correctness_gate_config(module, tmp_path):
     return module.CorrectnessGateConfig(
         repo_root=tmp_path,
@@ -772,6 +840,7 @@ def test_mklq_public_healthcheck_plan_lists_escalating_gates(tmp_path):
         "performance_evidence_guard",
         "crz_distance_evidence_guard",
         "multi_control_evidence_guard",
+        "cpu_scaling_evidence_guard",
         "metal_evidence_guard",
         "metal_runtime_counter_probe_parse",
         "metal_runtime_counter_docs",
@@ -797,11 +866,14 @@ def test_mklq_public_healthcheck_plans_crz_distance_guard(tmp_path):
 
     assert "crz_distance_evidence_guard" in steps
     assert "multi_control_evidence_guard" in steps
+    assert "cpu_scaling_evidence_guard" in steps
     assert steps.index("performance_evidence_guard") < steps.index(
         "crz_distance_evidence_guard")
     assert steps.index("crz_distance_evidence_guard") < steps.index(
         "multi_control_evidence_guard")
     assert steps.index("multi_control_evidence_guard") < steps.index(
+        "cpu_scaling_evidence_guard")
+    assert steps.index("cpu_scaling_evidence_guard") < steps.index(
         "metal_evidence_guard")
 
 
@@ -852,6 +924,33 @@ def test_mklq_public_healthcheck_runs_multi_control_guard(monkeypatch,
         module.MULTI_CONTROL_SUMMARY_ID)
     required = command[command.index("--required-ratios") + 1].split(",")
     assert required == ["multi_control_state_q20"]
+
+
+def test_mklq_public_healthcheck_runs_cpu_scaling_guard(monkeypatch,
+                                                        tmp_path):
+    module = _load_public_healthcheck_module()
+    config = _public_healthcheck_config(module, tmp_path)
+    seen = {}
+
+    def fake_run_command(config, command, env_overlay=None):
+        seen["command"] = command
+        return {"returncode": 0, "command": command}
+
+    monkeypatch.setattr(module, "run_command", fake_run_command)
+
+    result = module.run_cpu_scaling_evidence_check(config)
+
+    assert result["status"] == "passed"
+    command = seen["command"]
+    assert command[1].endswith("check_performance_evidence.py")
+    assert command[command.index("--summary-id") + 1] == (
+        module.CPU_SCALING_SUMMARY_ID)
+    required = command[command.index("--required-ratios") + 1].split(",")
+    assert required == [
+        "multi_control_state_q18",
+        "multi_control_state_q20",
+        "multi_control_state_q22",
+    ]
 
 
 def test_mklq_public_healthcheck_rejects_tracked_artifacts(monkeypatch,

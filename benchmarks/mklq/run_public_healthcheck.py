@@ -38,6 +38,7 @@ BENCHMARK_HELPERS = (
     "benchmarks/mklq/check_performance_evidence.py",
     "benchmarks/mklq/make_summary.py",
     "benchmarks/mklq/run_clean_cpu_benchmark.py",
+    "benchmarks/mklq/run_cpu_scaling_benchmark.py",
     "benchmarks/mklq/run_correctness_gate.py",
     "benchmarks/mklq/run_metal_runtime_counter_probe.py",
     "benchmarks/mklq/run_preflight_audit.py",
@@ -83,6 +84,12 @@ CRZ_DISTANCE_REQUIRED_RATIOS = tuple(
     for distance in range(1, 20))
 MULTI_CONTROL_SUMMARY_ID = "local-multi-control-cpu-q20-2026-06-22"
 MULTI_CONTROL_REQUIRED_RATIOS = ("multi_control_state_q20",)
+CPU_SCALING_SUMMARY_ID = "local-scaling-cpu-multi-control-q18-q22-2026-06-22"
+CPU_SCALING_REQUIRED_RATIOS = (
+    "multi_control_state_q18",
+    "multi_control_state_q20",
+    "multi_control_state_q22",
+)
 
 
 @dataclass(frozen=True)
@@ -424,6 +431,28 @@ def run_multi_control_evidence_check(
     return passed(result)
 
 
+def run_cpu_scaling_evidence_check(
+        config: HealthcheckConfig) -> dict[str, Any]:
+    script = config.repo_root / "benchmarks" / "mklq" / (
+        "check_performance_evidence.py")
+    command = [
+        config.python_executable,
+        str(script),
+        "--reports",
+        "benchmarks/mklq/reports",
+        "--pattern",
+        "*.summary.json",
+        "--summary-id",
+        CPU_SCALING_SUMMARY_ID,
+        "--required-ratios",
+        ",".join(CPU_SCALING_REQUIRED_RATIOS),
+    ]
+    result = run_command(config, command)
+    if result["returncode"] != 0:
+        return failed("CPU scaling evidence guard failed", result)
+    return passed(result)
+
+
 def run_metal_evidence_check(config: HealthcheckConfig) -> dict[str, Any]:
     script = config.repo_root / "benchmarks" / "mklq" / (
         "check_metal_evidence.py")
@@ -742,6 +771,9 @@ def build_steps(config: HealthcheckConfig) -> list[Step]:
         Step("multi_control_evidence_guard",
              "Check accepted multi-control CPU benchmark evidence ratios.",
              run_multi_control_evidence_check),
+        Step("cpu_scaling_evidence_guard",
+             "Check accepted CPU qubit-scaling benchmark evidence ratios.",
+             run_cpu_scaling_evidence_check),
         Step("metal_evidence_guard",
              "Check experimental Metal benchmark evidence boundaries.",
              run_metal_evidence_check),
