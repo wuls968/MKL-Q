@@ -33,6 +33,7 @@ TRACKED_ARTIFACT_PATTERN = re.compile(
 BENCHMARK_HELPERS = (
     "benchmarks/mklq/bench_mklq_targets.py",
     "benchmarks/mklq/bench_probability_kernels.py",
+    "benchmarks/mklq/check_cpu_sampling_counter_docs.py",
     "benchmarks/mklq/check_metal_evidence.py",
     "benchmarks/mklq/check_metal_runtime_counter_docs.py",
     "benchmarks/mklq/check_performance_evidence.py",
@@ -41,10 +42,12 @@ BENCHMARK_HELPERS = (
     "benchmarks/mklq/run_cpu_scaling_benchmark.py",
     "benchmarks/mklq/run_sampling_scaling_benchmark.py",
     "benchmarks/mklq/run_correctness_gate.py",
+    "benchmarks/mklq/run_cpu_sampling_counter_probe.py",
     "benchmarks/mklq/run_metal_runtime_counter_probe.py",
     "benchmarks/mklq/run_preflight_audit.py",
     "benchmarks/mklq/run_public_readiness_audit.py",
     "benchmarks/mklq/run_public_healthcheck.py",
+    "benchmarks/mklq/summarize_cpu_sampling_counters.py",
     "benchmarks/mklq/summarize_metal_runtime_counters.py",
     "benchmarks/mklq/summarize_reports.py",
 )
@@ -300,10 +303,14 @@ def public_metadata_requirements() -> list[tuple[str, str]]:
         (".github/branch-protection-main.json", "\"enforce_admins\": true"),
         ("docs/mklq/public-readiness.md", "Public Readiness"),
         ("docs/mklq/public-readiness.md", "run_public_readiness_audit.py"),
+        ("docs/mklq/cpu-sampling-counters.md", "sampling phase counter evidence"),
         ("docs/mklq/validation.md", "not a release certification"),
         ("docs/mklq/benchmark-evidence.md", "cross-machine performance certification"),
         ("benchmarks/mklq/README.md", "Performance Evidence Guard"),
         ("benchmarks/mklq/README.md", "Metal Evidence Guard"),
+        ("benchmarks/mklq/README.md", "CPU Sampling Counter Probe"),
+        ("benchmarks/mklq/README.md", "CPU Sampling Counter Summary"),
+        ("benchmarks/mklq/README.md", "CPU Sampling Counter Docs Guard"),
         ("benchmarks/mklq/README.md", "Preflight Audit"),
         ("benchmarks/mklq/README.md", "Metal Runtime Counter Probe"),
         ("benchmarks/mklq/README.md", "Metal Runtime Counter Summary"),
@@ -311,6 +318,9 @@ def public_metadata_requirements() -> list[tuple[str, str]]:
         ("docs/mklq/metal-runtime-counters.md", "runtime counter evidence"),
         ("docs/mklq/testing-matrix.md", "check_performance_evidence.py"),
         ("docs/mklq/testing-matrix.md", "check_metal_evidence.py"),
+        ("docs/mklq/testing-matrix.md", "run_cpu_sampling_counter_probe.py"),
+        ("docs/mklq/testing-matrix.md", "check_cpu_sampling_counter_docs.py"),
+        ("docs/mklq/testing-matrix.md", "summarize_cpu_sampling_counters.py"),
         ("docs/mklq/testing-matrix.md", "run_metal_runtime_counter_probe.py"),
         ("docs/mklq/testing-matrix.md", "check_metal_runtime_counter_docs.py"),
         ("docs/mklq/testing-matrix.md", "run_preflight_audit.py"),
@@ -504,6 +514,138 @@ def run_metal_evidence_check(config: HealthcheckConfig) -> dict[str, Any]:
     result = run_command(config, command)
     if result["returncode"] != 0:
         return failed("Metal evidence guard failed", result)
+    return passed(result)
+
+
+def run_cpu_sampling_counter_probe_parse(
+        config: HealthcheckConfig) -> dict[str, Any]:
+    report_dir = config.repo_root / "benchmarks" / "mklq" / "reports"
+    reports = sorted(report_dir.glob("*.cpu-counter.json"))
+    if not reports:
+        return failed("no CPU sampling counter probe reports found")
+
+    failures: list[str] = []
+    parsed: list[str] = []
+    selected_tests = 0
+    expected_tests = 0
+    missing_tests = 0
+    for path in reports:
+        relative = command_path(config.repo_root, path)
+        try:
+            with path.open("r", encoding="utf-8") as handle:
+                payload = json.load(handle)
+        except json.JSONDecodeError as exc:
+            failures.append(f"{relative}: invalid JSON: {exc}")
+            continue
+
+        parsed.append(relative)
+        if payload.get("schema_version") != "mklq-cpu-sampling-counter-probe-v1":
+            failures.append(f"{relative}: unexpected schema_version")
+        if payload.get("evidence_kind") != "local_runtime_counter_probe":
+            failures.append(f"{relative}: unexpected evidence_kind")
+
+        summary = payload.get("summary", {})
+        if summary.get("status") != "passed":
+            failures.append(f"{relative}: summary status is not passed")
+        selected = summary.get("selected")
+        expected = summary.get("expected")
+        missing = summary.get("missing")
+        passed_count = summary.get("passed")
+        failed_count = summary.get("failed")
+        if not isinstance(expected, int) or expected <= 0:
+            failures.append(f"{relative}: expected test count must be positive")
+            expected = 0
+        if not isinstance(selected, int) or selected <= 0:
+            failures.append(f"{relative}: selected test count must be positive")
+            selected = 0
+        if missing != 0:
+            failures.append(f"{relative}: missing counter test count must be zero")
+        if expected and selected != expected:
+            failures.append(f"{relative}: selected count does not match expected")
+        if passed_count != selected:
+            failures.append(f"{relative}: passed count does not match selected")
+        if failed_count != 0:
+            failures.append(f"{relative}: failed count must be zero")
+
+        expected_counter_tests = payload.get("expected_counter_tests")
+        missing_counter_tests = payload.get("missing_counter_tests")
+        if not isinstance(expected_counter_tests, list) or (
+                expected and len(expected_counter_tests) != expected):
+            failures.append(
+                f"{relative}: expected_counter_tests length does not match expected")
+            expected_counter_tests = []
+        if missing_counter_tests != []:
+            failures.append(f"{relative}: missing_counter_tests must be empty")
+
+        boundary = payload.get("boundary", {})
+        if boundary.get("runtime_counter_evidence") is not True:
+            failures.append(f"{relative}: runtime_counter_evidence must be true")
+        if boundary.get("sampling_phase_counter_evidence") is not True:
+            failures.append(
+                f"{relative}: sampling_phase_counter_evidence must be true")
+        if boundary.get("release_signoff") is not False:
+            failures.append(f"{relative}: release_signoff must be false")
+        if boundary.get("performance_benchmark") is not False:
+            failures.append(f"{relative}: performance_benchmark must be false")
+        if boundary.get("cross_machine_performance_proof") is not False:
+            failures.append(
+                f"{relative}: cross_machine_performance_proof must be false")
+
+        tests = payload.get("tests", [])
+        if not isinstance(tests, list) or not tests:
+            failures.append(f"{relative}: tests must be a non-empty list")
+            tests = []
+        if selected and len(tests) != selected:
+            failures.append(f"{relative}: test list length does not match selected")
+        if expected_counter_tests:
+            test_names = [
+                test.get("name") for test in tests if isinstance(test, dict)
+            ]
+            if test_names != expected_counter_tests:
+                failures.append(
+                    f"{relative}: test names do not match expected_counter_tests")
+        for index, test in enumerate(tests):
+            name = test.get("name", f"#{index}") if isinstance(test, dict) else f"#{index}"
+            if not isinstance(test, dict):
+                failures.append(f"{relative}: test {name} is not an object")
+                continue
+            if test.get("status") != "passed":
+                failures.append(f"{relative}: test {name} status is not passed")
+            if "stdout" in test:
+                failures.append(f"{relative}: test {name} contains raw stdout")
+            if "stderr" in test:
+                failures.append(f"{relative}: test {name} contains raw stderr")
+        expected_tests += expected
+        selected_tests += selected
+        missing_tests += missing if isinstance(missing, int) else 0
+
+    details = {
+        "counter_report_count": len(parsed),
+        "counter_reports": parsed,
+        "expected_tests": expected_tests,
+        "selected_tests": selected_tests,
+        "missing_tests": missing_tests,
+        "failures": failures,
+    }
+    return failed("CPU sampling counter probe parse failed",
+                  details) if failures else passed(details)
+
+
+def run_cpu_sampling_counter_docs_check(
+        config: HealthcheckConfig) -> dict[str, Any]:
+    script = config.repo_root / "benchmarks" / "mklq" / (
+        "check_cpu_sampling_counter_docs.py")
+    command = [
+        config.python_executable,
+        str(script),
+        "--reports",
+        "benchmarks/mklq/reports",
+        "--doc",
+        "docs/mklq/cpu-sampling-counters.md",
+    ]
+    result = run_command(config, command)
+    if result["returncode"] != 0:
+        return failed("CPU sampling counter docs guard failed", result)
     return passed(result)
 
 
@@ -819,6 +961,12 @@ def build_steps(config: HealthcheckConfig) -> list[Step]:
         Step("metal_evidence_guard",
              "Check experimental Metal benchmark evidence boundaries.",
              run_metal_evidence_check),
+        Step("cpu_sampling_counter_probe_parse",
+             "Parse bounded CPU sampling phase counter evidence.",
+             run_cpu_sampling_counter_probe_parse),
+        Step("cpu_sampling_counter_docs",
+             "Compare tracked CPU sampling counter docs with regenerated output.",
+             run_cpu_sampling_counter_docs_check),
         Step("metal_runtime_counter_probe_parse",
              "Parse bounded Metal runtime counter evidence.",
              run_metal_runtime_counter_probe_parse),
