@@ -8,7 +8,7 @@
     "runtime_counter_source": "build-tree ctest cases that assert MKL-Q mklq-cpu simulator test-accessor sampling phase counters",
     "sampling_phase_counter_evidence": true
   },
-  "created_at_utc": "2026-06-23T03:10:32.069719+00:00",
+  "created_at_utc": "2026-06-23T03:24:49.386239+00:00",
   "evidence_kind": "local_runtime_counter_probe",
   "execution": {
     "returncode": 0,
@@ -76,7 +76,7 @@
     {
       "counter_source": "MKL-Q mklq-cpu simulator test-accessor sampling phase counters",
       "ctest_regex": "^mklq_cpu_MKLQCpuTester\\.CountsOnlyFullRegisterSamplingReportsNativePhases$",
-      "elapsed_seconds": 2.149924208992161,
+      "elapsed_seconds": 1.9923377089726273,
       "name": "mklq_cpu_MKLQCpuTester.CountsOnlyFullRegisterSamplingReportsNativePhases",
       "returncode": 0,
       "status": "passed"
@@ -84,7 +84,7 @@
     {
       "counter_source": "MKL-Q mklq-cpu simulator test-accessor sampling phase counters",
       "ctest_regex": "^mklq_cpu_MKLQCpuTester\\.CountsOnlyPartialRegisterSamplingReportsNativePhases$",
-      "elapsed_seconds": 1.9322613750118762,
+      "elapsed_seconds": 2.0147981669870205,
       "name": "mklq_cpu_MKLQCpuTester.CountsOnlyPartialRegisterSamplingReportsNativePhases",
       "returncode": 0,
       "status": "passed"
@@ -92,7 +92,7 @@
     {
       "counter_source": "MKL-Q mklq-cpu simulator test-accessor sampling phase counters",
       "ctest_regex": "^mklq_cpu_MKLQCpuTester\\.SequentialFullRegisterSamplingReportsNativePhases$",
-      "elapsed_seconds": 1.9553230830060784,
+      "elapsed_seconds": 1.9467864169855602,
       "name": "mklq_cpu_MKLQCpuTester.SequentialFullRegisterSamplingReportsNativePhases",
       "returncode": 0,
       "status": "passed"
