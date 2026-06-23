@@ -65,6 +65,7 @@ jobs:
           test -f benchmarks/mklq/check_metal_evidence.py
           test -f benchmarks/mklq/check_metal_runtime_counter_docs.py
           test -f benchmarks/mklq/check_performance_evidence.py
+          test -f benchmarks/mklq/check_sampling_profile_evidence.py
           test -f benchmarks/mklq/run_cpu_sampling_counter_probe.py
           test -f benchmarks/mklq/run_cpu_scaling_benchmark.py
           test -f benchmarks/mklq/run_sampling_scaling_benchmark.py
@@ -93,6 +94,7 @@ jobs:
           grep -q 'every operation stays on Metal' docs/mklq/testing-matrix.md
           grep -q 'check_metal_evidence.py' docs/mklq/testing-matrix.md
           grep -q 'check_performance_evidence.py' docs/mklq/testing-matrix.md
+          grep -q 'check_sampling_profile_evidence.py' docs/mklq/testing-matrix.md
           grep -q 'run_cpu_sampling_counter_probe.py' docs/mklq/testing-matrix.md
           grep -q 'check_cpu_sampling_counter_docs.py' docs/mklq/testing-matrix.md
           grep -q 'summarize_cpu_sampling_counters.py' docs/mklq/testing-matrix.md
@@ -264,6 +266,14 @@ jobs:
             --summary-id local-sampling-scaling-cpu-q18-q22-2026-06-23 \
             --required-ratios sample_full_register_q18_1024_shots,sample_full_register_q18_65536_shots,sample_full_register_q20_1024_shots,sample_full_register_q20_65536_shots,sample_full_register_q22_1024_shots,sample_full_register_q22_65536_shots,sample_partial_register_q18_1024_shots,sample_partial_register_q18_65536_shots,sample_partial_register_q20_1024_shots,sample_partial_register_q20_65536_shots,sample_partial_register_q22_1024_shots,sample_partial_register_q22_65536_shots
 
+      - name: Check sampling profile evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 benchmarks/mklq/check_sampling_profile_evidence.py \
+            --pattern '*.summary.json' \
+            --summary-id local-sampling-profile-breakdown-cpu-q20-q22-2026-06-23
+
       - name: Check experimental Metal evidence
         shell: bash
         run: |
@@ -417,6 +427,7 @@ jobs:
             benchmarks/mklq/check_metal_evidence.py \
             benchmarks/mklq/check_metal_runtime_counter_docs.py \
             benchmarks/mklq/check_performance_evidence.py \
+            benchmarks/mklq/check_sampling_profile_evidence.py \
             benchmarks/mklq/make_summary.py \
             benchmarks/mklq/run_clean_cpu_benchmark.py \
             benchmarks/mklq/run_cpu_scaling_benchmark.py \
