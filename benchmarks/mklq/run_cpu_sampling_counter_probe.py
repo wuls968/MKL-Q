@@ -26,6 +26,8 @@ COUNTER_SOURCE = (
     "MKL-Q mklq-cpu simulator test-accessor sampling phase counters")
 
 COUNTER_TEST_SUFFIXES = (
+    "SparseFullRegisterScanHitReportsNativePhases",
+    "SparseFullRegisterScanMissReportsNativePhases",
     "CountsOnlyFullRegisterSamplingReportsNativePhases",
     "CountsOnlyPartialRegisterSamplingReportsNativePhases",
     "SequentialFullRegisterSamplingReportsNativePhases",

@@ -231,6 +231,8 @@ protected:
   mutable std::size_t fullRegisterProbabilityFills = 0;
   mutable std::size_t marginalProbabilityFills = 0;
   mutable std::size_t sparseFullRegisterScans = 0;
+  mutable std::size_t sparseFullRegisterScanHits = 0;
+  mutable std::size_t sparseFullRegisterScanMisses = 0;
   mutable std::size_t countsOnlySampleDrawBatches = 0;
   mutable std::size_t sequentialSampleDrawBatches = 0;
   mutable std::size_t sampleExpectationReductions = 0;
@@ -1700,8 +1702,12 @@ protected:
       const auto probability = std::norm(state[basis]);
       if (probability == 0.0)
         continue;
-      if (probabilities.size() == sparseSamplingOutcomeLimit)
+      if (probabilities.size() == sparseSamplingOutcomeLimit) {
+#if defined(MKLQ_ENABLE_TEST_ACCESSORS)
+        ++sparseFullRegisterScanMisses;
+#endif
         return false;
+      }
       outcomes.push_back(basis);
       probabilities.push_back(probability);
     }
@@ -1716,6 +1722,7 @@ protected:
       ++sequentialSampleDrawBatches;
     else
       ++countsOnlySampleDrawBatches;
+    ++sparseFullRegisterScanHits;
 #endif
 
     if (outcomes.size() == 1) {

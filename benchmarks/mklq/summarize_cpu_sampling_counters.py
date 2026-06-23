@@ -22,6 +22,10 @@ DEFAULT_REPORTS_DIR = Path(__file__).resolve().parent / "reports"
 DEFAULT_PATTERN = "*.cpu-counter.json"
 
 CATEGORY_DESCRIPTIONS = {
+    "sparse_full_register_scan_hit":
+        "Sparse full-register scan hit phase counter tests",
+    "sparse_full_register_scan_miss":
+        "Sparse full-register scan miss and fallback phase counter tests",
     "counts_only_full_register":
         "Counts-only full-register sampling phase counter tests",
     "counts_only_partial_register":
@@ -32,6 +36,8 @@ CATEGORY_DESCRIPTIONS = {
 }
 
 CATEGORY_RULES = (
+    ("sparse_full_register_scan_hit", ("SparseFullRegisterScanHit",)),
+    ("sparse_full_register_scan_miss", ("SparseFullRegisterScanMiss",)),
     ("counts_only_full_register", ("CountsOnlyFullRegister",)),
     ("counts_only_partial_register", ("CountsOnlyPartialRegister",)),
     ("sequential_full_register", ("SequentialFullRegister",)),
