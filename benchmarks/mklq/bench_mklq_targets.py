@@ -62,6 +62,13 @@ METAL_SAMPLING_SCOPE = (
 METAL_SPARSE_SAMPLING_SCOPE = (
     "mixed-path sparse or deterministic sampling with host-side count "
     "accumulation")
+SAMPLING_PROFILE_SCOPE = (
+    "benchmark_harness_diagnostic_timing_not_native_backend_counters")
+SAMPLING_PROFILE_BOUNDARY = (
+    "Additional benchmark harness timings for kernel construction, "
+    "cudaq.sample calls, and result count-map materialization; not native "
+    "backend internal phase counters such as probability fill, draw, or "
+    "counts aggregation.")
 METAL_PATH_CASES = {
     "gate-state": ("mklq_metal_mixed_gate_state_host_readback",
                    METAL_COMPOSITE_SCOPE),
@@ -793,6 +800,48 @@ def summarize_timings(timings: list[float]) -> dict[str, float]:
   }
 
 
+def summarize_phase_timings(prefix: str, timings: list[float]) -> dict[str,
+                                                                       float]:
+  return {
+      f"{prefix}_seconds_min": min(timings),
+      f"{prefix}_seconds_median": statistics.median(timings),
+      f"{prefix}_seconds_max": max(timings),
+  }
+
+
+def materialize_sample_counts(result: Any) -> Any:
+  items = getattr(result, "items", None)
+  if callable(items):
+    return dict(items())
+  try:
+    return len(result)
+  except TypeError:
+    return result
+
+
+def add_sampling_profile_metrics(
+    metrics: dict[str, Any], build_action: Callable[[], Any],
+    sample_action: Callable[[], Any], sample_timings: list[float],
+    repeats: int) -> None:
+  build_timings = timed_repeats(build_action, repeats)
+  sample_result = sample_action()
+  materialization_timings = timed_repeats(
+      lambda: materialize_sample_counts(sample_result), repeats)
+
+  metrics.update({
+      "sampling_profile_enabled": True,
+      "sampling_profile_scope": SAMPLING_PROFILE_SCOPE,
+      "sampling_profile_boundary": SAMPLING_PROFILE_BOUNDARY,
+      "sampling_profile_extra_sample_calls": 1,
+  })
+  metrics.update(
+      summarize_phase_timings("sampling_kernel_build", build_timings))
+  metrics.update(summarize_phase_timings("sampling_call", sample_timings))
+  metrics.update(
+      summarize_phase_timings("sampling_result_counts_materialization",
+                              materialization_timings))
+
+
 def result_template(target: str, case: str, qubits: int, shots: int,
                     repeats: int,
                     distance: int | None = None) -> dict[str, Any]:
@@ -833,7 +882,8 @@ def crz_distance_sweep_values(
 
 def run_case(cudaq: Any, target: str, case: str, qubits: int, shots: int,
              repeats: int, warmups: int, layers: int,
-             distance: int | None = None) -> dict[str, Any]:
+             distance: int | None = None,
+             profile_sampling_breakdown: bool = False) -> dict[str, Any]:
   row = result_template(target, case, qubits, shots, repeats, distance)
   row["status"] = "ok"
   row["warmups"] = warmups
@@ -1078,6 +1128,10 @@ def run_case(cudaq: Any, target: str, case: str, qubits: int, shots: int,
         action()
       timings = timed_repeats(action, repeats)
       metrics = summarize_timings(timings)
+      if profile_sampling_breakdown:
+        add_sampling_profile_metrics(
+            metrics, lambda: build_sample_ghz_kernel(cudaq, qubits), action,
+            timings, repeats)
       median = metrics["elapsed_seconds_median"]
       metrics.update({
           "gate_count": gate_count,
@@ -1092,6 +1146,10 @@ def run_case(cudaq: Any, target: str, case: str, qubits: int, shots: int,
         action()
       timings = timed_repeats(action, repeats)
       metrics = summarize_timings(timings)
+      if profile_sampling_breakdown:
+        add_sampling_profile_metrics(
+            metrics, lambda: build_sample_basis_kernel(cudaq, qubits), action,
+            timings, repeats)
       median = metrics["elapsed_seconds_median"]
       metrics.update({
           "gate_count": gate_count,
@@ -1108,6 +1166,11 @@ def run_case(cudaq: Any, target: str, case: str, qubits: int, shots: int,
         action()
       timings = timed_repeats(action, repeats)
       metrics = summarize_timings(timings)
+      if profile_sampling_breakdown:
+        add_sampling_profile_metrics(
+            metrics,
+            lambda: build_sample_full_register_kernel(cudaq, qubits), action,
+            timings, repeats)
       median = metrics["elapsed_seconds_median"]
       metrics.update({
           "gate_count": gate_count,
@@ -1123,6 +1186,11 @@ def run_case(cudaq: Any, target: str, case: str, qubits: int, shots: int,
         action()
       timings = timed_repeats(action, repeats)
       metrics = summarize_timings(timings)
+      if profile_sampling_breakdown:
+        add_sampling_profile_metrics(
+            metrics,
+            lambda: build_sample_partial_register_kernel(cudaq, qubits),
+            action, timings, repeats)
       median = metrics["elapsed_seconds_median"]
       metrics.update({
           "gate_count": gate_count,
@@ -1194,6 +1262,8 @@ def run_isolated_case(args: argparse.Namespace, target: str, case: str,
     ]
     if distance is not None:
       command.extend(["--crz-distance", str(distance)])
+    if getattr(args, "profile_sampling_breakdown", False):
+      command.append("--profile-sampling-breakdown")
     completed = subprocess.run(command, capture_output=True, text=True)
 
     if output.exists():
@@ -1257,6 +1327,7 @@ def build_report(args: argparse.Namespace) -> dict[str, Any]:
           "repeats": args.repeats,
           "warmups": args.warmups,
           "layers": args.layers,
+          "profile_sampling_breakdown": args.profile_sampling_breakdown,
           "dry_run": args.dry_run,
           "isolate_rows": args.isolate_rows,
           "command": sys.argv,
@@ -1300,7 +1371,8 @@ def build_report(args: argparse.Namespace) -> dict[str, Any]:
                                                     requested_distance):
             report["results"].append(
                 run_case(cudaq, target, case, qubits, shots, args.repeats,
-                         args.warmups, args.layers, distance))
+                         args.warmups, args.layers, distance,
+                         args.profile_sampling_breakdown))
   return report
 
 
@@ -1390,6 +1462,11 @@ def make_parser() -> argparse.ArgumentParser:
   parser.add_argument("--isolate-rows",
                       action="store_true",
                       help="Run each measured row in a fresh Python process.")
+  parser.add_argument(
+      "--profile-sampling-breakdown",
+      action="store_true",
+      help=("For sampling cases, add diagnostic harness-level timings for "
+            "kernel build, cudaq.sample, and count-map materialization."))
   parser.add_argument("--allow-errors",
                       action="store_true",
                       help="Return 0 even when one or more benchmark rows fail.")

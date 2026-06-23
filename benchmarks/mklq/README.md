@@ -58,6 +58,10 @@ python3 benchmarks/mklq/bench_mklq_targets.py \
   --output /tmp/mklq-benchmark-smoke.json
 ```
 
+Add `--profile-sampling-breakdown` when a sampling row needs harness-level
+diagnostic timing for kernel construction, the measured `cudaq.sample` call,
+and sample-result count-map materialization.
+
 The `--qubits 4` smoke command is only a quick wiring check. Use larger qubit
 counts, such as q15-q20 isolated rows, when collecting dense sampling evidence.
 For CPU-backed `sample-full-register`, q4 can still fit the sparse
@@ -95,9 +99,12 @@ The JSON report includes:
 - runtime metadata: CUDA-Q module path/version and Python path context for
   non-isolated runs, or per-row child runtime metadata with `--isolate-rows`
 - command/config metadata: targets, cases, qubits, shots, shot counts, repeats,
-  warmups
+  warmups, and whether optional sampling profiling is enabled
 - per-row measurements: elapsed time, throughput/latency, estimated state bytes,
   and cumulative process max RSS
+- for sampling rows with `--profile-sampling-breakdown`, diagnostic
+  harness-level `sampling_kernel_build_seconds_*`, `sampling_call_seconds_*`,
+  and `sampling_result_counts_materialization_seconds_*` fields
 - for `mklq-metal` rows, conservative static path labels that state the
   mixed-path/resident/host boundary without implying all-Metal execution
 
@@ -160,6 +167,12 @@ compatibility. For
 `mklq-metal`, small marginal buffers use the resident marginal probability
 kernel, while q15-q20 every-other-qubit rows currently route to resident
 full-register probability fill plus host marginal folding.
+
+`--profile-sampling-breakdown` is a diagnostic benchmark-harness feature, not a
+native backend profiler. It records additional timings around Python-visible
+work and explicitly labels rows with
+`sampling_profile_boundary`; do not interpret those fields as internal
+probability-fill, draw, or count-aggregation counters.
 
 Measured timings are post-warmup execution calls; target setup and kernel
 construction are outside the timed region. `process_max_rss_bytes` is the
