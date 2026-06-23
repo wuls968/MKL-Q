@@ -39,6 +39,7 @@ BENCHMARK_HELPERS = (
     "benchmarks/mklq/make_summary.py",
     "benchmarks/mklq/run_clean_cpu_benchmark.py",
     "benchmarks/mklq/run_cpu_scaling_benchmark.py",
+    "benchmarks/mklq/run_sampling_scaling_benchmark.py",
     "benchmarks/mklq/run_correctness_gate.py",
     "benchmarks/mklq/run_metal_runtime_counter_probe.py",
     "benchmarks/mklq/run_preflight_audit.py",
@@ -89,6 +90,22 @@ CPU_SCALING_REQUIRED_RATIOS = (
     "multi_control_state_q18",
     "multi_control_state_q20",
     "multi_control_state_q22",
+)
+SAMPLING_SCALING_SUMMARY_ID = (
+    "local-sampling-scaling-cpu-q18-q22-2026-06-23")
+SAMPLING_SCALING_REQUIRED_RATIOS = (
+    "sample_full_register_q18_1024_shots",
+    "sample_full_register_q18_65536_shots",
+    "sample_full_register_q20_1024_shots",
+    "sample_full_register_q20_65536_shots",
+    "sample_full_register_q22_1024_shots",
+    "sample_full_register_q22_65536_shots",
+    "sample_partial_register_q18_1024_shots",
+    "sample_partial_register_q18_65536_shots",
+    "sample_partial_register_q20_1024_shots",
+    "sample_partial_register_q20_65536_shots",
+    "sample_partial_register_q22_1024_shots",
+    "sample_partial_register_q22_65536_shots",
 )
 
 
@@ -453,6 +470,28 @@ def run_cpu_scaling_evidence_check(
     return passed(result)
 
 
+def run_sampling_scaling_evidence_check(
+        config: HealthcheckConfig) -> dict[str, Any]:
+    script = config.repo_root / "benchmarks" / "mklq" / (
+        "check_performance_evidence.py")
+    command = [
+        config.python_executable,
+        str(script),
+        "--reports",
+        "benchmarks/mklq/reports",
+        "--pattern",
+        "*.summary.json",
+        "--summary-id",
+        SAMPLING_SCALING_SUMMARY_ID,
+        "--required-ratios",
+        ",".join(SAMPLING_SCALING_REQUIRED_RATIOS),
+    ]
+    result = run_command(config, command)
+    if result["returncode"] != 0:
+        return failed("sampling scaling evidence guard failed", result)
+    return passed(result)
+
+
 def run_metal_evidence_check(config: HealthcheckConfig) -> dict[str, Any]:
     script = config.repo_root / "benchmarks" / "mklq" / (
         "check_metal_evidence.py")
@@ -774,6 +813,9 @@ def build_steps(config: HealthcheckConfig) -> list[Step]:
         Step("cpu_scaling_evidence_guard",
              "Check accepted CPU qubit-scaling benchmark evidence ratios.",
              run_cpu_scaling_evidence_check),
+        Step("sampling_scaling_evidence_guard",
+             "Check accepted CPU sampling-scaling benchmark evidence ratios.",
+             run_sampling_scaling_evidence_check),
         Step("metal_evidence_guard",
              "Check experimental Metal benchmark evidence boundaries.",
              run_metal_evidence_check),

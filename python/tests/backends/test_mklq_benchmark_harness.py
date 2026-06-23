@@ -81,6 +81,18 @@ def _load_cpu_scaling_benchmark_gate_module():
     return module
 
 
+def _load_sampling_scaling_benchmark_gate_module():
+    repo_root = Path(__file__).resolve().parents[3]
+    script = repo_root / "benchmarks" / "mklq" / (
+        "run_sampling_scaling_benchmark.py")
+    spec = importlib.util.spec_from_file_location(
+        "run_sampling_scaling_benchmark", script)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    return module
+
+
 def _load_correctness_gate_module():
     repo_root = Path(__file__).resolve().parents[3]
     script = repo_root / "benchmarks" / "mklq" / "run_correctness_gate.py"
@@ -651,6 +663,64 @@ def test_mklq_cpu_scaling_gate_plan_uses_multi_qubit_clean_evidence(tmp_path):
     assert "--allow-dirty" not in summary_command
 
 
+def test_mklq_sampling_scaling_gate_plan_uses_multi_qubit_shot_evidence(
+        tmp_path):
+    module = _load_sampling_scaling_benchmark_gate_module()
+    config = module.SamplingScalingConfig(
+        repo_root=tmp_path,
+        pythonpath="/tmp/cudaq-runtime",
+        stamp="2026-06-23",
+        qubits=[18, 20, 22],
+        threads=10,
+        repeats=2,
+        warmups=1,
+        layers=8,
+        shot_counts="1024,65536",
+        results_dir=tmp_path / "results",
+        reports_dir=tmp_path / "reports",
+        evidence_output=tmp_path / "benchmark-evidence.md",
+        targets="qpp-cpu,mklq-cpu",
+        cases="sample-full-register,sample-partial-register",
+        summary_id="local-sampling-scaling-cpu-q18-q22-2026-06-23",
+        evidence_kind="clean_local_benchmark_evidence",
+        ratio_group="clean_worktree_cross_target_ratio",
+        performance_scope="local test only",
+        summary_text="Synthetic sampling scaling benchmark gate.",
+        runtime_note="synthetic runtime note",
+        allow_dirty=False,
+        skip_benchmark=False,
+        refresh_evidence=True,
+    )
+
+    plan = module.build_plan(config)
+
+    assert plan["environment"] == {
+        "OMP_NUM_THREADS": "10",
+        "OMP_PROC_BIND": "close",
+        "OMP_DYNAMIC": "false",
+        "VECLIB_MAXIMUM_THREADS": "1",
+        "PYTHONPATH": "/tmp/cudaq-runtime",
+    }
+    assert plan["paths"]["raw"].endswith(
+        "local-sampling-scaling-cpu-q18-q22-2026-06-23.json")
+    assert plan["paths"]["summary"].endswith(
+        "local-sampling-scaling-cpu-q18-q22-2026-06-23.summary.json")
+    benchmark_command = plan["commands"]["raw"]
+    assert "--isolate-rows" in benchmark_command
+    assert benchmark_command[benchmark_command.index("--cases") + 1] == (
+        "sample-full-register,sample-partial-register")
+    assert benchmark_command[benchmark_command.index("--qubits") + 1] == (
+        "18,20,22")
+    assert benchmark_command[benchmark_command.index("--shot-counts") +
+                             1] == "1024,65536"
+    assert "--shots" not in benchmark_command
+    summary_command = plan["commands"]["summary"]
+    assert summary_command.count("--raw") == 1
+    assert summary_command[summary_command.index("--ratio-group") + 1] == (
+        "clean_worktree_cross_target_ratio")
+    assert "--allow-dirty" not in summary_command
+
+
 def _correctness_gate_config(module, tmp_path):
     return module.CorrectnessGateConfig(
         repo_root=tmp_path,
@@ -841,6 +911,7 @@ def test_mklq_public_healthcheck_plan_lists_escalating_gates(tmp_path):
         "crz_distance_evidence_guard",
         "multi_control_evidence_guard",
         "cpu_scaling_evidence_guard",
+        "sampling_scaling_evidence_guard",
         "metal_evidence_guard",
         "metal_runtime_counter_probe_parse",
         "metal_runtime_counter_docs",
@@ -867,6 +938,7 @@ def test_mklq_public_healthcheck_plans_crz_distance_guard(tmp_path):
     assert "crz_distance_evidence_guard" in steps
     assert "multi_control_evidence_guard" in steps
     assert "cpu_scaling_evidence_guard" in steps
+    assert "sampling_scaling_evidence_guard" in steps
     assert steps.index("performance_evidence_guard") < steps.index(
         "crz_distance_evidence_guard")
     assert steps.index("crz_distance_evidence_guard") < steps.index(
@@ -874,6 +946,8 @@ def test_mklq_public_healthcheck_plans_crz_distance_guard(tmp_path):
     assert steps.index("multi_control_evidence_guard") < steps.index(
         "cpu_scaling_evidence_guard")
     assert steps.index("cpu_scaling_evidence_guard") < steps.index(
+        "sampling_scaling_evidence_guard")
+    assert steps.index("sampling_scaling_evidence_guard") < steps.index(
         "metal_evidence_guard")
 
 
@@ -950,6 +1024,42 @@ def test_mklq_public_healthcheck_runs_cpu_scaling_guard(monkeypatch,
         "multi_control_state_q18",
         "multi_control_state_q20",
         "multi_control_state_q22",
+    ]
+
+
+def test_mklq_public_healthcheck_runs_sampling_scaling_guard(monkeypatch,
+                                                             tmp_path):
+    module = _load_public_healthcheck_module()
+    config = _public_healthcheck_config(module, tmp_path)
+    seen = {}
+
+    def fake_run_command(config, command, env_overlay=None):
+        seen["command"] = command
+        return {"returncode": 0, "command": command}
+
+    monkeypatch.setattr(module, "run_command", fake_run_command)
+
+    result = module.run_sampling_scaling_evidence_check(config)
+
+    assert result["status"] == "passed"
+    command = seen["command"]
+    assert command[1].endswith("check_performance_evidence.py")
+    assert command[command.index("--summary-id") + 1] == (
+        module.SAMPLING_SCALING_SUMMARY_ID)
+    required = command[command.index("--required-ratios") + 1].split(",")
+    assert required == [
+        "sample_full_register_q18_1024_shots",
+        "sample_full_register_q18_65536_shots",
+        "sample_full_register_q20_1024_shots",
+        "sample_full_register_q20_65536_shots",
+        "sample_full_register_q22_1024_shots",
+        "sample_full_register_q22_65536_shots",
+        "sample_partial_register_q18_1024_shots",
+        "sample_partial_register_q18_65536_shots",
+        "sample_partial_register_q20_1024_shots",
+        "sample_partial_register_q20_65536_shots",
+        "sample_partial_register_q22_1024_shots",
+        "sample_partial_register_q22_65536_shots",
     ]
 
 

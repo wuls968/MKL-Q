@@ -37,15 +37,16 @@ Raw wrapper output was written to ignored local paths
 `benchmarks/mklq/results/public-healthcheck-full-2026-06-23.json`,
 `benchmarks/mklq/results/local-correctness-gate-2026-06-22.json`,
 `benchmarks/mklq/results/local-metal-runtime-counter-probe-2026-06-22.counter.json`,
+`benchmarks/mklq/results/local-sampling-scaling-cpu-q18-q22-2026-06-23.json`,
 and the temporary example-smoke payload embedded in the full healthcheck
 output; these raw payloads are not tracked as public evidence.
 
 - Install-prefix build: passed.
-- Full public healthcheck: passed, with 19 steps passed and 0 failed.
+- Full public healthcheck: passed, with 20 steps passed and 0 failed.
 - One-command correctness gate: passed with 4 steps passed, 0 failed, and 0
   skipped, including the Metal runtime counter probe.
 - Public example smoke gate: passed, with 30 steps passed and 0 failed.
-- Current `benchmark_harness_tests`: `94 passed`.
+- Current `benchmark_harness_tests`: `96 passed`.
 - Standalone install-prefix Python subset: `35 passed`.
 - `python_target_smoke`: `57 passed`.
 - `nvqpp_smoke`: `2 passed`.
@@ -61,6 +62,10 @@ output; these raw payloads are not tracked as public evidence.
   `multi-control-state` rows reporting `status == "ok"` and tracked
   `qpp-cpu` over `mklq-cpu` median elapsed ratios of `11.66x`, `28.00x`, and
   `72.93x`.
+- Focused sampling scaling evidence: passed, with 24 q18/q20/q22
+  full-register and partial-register sampling rows reporting `status == "ok"`.
+  The tracked `qpp-cpu` over `mklq-cpu` median elapsed ratios range from
+  `45.24x` to `109.56x` across 1024-shot and 65536-shot rows.
 
 ## Install-prefix Gate
 
@@ -187,7 +192,7 @@ python3 benchmarks/mklq/run_correctness_gate.py \
 python3 benchmarks/mklq/run_public_healthcheck.py --full --require-clean
 ```
 
-Latest 2026-06-23 result: `19/19` steps passed. This includes Git
+Latest 2026-06-23 result: `20/20` steps passed. This includes Git
 repository hygiene, tracked-artifact checks, public metadata checks, sanitized
 benchmark summary parsing, the clean CPU performance evidence guards, the Metal
 evidence boundary guard, bounded Metal runtime counter evidence parsing, Metal
@@ -196,7 +201,7 @@ evidence regeneration, benchmark harness tests, install-prefix build, the
 one-command correctness gate, and the public example smoke gate.
 
 The ignored raw healthcheck JSON records the exact Git state for this local
-run. The benchmark harness step reported `94 passed`, and the public example
+run. The benchmark harness step reported `96 passed`, and the public example
 smoke step reported 30 passed and 0 failed.
 
 ## Benchmark Evidence
@@ -244,6 +249,25 @@ python3 benchmarks/mklq/run_cpu_scaling_benchmark.py \
   --skip-benchmark
 ```
 
+Run the focused CPU sampling-scaling evidence gate for full-register and
+partial-register sampling with:
+
+```bash
+python3 benchmarks/mklq/run_sampling_scaling_benchmark.py \
+  --pythonpath "${HOME}/.cudaq-mklq" \
+  --stamp 2026-06-23
+```
+
+If the ignored raw JSON already exists, regenerate only the sanitized summary
+and public index with:
+
+```bash
+python3 benchmarks/mklq/run_sampling_scaling_benchmark.py \
+  --pythonpath "${HOME}/.cudaq-mklq" \
+  --stamp 2026-06-23 \
+  --skip-benchmark
+```
+
 Current tracked summaries include:
 
 - `local-clean-cpu-q20-2026-06-21.summary.json`
@@ -255,6 +279,7 @@ Current tracked summaries include:
 - `local-counts-only-sampling-shot-scaling-q20-2026-06-19.summary.json`
 - `local-multi-control-cpu-q20-2026-06-22.summary.json`
 - `local-scaling-cpu-multi-control-q18-q22-2026-06-22.summary.json`
+- `local-sampling-scaling-cpu-q18-q22-2026-06-23.summary.json`
 
 The clean-worktree local benchmark summary was refreshed against
 `34f4b260d1c657ad626c526eed4e6b9d3a441be4` on 2026-06-21. The clean summary now
@@ -278,6 +303,14 @@ current local MKL-Q build to `/Users/a0000/.cudaq-mklq`. It compares q18/q20/q22
 `qpp-cpu` and `mklq-cpu` on `multi-control-state` with `repeats=3`,
 `warmups=1`, `layers=8`, and isolated rows. The public healthcheck now includes
 a dedicated `cpu_scaling_evidence_guard` for this summary.
+
+The focused sampling scaling summary was generated against
+`0cb821897fc158c9755173da70953444099a1e64` on 2026-06-23 after installing the
+current local MKL-Q build to `/Users/a0000/.cudaq-mklq`. It compares q18/q20/q22
+`qpp-cpu` and `mklq-cpu` on full-register and partial-register sampling at 1024
+and 65536 shots with `repeats=2`, `warmups=1`, `layers=8`, and isolated rows.
+The public healthcheck now includes a dedicated
+`sampling_scaling_evidence_guard` for this summary.
 
 The Metal composite summary is local tuning evidence only. It records q20
 `qft-like-state` and `seeded-clifford-state` rows for `qpp-cpu`, `mklq-cpu`, and
