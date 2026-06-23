@@ -33,6 +33,10 @@ EXPECTED_TOPICS = {
     "mklq",
     "quantum-computing",
 }
+EXPECTED_ISSUE_TEMPLATES = [
+    ".github/ISSUE_TEMPLATE/bug_report.yaml",
+    ".github/ISSUE_TEMPLATE/feature_request.yaml",
+]
 TRACKED_ARTIFACT_PATTERN = re.compile(
     r"(^|/)(__pycache__|\.pytest_cache)(/|$)|"
     r"\.pyc$|\.DS_Store$|^build(-python)?/|"
@@ -90,6 +94,110 @@ def load_json(text: str, fallback: Any) -> Any:
     return json.loads(text)
 
 
+def unquote_yaml_scalar(value: str) -> str:
+    value = value.strip()
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in {'"', "'"}:
+        return value[1:-1]
+    return value
+
+
+def parse_inline_yaml_list(value: str) -> list[str]:
+    value = value.strip()
+    if not value.startswith("[") or not value.endswith("]"):
+        return []
+    items = value[1:-1].split(",")
+    return [unquote_yaml_scalar(item) for item in items if item.strip()]
+
+
+def parse_labels_yaml(path: Path) -> dict[str, dict[str, str]]:
+    labels: dict[str, dict[str, str]] = {}
+    current: dict[str, str] | None = None
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if line.startswith("- name:"):
+            name = unquote_yaml_scalar(line.split(":", 1)[1])
+            current = {"name": name}
+            labels[name] = current
+            continue
+        if current is None or ":" not in line:
+            continue
+        key, value = line.split(":", 1)
+        if key in {"color", "description"}:
+            current[key] = unquote_yaml_scalar(value)
+    return labels
+
+
+def parse_issue_template_labels(path: Path) -> list[str]:
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line.startswith("labels:"):
+            continue
+        value = line.split(":", 1)[1].strip()
+        return parse_inline_yaml_list(value)
+    return []
+
+
+def bool_from_protection_field(value: Any) -> bool | None:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, dict) and isinstance(value.get("enabled"), bool):
+        return value["enabled"]
+    return None
+
+
+def protection_core(payload: dict[str, Any]) -> dict[str, Any]:
+    required = payload.get("required_status_checks") or {}
+    checks = required.get("checks") or []
+    check_contexts = [
+        str(check.get("context")) for check in checks
+        if isinstance(check, dict) and check.get("context")
+    ]
+    contexts = sorted({str(item) for item in required.get("contexts") or []}
+                      | set(check_contexts))
+    return {
+        "required_status_checks": {
+            "strict": required.get("strict"),
+            "contexts": contexts,
+        },
+        "enforce_admins": bool_from_protection_field(
+            payload.get("enforce_admins")),
+        "allow_force_pushes": bool_from_protection_field(
+            payload.get("allow_force_pushes")),
+        "allow_deletions": bool_from_protection_field(
+            payload.get("allow_deletions")),
+        "required_linear_history": bool_from_protection_field(
+            payload.get("required_linear_history")),
+        "block_creations": bool_from_protection_field(
+            payload.get("block_creations")),
+        "required_conversation_resolution": bool_from_protection_field(
+            payload.get("required_conversation_resolution")),
+        "lock_branch": bool_from_protection_field(payload.get("lock_branch")),
+        "allow_fork_syncing": bool_from_protection_field(
+            payload.get("allow_fork_syncing")),
+    }
+
+
+def protection_reference_core(payload: dict[str, Any]) -> dict[str, Any]:
+    required = payload.get("required_status_checks") or {}
+    return {
+        "required_status_checks": {
+            "strict": required.get("strict"),
+            "contexts": sorted(str(item) for item in required.get("contexts") or []),
+        },
+        "enforce_admins": payload.get("enforce_admins"),
+        "allow_force_pushes": payload.get("allow_force_pushes"),
+        "allow_deletions": payload.get("allow_deletions"),
+        "required_linear_history": payload.get("required_linear_history"),
+        "block_creations": payload.get("block_creations"),
+        "required_conversation_resolution":
+            payload.get("required_conversation_resolution"),
+        "lock_branch": payload.get("lock_branch"),
+        "allow_fork_syncing": payload.get("allow_fork_syncing"),
+    }
+
+
 def remote_head_sha(output: str) -> str:
     if not output.strip():
         return ""
@@ -142,6 +250,39 @@ def check_workflows(config: AuditConfig) -> dict[str, Any]:
                       "github_workflows", details)
 
 
+def check_issue_templates(config: AuditConfig) -> dict[str, Any]:
+    tracked = command_output(config.repo_root, [
+        "git",
+        "ls-files",
+        ".github/ISSUE_TEMPLATE",
+    ]).splitlines()
+    labels = parse_labels_yaml(config.repo_root / ".github" / "labels.yml")
+    failures: list[str] = []
+    if tracked != EXPECTED_ISSUE_TEMPLATES:
+        failures.append("unexpected issue template set")
+    referenced_labels: set[str] = set()
+    for relative_path in EXPECTED_ISSUE_TEMPLATES:
+        path = config.repo_root / relative_path
+        if not path.exists():
+            failures.append(f"{relative_path} is missing")
+            continue
+        text = path.read_text(encoding="utf-8", errors="replace")
+        if "name:" not in text or "description:" not in text:
+            failures.append(f"{relative_path} is missing required metadata")
+        referenced_labels.update(parse_issue_template_labels(path))
+    missing_declared_labels = sorted(referenced_labels - set(labels))
+    if missing_declared_labels:
+        failures.append("issue template labels are missing from .github/labels.yml")
+    details = {
+        "templates": tracked,
+        "expected_templates": EXPECTED_ISSUE_TEMPLATES,
+        "referenced_labels": sorted(referenced_labels),
+        "missing_declared_labels": missing_declared_labels,
+    }
+    return failed("issue_templates", "; ".join(failures),
+                  details) if failures else passed("issue_templates", details)
+
+
 def check_repository(config: AuditConfig) -> dict[str, Any]:
     payload = load_json(
         command_output(config.repo_root, [
@@ -180,6 +321,53 @@ def check_repository(config: AuditConfig) -> dict[str, Any]:
                   details) if failures else passed("github_repository", details)
 
 
+def check_github_labels(config: AuditConfig) -> dict[str, Any]:
+    local = parse_labels_yaml(config.repo_root / ".github" / "labels.yml")
+    live_payload = load_json(
+        command_output(config.repo_root, [
+            "gh",
+            "label",
+            "list",
+            "--repo",
+            config.repo,
+            "--limit",
+            "100",
+            "--json",
+            "name,color,description",
+        ]), [])
+    live = {
+        str(label.get("name")): {
+            "name": str(label.get("name")),
+            "color": str(label.get("color", "")).lower(),
+            "description": str(label.get("description", "")),
+        }
+        for label in live_payload
+        if isinstance(label, dict) and label.get("name")
+    }
+    failures: list[str] = []
+    missing = sorted(set(local) - set(live))
+    differing = []
+    for name, expected in local.items():
+        actual = live.get(name)
+        if not actual:
+            continue
+        if actual.get("color") != expected.get("color", "").lower():
+            differing.append(name)
+            continue
+        if actual.get("description") != expected.get("description", ""):
+            differing.append(name)
+    if missing or differing:
+        failures.append("live label metadata differs from .github/labels.yml")
+    details = {
+        "expected_labels": sorted(local),
+        "live_labels": sorted(live),
+        "missing": missing,
+        "differing": sorted(differing),
+    }
+    return failed("github_labels", "; ".join(failures),
+                  details) if failures else passed("github_labels", details)
+
+
 def check_branch_protection(config: AuditConfig) -> dict[str, Any]:
     branch = load_json(
         command_output(config.repo_root, [
@@ -212,6 +400,44 @@ def check_branch_protection(config: AuditConfig) -> dict[str, Any]:
     details = {"branch": branch, "protection": protection}
     return failed("branch_protection", "; ".join(failures),
                   details) if failures else passed("branch_protection", details)
+
+
+def check_branch_protection_reference(config: AuditConfig) -> dict[str, Any]:
+    reference_path = config.repo_root / ".github" / "branch-protection-main.json"
+    reference = load_json(reference_path.read_text(encoding="utf-8"), {})
+    protection = load_json(
+        command_output(config.repo_root, [
+            "gh",
+            "api",
+            f"repos/{config.repo}/branches/main/protection",
+        ]), {})
+    expected = protection_reference_core(reference)
+    actual = protection_core(protection)
+    failures: list[str] = []
+    if actual != expected:
+        failures.append(
+            "branch protection differs from .github/branch-protection-main.json"
+        )
+    details = {"expected": expected, "actual": actual}
+    return failed("branch_protection_reference", "; ".join(failures),
+                  details) if failures else passed(
+                      "branch_protection_reference", details)
+
+
+def check_public_claim_boundaries(config: AuditConfig) -> dict[str, Any]:
+    script = config.repo_root / "benchmarks" / "mklq" / "check_public_claims.py"
+    result = load_json(
+        command_output(config.repo_root, [
+            sys.executable,
+            str(script),
+            "--root",
+            str(config.repo_root),
+        ]), {})
+    status = (result.get("summary") or {}).get("status")
+    if status != "passed":
+        return failed("public_claim_boundaries",
+                      "public claim-boundary check failed", result)
+    return passed("public_claim_boundaries", result)
 
 
 def check_latest_public_hygiene(config: AuditConfig) -> dict[str, Any]:
@@ -286,8 +512,12 @@ def build_report(config: AuditConfig) -> dict[str, Any]:
         check_local_git(config),
         check_tracked_artifacts(config),
         check_workflows(config),
+        check_issue_templates(config),
         check_repository(config),
+        check_github_labels(config),
         check_branch_protection(config),
+        check_branch_protection_reference(config),
+        check_public_claim_boundaries(config),
         check_latest_public_hygiene(config),
         check_no_releases(config),
     ]

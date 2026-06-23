@@ -302,6 +302,8 @@ def public_metadata_requirements() -> list[tuple[str, str]]:
         ("docs/mklq/maintainer-runbook.md", "check_metal_evidence.py"),
         ("docs/mklq/maintainer-runbook.md", "run_preflight_audit.py"),
         ("docs/mklq/issue-labels.md", "Label Taxonomy"),
+        ("docs/mklq/issue-labels.md", "bug"),
+        ("docs/mklq/issue-labels.md", "enhancement"),
         ("docs/mklq/branch-protection.md", "Source-only repository checks"),
         ("docs/mklq/branch-protection.md", "administrator enforcement enabled"),
         (".github/branch-protection-main.json", "\"enforce_admins\": true"),
@@ -338,6 +340,8 @@ def public_metadata_requirements() -> list[tuple[str, str]]:
         (".github/pull_request_template.md", "check_metal_evidence.py"),
         (".github/labels.yml", "backend:cpu"),
         (".github/labels.yml", "backend:metal"),
+        (".github/labels.yml", "bug"),
+        (".github/labels.yml", "enhancement"),
         (".github/ISSUE_TEMPLATE/bug_report.yaml", "needs-repro"),
     ]
 

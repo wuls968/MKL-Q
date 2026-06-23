@@ -139,7 +139,11 @@ jobs:
           grep -q 'Release And Artifact Requests' docs/mklq/maintainer-runbook.md
           grep -q 'Recovery' docs/mklq/maintainer-runbook.md
           grep -q 'Label Taxonomy' docs/mklq/issue-labels.md
+          grep -q 'bug' docs/mklq/issue-labels.md
+          grep -q 'enhancement' docs/mklq/issue-labels.md
           grep -q 'needs-repro' docs/mklq/issue-labels.md
+          grep -q 'bug' .github/labels.yml
+          grep -q 'enhancement' .github/labels.yml
           grep -q 'backend:cpu' .github/labels.yml
           grep -q 'backend:metal' .github/labels.yml
           grep -q 'release-policy' .github/labels.yml
