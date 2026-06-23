@@ -1985,6 +1985,8 @@ def test_mklq_cpu_sampling_counter_probe_selects_phase_tests():
     module = _load_cpu_sampling_counter_probe_module()
     listing = """
 Test project /repo/build-python
+  Test #757: mklq_cpu_MKLQCpuTester.SparseFullRegisterScanHitReportsNativePhases
+  Test #758: mklq_cpu_MKLQCpuTester.SparseFullRegisterScanMissReportsNativePhases
   Test #759: mklq_cpu_MKLQCpuTester.CountsOnlyFullRegisterSamplingReportsNativePhases
   Test #763: mklq_cpu_MKLQCpuTester.CountsOnlyPartialRegisterSamplingReportsNativePhases
   Test #764: mklq_cpu_MKLQCpuTester.SequentialFullRegisterSamplingReportsNativePhases
@@ -1995,6 +1997,8 @@ Test project /repo/build-python
     tests = module.select_counter_tests(listing)
 
     assert tests == [
+        "mklq_cpu_MKLQCpuTester.SparseFullRegisterScanHitReportsNativePhases",
+        "mklq_cpu_MKLQCpuTester.SparseFullRegisterScanMissReportsNativePhases",
         "mklq_cpu_MKLQCpuTester.CountsOnlyFullRegisterSamplingReportsNativePhases",
         "mklq_cpu_MKLQCpuTester.CountsOnlyPartialRegisterSamplingReportsNativePhases",
         "mklq_cpu_MKLQCpuTester.SequentialFullRegisterSamplingReportsNativePhases",
@@ -2060,7 +2064,7 @@ def test_mklq_cpu_sampling_counter_probe_builds_bounded_report(monkeypatch,
         "--test-dir",
         str(tmp_path),
         "-R",
-        r"^mklq_cpu_MKLQCpuTester\.CountsOnlyFullRegisterSamplingReportsNativePhases$",
+        module.exact_ctest_regex(expected_test_names[0]),
     ]
 
 
@@ -2097,6 +2101,8 @@ Test project /tmp/build
 
 def _cpu_sampling_counter_summary_fixture():
     tests = [
+        "mklq_cpu_MKLQCpuTester.SparseFullRegisterScanHitReportsNativePhases",
+        "mklq_cpu_MKLQCpuTester.SparseFullRegisterScanMissReportsNativePhases",
         "mklq_cpu_MKLQCpuTester.CountsOnlyFullRegisterSamplingReportsNativePhases",
         "mklq_cpu_MKLQCpuTester.CountsOnlyPartialRegisterSamplingReportsNativePhases",
         "mklq_cpu_MKLQCpuTester.SequentialFullRegisterSamplingReportsNativePhases",
@@ -2143,16 +2149,18 @@ def test_mklq_cpu_sampling_counter_summary_groups_phase_coverage(tmp_path):
     assert summary["summary"] == {
         "status": "passed",
         "report_count": 1,
-        "expected": 3,
-        "selected": 3,
+        "expected": 5,
+        "selected": 5,
         "missing": 0,
-        "passed": 3,
+        "passed": 5,
         "failed": 0,
     }
     categories = {
         category["category"]: category
         for category in summary["categories"]
     }
+    assert categories["sparse_full_register_scan_hit"]["passed"] == 1
+    assert categories["sparse_full_register_scan_miss"]["passed"] == 1
     assert categories["counts_only_full_register"]["passed"] == 1
     assert categories["counts_only_partial_register"]["passed"] == 1
     assert categories["sequential_full_register"]["passed"] == 1

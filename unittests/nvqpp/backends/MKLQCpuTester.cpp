@@ -152,6 +152,14 @@ public:
     return sparseFullRegisterScans;
   }
 
+  std::size_t sparseFullRegisterScanHitsForTest() const {
+    return sparseFullRegisterScanHits;
+  }
+
+  std::size_t sparseFullRegisterScanMissesForTest() const {
+    return sparseFullRegisterScanMisses;
+  }
+
   std::size_t countsOnlySampleDrawBatchesForTest() const {
     return countsOnlySampleDrawBatches;
   }
@@ -400,6 +408,35 @@ CUDAQ_TEST(MKLQCpuTester, DeterministicSparseSamplingConvertsBitStringOnce) {
   EXPECT_EQ(sim.bitStringConversionsForTest(), 1);
 }
 
+CUDAQ_TEST(MKLQCpuTester, SparseFullRegisterScanHitReportsNativePhases) {
+  std::vector<std::complex<double>> state(8, {0.0, 0.0});
+  state[5] = {1.0, 0.0};
+
+  MklqCpuCircuitSimulatorTester sim;
+  sim.setStateForTest(std::move(state));
+
+  constexpr int shots = 32;
+  const auto counts =
+      sim.sampleQubitsWithoutSequentialDataForTest({0, 1, 2}, shots);
+
+  ASSERT_EQ(counts.counts.size(), 1);
+  ASSERT_TRUE(counts.counts.contains("101"));
+  EXPECT_EQ(counts.counts.at("101"), shots);
+  EXPECT_TRUE(counts.sequentialData.empty());
+  EXPECT_EQ(sim.sparseFullRegisterScansForTest(), 1);
+  EXPECT_EQ(sim.sparseFullRegisterScanHitsForTest(), 1);
+  EXPECT_EQ(sim.sparseFullRegisterScanMissesForTest(), 0);
+  EXPECT_EQ(sim.fullRegisterProbabilityFillsForTest(), 0);
+  EXPECT_EQ(sim.marginalProbabilityFillsForTest(), 0);
+  EXPECT_EQ(sim.countsOnlySampleDrawBatchesForTest(), 1);
+  EXPECT_EQ(sim.sequentialSampleDrawBatchesForTest(), 0);
+  EXPECT_EQ(sim.sampleExpectationReductionsForTest(), 1);
+  EXPECT_EQ(sim.denseDrawCountBuffersForTest(), 0);
+  EXPECT_EQ(sim.sparseDrawCountMapsForTest(), 0);
+  EXPECT_EQ(sim.sortedSparseDrawCountMapsForTest(), 0);
+  EXPECT_EQ(sim.bitStringConversionsForTest(), 1);
+}
+
 CUDAQ_TEST(MKLQCpuTester,
            CountsOnlyDenseFullRegisterSamplingAggregatesBitStrings) {
   constexpr std::size_t qubitCount = 17;
@@ -434,6 +471,49 @@ CUDAQ_TEST(MKLQCpuTester,
   EXPECT_EQ(sim.denseDrawCountBuffersForTest(), 0);
   EXPECT_EQ(sim.sparseDrawCountMapsForTest(), 1);
   EXPECT_EQ(sim.sortedSparseDrawCountMapsForTest(), 1);
+}
+
+CUDAQ_TEST(MKLQCpuTester, SparseFullRegisterScanMissReportsNativePhases) {
+  constexpr std::size_t qubitCount = 17;
+  constexpr std::size_t dimension = 1ULL << qubitCount;
+  constexpr int shots = 4096;
+  constexpr std::size_t nonzeroOutcomes = 65;
+  const double amplitude =
+      1.0 / std::sqrt(static_cast<double>(nonzeroOutcomes));
+
+  std::vector<std::complex<double>> state(dimension, {0.0, 0.0});
+  for (std::size_t index = 0; index < nonzeroOutcomes; ++index)
+    state[index] = {amplitude, 0.0};
+
+  MklqCpuCircuitSimulatorTester sim;
+  sim.setRandomSeed(13);
+  sim.setStateForTest(std::move(state));
+
+  std::vector<std::size_t> qubits;
+  qubits.reserve(qubitCount);
+  for (std::size_t qubit = 0; qubit < qubitCount; ++qubit)
+    qubits.push_back(qubit);
+
+  const auto counts =
+      sim.sampleQubitsWithoutSequentialDataForTest(qubits, shots);
+
+  std::size_t total = 0;
+  for (const auto &[bits, count] : counts.counts)
+    total += count;
+  EXPECT_EQ(total, shots);
+  EXPECT_TRUE(counts.sequentialData.empty());
+  EXPECT_EQ(sim.sparseFullRegisterScansForTest(), 1);
+  EXPECT_EQ(sim.sparseFullRegisterScanHitsForTest(), 0);
+  EXPECT_EQ(sim.sparseFullRegisterScanMissesForTest(), 1);
+  EXPECT_EQ(sim.fullRegisterProbabilityFillsForTest(), 1);
+  EXPECT_EQ(sim.marginalProbabilityFillsForTest(), 0);
+  EXPECT_EQ(sim.countsOnlySampleDrawBatchesForTest(), 1);
+  EXPECT_EQ(sim.sequentialSampleDrawBatchesForTest(), 0);
+  EXPECT_EQ(sim.sampleExpectationReductionsForTest(), 1);
+  EXPECT_EQ(sim.denseDrawCountBuffersForTest(), 0);
+  EXPECT_EQ(sim.sparseDrawCountMapsForTest(), 1);
+  EXPECT_EQ(sim.sortedSparseDrawCountMapsForTest(), 1);
+  EXPECT_LE(sim.bitStringConversionsForTest(), nonzeroOutcomes);
 }
 
 CUDAQ_TEST(MKLQCpuTester,
