@@ -102,9 +102,10 @@ The public GitHub configuration is intentionally lightweight:
   API payload.
 
 The lightweight workflow checks source-only repository hygiene, public metadata,
-tracked benchmark summary parseability, bounded Metal runtime counter probe
-parseability with complete expected counter-test coverage, and benchmark helper
-syntax. It does not build CUDA-Q or run Apple Silicon backend correctness tests.
+tracked benchmark summary parseability, bounded CPU sampling/probability counter
+and Metal runtime counter probe parseability with complete expected counter-test
+coverage, and benchmark helper syntax. It does not build CUDA-Q or run Apple
+Silicon backend correctness tests.
 
 The pushed-public readiness audit is handled by
 `benchmarks/mklq/run_public_readiness_audit.py`. In addition to repository
@@ -139,11 +140,12 @@ The latest public local validation evidence is recorded in
 [`validation.md`](validation.md), with a public metadata refresh on
 2026-06-23:
 
-- latest validation refresh date: 2026-06-22;
+- latest validation refresh date: 2026-06-23;
 - source state: the ignored raw healthcheck JSON records the exact local Git
   state for the latest runtime validation gate;
 - install-prefix build: passed;
 - default public healthcheck: passed with 21/21 steps passed;
+- full public healthcheck: passed with 24/24 steps passed;
 - one-command correctness gate: passed with 4/4 steps passed, including
   `metal_runtime_counter_probe`;
 - public example smoke gate: passed with 30/30 steps passed;
@@ -154,7 +156,7 @@ The latest public local validation evidence is recorded in
 - standalone install-prefix Python subset: `35 passed`;
 - `python_target_smoke`: `57 passed`;
 - `nvqpp_smoke`: `2 passed`;
-- current focused `target_config_ctest`: `72/72 passed`;
+- current full `target_config_ctest`: `88/88 passed`;
 - current focused `metal_runtime_counter_probe`: 20 expected, 20 selected, 0
   missing, and 20 passed, including the direct resident three-target runtime
   fixture, resident built-in Rx/Ry/Rz, controlled-Rx/Ry/Rz, phase-family
