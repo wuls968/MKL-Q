@@ -109,6 +109,13 @@ public:
     return probabilities;
   }
 
+  std::vector<double>
+  marginalProbabilitiesForTest(const std::vector<std::size_t> &qubits) {
+    std::vector<double> probabilities(1ULL << qubits.size(), 0.0);
+    fillMarginalProbabilities(probabilities, qubits);
+    return probabilities;
+  }
+
   std::size_t bitStringConversionsForTest() const {
     return bitStringConversions;
   }
@@ -580,6 +587,30 @@ CUDAQ_TEST(MKLQCpuTester, DenseFullRegisterProbabilitiesLargeStateMatchNorms) {
     maxDiff = std::max(maxDiff, std::abs(probabilities[index] - expected));
   }
   EXPECT_DOUBLE_EQ(maxDiff, 0.0);
+}
+
+CUDAQ_TEST(MKLQCpuTester,
+           MarginalProbabilitiesPreserveRequestedSampleBitOrder) {
+  constexpr std::size_t qubitCount = 6;
+  constexpr std::size_t dimension = 1ULL << qubitCount;
+  std::vector<std::complex<double>> state(dimension);
+  std::array<double, 8> expected{};
+  for (std::size_t basis = 0; basis < dimension; ++basis) {
+    const auto amplitude = static_cast<double>(basis + 1);
+    state[basis] = {amplitude, 0.0};
+    const auto outcome = ((basis & (1ULL << 5)) ? 1ULL << 0 : 0) |
+                         ((basis & (1ULL << 0)) ? 1ULL << 1 : 0) |
+                         ((basis & (1ULL << 2)) ? 1ULL << 2 : 0);
+    expected[outcome] += amplitude * amplitude;
+  }
+
+  MklqCpuCircuitSimulatorTester sim;
+  sim.setStateForTest(std::move(state));
+  const auto probabilities = sim.marginalProbabilitiesForTest({5, 0, 2});
+
+  ASSERT_EQ(probabilities.size(), expected.size());
+  for (std::size_t outcome = 0; outcome < expected.size(); ++outcome)
+    EXPECT_DOUBLE_EQ(probabilities[outcome], expected[outcome]);
 }
 
 CUDAQ_TEST(MKLQCpuTester,
