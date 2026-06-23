@@ -115,6 +115,18 @@ def _load_public_healthcheck_module():
     return module
 
 
+def _load_sampling_profile_evidence_module():
+    repo_root = Path(__file__).resolve().parents[3]
+    script = repo_root / "benchmarks" / "mklq" / (
+        "check_sampling_profile_evidence.py")
+    spec = importlib.util.spec_from_file_location(
+        "check_sampling_profile_evidence", script)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    return module
+
+
 def _load_public_readiness_audit_module():
     repo_root = Path(__file__).resolve().parents[3]
     script = repo_root / "benchmarks" / "mklq" / (
@@ -986,6 +998,7 @@ def test_mklq_public_healthcheck_plan_lists_escalating_gates(tmp_path):
         "multi_control_evidence_guard",
         "cpu_scaling_evidence_guard",
         "sampling_scaling_evidence_guard",
+        "sampling_profile_evidence_guard",
         "metal_evidence_guard",
         "cpu_sampling_counter_probe_parse",
         "cpu_sampling_counter_docs",
@@ -1024,6 +1037,8 @@ def test_mklq_public_healthcheck_plans_crz_distance_guard(tmp_path):
     assert steps.index("cpu_scaling_evidence_guard") < steps.index(
         "sampling_scaling_evidence_guard")
     assert steps.index("sampling_scaling_evidence_guard") < steps.index(
+        "sampling_profile_evidence_guard")
+    assert steps.index("sampling_profile_evidence_guard") < steps.index(
         "metal_evidence_guard")
 
 
@@ -1139,8 +1154,99 @@ def test_mklq_public_healthcheck_runs_sampling_scaling_guard(monkeypatch,
     ]
 
 
+def test_mklq_public_healthcheck_runs_sampling_profile_guard(monkeypatch,
+                                                             tmp_path):
+    module = _load_public_healthcheck_module()
+    config = _public_healthcheck_config(module, tmp_path)
+    seen = {}
+
+    def fake_run_command(config, command, env_overlay=None):
+        seen["command"] = command
+        return {"returncode": 0, "command": command}
+
+    monkeypatch.setattr(module, "run_command", fake_run_command)
+
+    result = module.run_sampling_profile_evidence_check(config)
+
+    assert result["status"] == "passed"
+    command = seen["command"]
+    assert command[1].endswith("check_sampling_profile_evidence.py")
+    assert command[command.index("--summary-id") + 1] == (
+        module.SAMPLING_PROFILE_SUMMARY_ID)
+
+
+def _sampling_profile_summary_fixture(omit_row=None):
+    rows = []
+    for case in ("sample-full-register", "sample-partial-register"):
+        for qubits in (20, 22):
+            for shots in (1024, 65536):
+                row_key = (case, qubits, shots)
+                if row_key == omit_row:
+                    continue
+                rows.append({
+                    "target": "mklq-cpu",
+                    "case": case,
+                    "qubits": qubits,
+                    "shots": shots,
+                    "status": "ok",
+                    "elapsed_seconds_median": 0.05,
+                    "sample_latency_seconds_per_shot": 1.0e-5,
+                    "sample_throughput_shots_per_second": 100000.0,
+                    "sampling_kernel_build_seconds_median": 1.0e-3,
+                    "sampling_result_counts_materialization_seconds_median":
+                        1.0e-5,
+                    "sampling_profile_enabled": True,
+                    "sampling_profile_scope":
+                        "benchmark_harness_diagnostic_timing_not_native_backend_counters",
+                    "sampling_profile_boundary":
+                        "Additional benchmark harness timings; not native backend internal phase counters.",
+                    "sampling_profile_extra_sample_calls": 1,
+                })
+    return {
+        "schema_version": "mklq-benchmark-summary-v1",
+        "summary_id": "local-sampling-profile-breakdown-cpu-q20-q22-2026-06-23",
+        "evidence_kind": "local_tuning_evidence",
+        "interpretation": {
+            "clean_worktree": True,
+            "raw_json_files_are_ignored": True,
+            "performance_claim_scope":
+                "local sampling profiling evidence only; not cross-machine performance certification or native backend internal phase counters",
+            "sampling_profile_boundary":
+                "benchmark harness diagnostic timing, not native backend internal phase counters",
+        },
+        "rows": rows,
+    }
+
+
+def test_mklq_sampling_profile_evidence_guard_accepts_required_rows():
+    module = _load_sampling_profile_evidence_module()
+
+    result = module.check_summary(
+        _sampling_profile_summary_fixture(),
+        required_rows=module.DEFAULT_REQUIRED_ROWS,
+    )
+
+    assert result["status"] == "passed"
+    assert result["checked_row_count"] == len(module.DEFAULT_REQUIRED_ROWS)
+    assert result["failures"] == []
+
+
+def test_mklq_sampling_profile_evidence_guard_rejects_missing_row():
+    module = _load_sampling_profile_evidence_module()
+
+    result = module.check_summary(
+        _sampling_profile_summary_fixture(
+            omit_row=("sample-full-register", 22, 65536)),
+        required_rows=module.DEFAULT_REQUIRED_ROWS,
+    )
+
+    assert result["status"] == "failed"
+    assert any("sample-full-register q22 shots=65536" in failure
+               for failure in result["failures"])
+
+
 def test_mklq_public_healthcheck_rejects_tracked_artifacts(monkeypatch,
-                                                          tmp_path):
+                                                           tmp_path):
     module = _load_public_healthcheck_module()
     config = _public_healthcheck_config(module, tmp_path)
 
@@ -2430,6 +2536,13 @@ def test_mklq_public_healthcheck_compiles_cpu_sampling_counter_helpers():
     assert "benchmarks/mklq/summarize_cpu_sampling_counters.py" in (
         module.PY_COMPILE_FILES)
     assert "benchmarks/mklq/check_cpu_sampling_counter_docs.py" in (
+        module.PY_COMPILE_FILES)
+
+
+def test_mklq_public_healthcheck_compiles_sampling_profile_guard():
+    module = _load_public_healthcheck_module()
+
+    assert "benchmarks/mklq/check_sampling_profile_evidence.py" in (
         module.PY_COMPILE_FILES)
 
 

@@ -37,6 +37,7 @@ BENCHMARK_HELPERS = (
     "benchmarks/mklq/check_metal_evidence.py",
     "benchmarks/mklq/check_metal_runtime_counter_docs.py",
     "benchmarks/mklq/check_performance_evidence.py",
+    "benchmarks/mklq/check_sampling_profile_evidence.py",
     "benchmarks/mklq/make_summary.py",
     "benchmarks/mklq/run_clean_cpu_benchmark.py",
     "benchmarks/mklq/run_cpu_scaling_benchmark.py",
@@ -96,6 +97,8 @@ CPU_SCALING_REQUIRED_RATIOS = (
 )
 SAMPLING_SCALING_SUMMARY_ID = (
     "local-sampling-scaling-cpu-q18-q22-2026-06-23")
+SAMPLING_PROFILE_SUMMARY_ID = (
+    "local-sampling-profile-breakdown-cpu-q20-q22-2026-06-23")
 SAMPLING_SCALING_REQUIRED_RATIOS = (
     "sample_full_register_q18_1024_shots",
     "sample_full_register_q18_65536_shots",
@@ -499,6 +502,26 @@ def run_sampling_scaling_evidence_check(
     result = run_command(config, command)
     if result["returncode"] != 0:
         return failed("sampling scaling evidence guard failed", result)
+    return passed(result)
+
+
+def run_sampling_profile_evidence_check(
+        config: HealthcheckConfig) -> dict[str, Any]:
+    script = config.repo_root / "benchmarks" / "mklq" / (
+        "check_sampling_profile_evidence.py")
+    command = [
+        config.python_executable,
+        str(script),
+        "--reports",
+        "benchmarks/mklq/reports",
+        "--pattern",
+        "*.summary.json",
+        "--summary-id",
+        SAMPLING_PROFILE_SUMMARY_ID,
+    ]
+    result = run_command(config, command)
+    if result["returncode"] != 0:
+        return failed("sampling profile evidence guard failed", result)
     return passed(result)
 
 
@@ -958,6 +981,9 @@ def build_steps(config: HealthcheckConfig) -> list[Step]:
         Step("sampling_scaling_evidence_guard",
              "Check accepted CPU sampling-scaling benchmark evidence ratios.",
              run_sampling_scaling_evidence_check),
+        Step("sampling_profile_evidence_guard",
+             "Check accepted CPU sampling profile benchmark evidence bounds.",
+             run_sampling_profile_evidence_check),
         Step("metal_evidence_guard",
              "Check experimental Metal benchmark evidence boundaries.",
              run_metal_evidence_check),
