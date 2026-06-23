@@ -2,24 +2,27 @@
   "boundary": {
     "cross_machine_performance_proof": false,
     "performance_benchmark": false,
+    "probability_fill_counter_evidence": true,
     "raw_logs_truncated": true,
     "release_signoff": false,
     "runtime_counter_evidence": true,
-    "runtime_counter_source": "build-tree ctest cases that assert MKL-Q mklq-cpu simulator test-accessor sampling phase counters",
+    "runtime_counter_source": "build-tree ctest cases that assert MKL-Q mklq-cpu simulator test-accessor sampling/probability counters",
     "sampling_phase_counter_evidence": true
   },
-  "created_at_utc": "2026-06-23T03:33:41.616474+00:00",
+  "created_at_utc": "2026-06-23T07:38:00.016818+00:00",
   "evidence_kind": "local_runtime_counter_probe",
   "execution": {
     "returncode": 0,
-    "test_command_count": 5
+    "test_command_count": 7
   },
   "expected_counter_tests": [
     "mklq_cpu_MKLQCpuTester.SparseFullRegisterScanHitReportsNativePhases",
     "mklq_cpu_MKLQCpuTester.SparseFullRegisterScanMissReportsNativePhases",
     "mklq_cpu_MKLQCpuTester.CountsOnlyFullRegisterSamplingReportsNativePhases",
     "mklq_cpu_MKLQCpuTester.CountsOnlyPartialRegisterSamplingReportsNativePhases",
-    "mklq_cpu_MKLQCpuTester.SequentialFullRegisterSamplingReportsNativePhases"
+    "mklq_cpu_MKLQCpuTester.SequentialFullRegisterSamplingReportsNativePhases",
+    "mklq_cpu_MKLQCpuTester.FullRegisterProbabilityFillReportsNativeCounter",
+    "mklq_cpu_MKLQCpuTester.MarginalProbabilityFillReportsNativeCounter"
   ],
   "machine": {
     "machine": "arm64",
@@ -78,56 +81,88 @@
         "-R",
         "^mklq_cpu_MKLQCpuTester\\.SequentialFullRegisterSamplingReportsNativePhases$",
         "--output-on-failure"
+      ],
+      [
+        "ctest",
+        "--test-dir",
+        "/Users/a0000/Documents/MKL-Q/build-python",
+        "-R",
+        "^mklq_cpu_MKLQCpuTester\\.FullRegisterProbabilityFillReportsNativeCounter$",
+        "--output-on-failure"
+      ],
+      [
+        "ctest",
+        "--test-dir",
+        "/Users/a0000/Documents/MKL-Q/build-python",
+        "-R",
+        "^mklq_cpu_MKLQCpuTester\\.MarginalProbabilityFillReportsNativeCounter$",
+        "--output-on-failure"
       ]
     ],
     "repo_root": "/Users/a0000/Documents/MKL-Q"
   },
   "summary": {
-    "expected": 5,
+    "expected": 7,
     "failed": 0,
     "missing": 0,
-    "passed": 5,
-    "selected": 5,
+    "passed": 7,
+    "selected": 7,
     "status": "passed"
   },
   "tests": [
     {
-      "counter_source": "MKL-Q mklq-cpu simulator test-accessor sampling phase counters",
+      "counter_source": "MKL-Q mklq-cpu simulator test-accessor sampling/probability counters",
       "ctest_regex": "^mklq_cpu_MKLQCpuTester\\.SparseFullRegisterScanHitReportsNativePhases$",
-      "elapsed_seconds": 2.1386340000026394,
+      "elapsed_seconds": 1.9532367080100812,
       "name": "mklq_cpu_MKLQCpuTester.SparseFullRegisterScanHitReportsNativePhases",
       "returncode": 0,
       "status": "passed"
     },
     {
-      "counter_source": "MKL-Q mklq-cpu simulator test-accessor sampling phase counters",
+      "counter_source": "MKL-Q mklq-cpu simulator test-accessor sampling/probability counters",
       "ctest_regex": "^mklq_cpu_MKLQCpuTester\\.SparseFullRegisterScanMissReportsNativePhases$",
-      "elapsed_seconds": 1.9196962079731748,
+      "elapsed_seconds": 1.9788683750084601,
       "name": "mklq_cpu_MKLQCpuTester.SparseFullRegisterScanMissReportsNativePhases",
       "returncode": 0,
       "status": "passed"
     },
     {
-      "counter_source": "MKL-Q mklq-cpu simulator test-accessor sampling phase counters",
+      "counter_source": "MKL-Q mklq-cpu simulator test-accessor sampling/probability counters",
       "ctest_regex": "^mklq_cpu_MKLQCpuTester\\.CountsOnlyFullRegisterSamplingReportsNativePhases$",
-      "elapsed_seconds": 1.9242791249998845,
+      "elapsed_seconds": 4.613991291960701,
       "name": "mklq_cpu_MKLQCpuTester.CountsOnlyFullRegisterSamplingReportsNativePhases",
       "returncode": 0,
       "status": "passed"
     },
     {
-      "counter_source": "MKL-Q mklq-cpu simulator test-accessor sampling phase counters",
+      "counter_source": "MKL-Q mklq-cpu simulator test-accessor sampling/probability counters",
       "ctest_regex": "^mklq_cpu_MKLQCpuTester\\.CountsOnlyPartialRegisterSamplingReportsNativePhases$",
-      "elapsed_seconds": 1.9169378750084434,
+      "elapsed_seconds": 1.957753250026144,
       "name": "mklq_cpu_MKLQCpuTester.CountsOnlyPartialRegisterSamplingReportsNativePhases",
       "returncode": 0,
       "status": "passed"
     },
     {
-      "counter_source": "MKL-Q mklq-cpu simulator test-accessor sampling phase counters",
+      "counter_source": "MKL-Q mklq-cpu simulator test-accessor sampling/probability counters",
       "ctest_regex": "^mklq_cpu_MKLQCpuTester\\.SequentialFullRegisterSamplingReportsNativePhases$",
-      "elapsed_seconds": 1.9243500829907134,
+      "elapsed_seconds": 1.9187598339631222,
       "name": "mklq_cpu_MKLQCpuTester.SequentialFullRegisterSamplingReportsNativePhases",
+      "returncode": 0,
+      "status": "passed"
+    },
+    {
+      "counter_source": "MKL-Q mklq-cpu simulator test-accessor sampling/probability counters",
+      "ctest_regex": "^mklq_cpu_MKLQCpuTester\\.FullRegisterProbabilityFillReportsNativeCounter$",
+      "elapsed_seconds": 1.9329240419901907,
+      "name": "mklq_cpu_MKLQCpuTester.FullRegisterProbabilityFillReportsNativeCounter",
+      "returncode": 0,
+      "status": "passed"
+    },
+    {
+      "counter_source": "MKL-Q mklq-cpu simulator test-accessor sampling/probability counters",
+      "ctest_regex": "^mklq_cpu_MKLQCpuTester\\.MarginalProbabilityFillReportsNativeCounter$",
+      "elapsed_seconds": 1.938850459002424,
+      "name": "mklq_cpu_MKLQCpuTester.MarginalProbabilityFillReportsNativeCounter",
       "returncode": 0,
       "status": "passed"
     }

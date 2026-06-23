@@ -148,6 +148,9 @@ The latest public local validation evidence is recorded in
   `metal_runtime_counter_probe`;
 - public example smoke gate: passed with 30/30 steps passed;
 - current benchmark harness tests: `118 passed`;
+- current `cpu_sampling_counter_probe_parse`: 7 expected, 7 selected, 0
+  missing, and 7 passed, including full-register and marginal probability-fill
+  counter ctests;
 - standalone install-prefix Python subset: `35 passed`;
 - `python_target_smoke`: `57 passed`;
 - `nvqpp_smoke`: `2 passed`;

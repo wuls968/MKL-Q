@@ -6,7 +6,7 @@
 # the terms of the Apache License 2.0 which accompanies this distribution.     #
 # ============================================================================ #
 
-"""Run build-tree mklq-cpu sampling counter tests and emit bounded JSON."""
+"""Run build-tree mklq-cpu sampling/probability counter tests."""
 
 import argparse
 import json
@@ -23,7 +23,7 @@ from typing import Any
 SCHEMA_VERSION = "mklq-cpu-sampling-counter-probe-v1"
 EVIDENCE_KIND = "local_runtime_counter_probe"
 COUNTER_SOURCE = (
-    "MKL-Q mklq-cpu simulator test-accessor sampling phase counters")
+    "MKL-Q mklq-cpu simulator test-accessor sampling/probability counters")
 
 COUNTER_TEST_SUFFIXES = (
     "SparseFullRegisterScanHitReportsNativePhases",
@@ -31,6 +31,8 @@ COUNTER_TEST_SUFFIXES = (
     "CountsOnlyFullRegisterSamplingReportsNativePhases",
     "CountsOnlyPartialRegisterSamplingReportsNativePhases",
     "SequentialFullRegisterSamplingReportsNativePhases",
+    "FullRegisterProbabilityFillReportsNativeCounter",
+    "MarginalProbabilityFillReportsNativeCounter",
 )
 
 TEST_PREFIX = "mklq_cpu_MKLQCpuTester."
@@ -180,6 +182,7 @@ def build_report(repo_root: Path, build_dir: Path) -> dict[str, Any]:
         "boundary": {
             "runtime_counter_evidence": True,
             "sampling_phase_counter_evidence": True,
+            "probability_fill_counter_evidence": True,
             "runtime_counter_source":
                 f"build-tree ctest cases that assert {COUNTER_SOURCE}",
             "release_signoff": False,

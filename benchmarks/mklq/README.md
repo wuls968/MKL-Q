@@ -178,8 +178,8 @@ probability-fill, draw, or count-aggregation counters.
 
 ## CPU Sampling Counter Probe
 
-Use the CPU sampling counter probe when changing `mklq-cpu` sampling internals
-or the native sampling phase counter tests:
+Use the CPU sampling counter probe when changing `mklq-cpu` sampling or
+probability-fill internals, or the native sampling/probability counter tests:
 
 ```bash
 python3 benchmarks/mklq/run_cpu_sampling_counter_probe.py \
@@ -188,9 +188,9 @@ python3 benchmarks/mklq/run_cpu_sampling_counter_probe.py \
 ```
 
 The report is bounded evidence from selected build-tree ctest cases. It records
-whether the complete expected CPU sampling phase counter test set is present
-and passing; it is not a benchmark result, release sign-off, or cross-machine
-performance proof.
+whether the complete expected CPU sampling phase and probability-fill counter
+test set is present and passing; it is not a benchmark result, release
+sign-off, or cross-machine performance proof.
 
 ## CPU Sampling Counter Summary
 

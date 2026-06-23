@@ -17,11 +17,12 @@ boundary and evidence limits.
 
 Latest local validation refresh: 2026-06-23.
 
-The install-prefix build, full public healthcheck, one-command correctness
-gate, public example smoke gate, and standalone install-prefix Python subset
-were refreshed on the local MKL-Q branch after enforcing administrator branch
-protection and switching maintainer flow to PR-first. The clean CPU benchmark
-summary was refreshed separately against
+The install-prefix build, one-command correctness gate, public example smoke
+gate, and standalone install-prefix Python subset were refreshed on the local
+MKL-Q branch after enforcing administrator branch protection and switching
+maintainer flow to PR-first. The default public healthcheck was refreshed after
+adding CPU probability-fill counter evidence. The clean CPU benchmark summary
+was refreshed separately against
 `34f4b260d1c657ad626c526eed4e6b9d3a441be4` after adding QFT-like and seeded
 Clifford composite rows to the clean evidence gate.
 
@@ -30,7 +31,9 @@ resident built-in Rx/Ry/Rz, controlled-Rx/Ry/Rz, phase-family S/T/Sdg/Tdg,
 multi-control single-qubit resident, resident three-target gates, and
 four-or-more-target unsupported gate fallback/reupload fixtures. It also reran
 the full install/build/correctness/example gate after the repository-governance
-changes landed on `main`.
+changes landed on `main`. The current CPU counter evidence adds explicit
+full-register and marginal probability-fill counter ctests alongside the
+existing sampling phase counter ctests.
 
 Raw wrapper output was written to ignored local paths
 `benchmarks/mklq/results/public-healthcheck-full-2026-06-22.json`,
@@ -42,11 +45,14 @@ and the temporary example-smoke payload embedded in the full healthcheck
 output; these raw payloads are not tracked as public evidence.
 
 - Install-prefix build: passed.
-- Full public healthcheck: passed, with 20 steps passed and 0 failed.
+- Default public healthcheck: passed, with 21 steps passed and 0 failed.
 - One-command correctness gate: passed with 4 steps passed, 0 failed, and 0
   skipped, including the Metal runtime counter probe.
 - Public example smoke gate: passed, with 30 steps passed and 0 failed.
-- Current `benchmark_harness_tests`: `96 passed`.
+- Current `benchmark_harness_tests`: `118 passed`.
+- Current `cpu_sampling_counter_probe_parse`: 7 expected, 7 selected, 0
+  missing, and 7 passed, including full-register and marginal
+  probability-fill counter ctests.
 - Standalone install-prefix Python subset: `35 passed`.
 - `python_target_smoke`: `57 passed`.
 - `nvqpp_smoke`: `2 passed`.

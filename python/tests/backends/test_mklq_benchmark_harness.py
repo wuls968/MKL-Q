@@ -2173,6 +2173,8 @@ Test project /repo/build-python
   Test #759: mklq_cpu_MKLQCpuTester.CountsOnlyFullRegisterSamplingReportsNativePhases
   Test #763: mklq_cpu_MKLQCpuTester.CountsOnlyPartialRegisterSamplingReportsNativePhases
   Test #764: mklq_cpu_MKLQCpuTester.SequentialFullRegisterSamplingReportsNativePhases
+  Test #765: mklq_cpu_MKLQCpuTester.FullRegisterProbabilityFillReportsNativeCounter
+  Test #766: mklq_cpu_MKLQCpuTester.MarginalProbabilityFillReportsNativeCounter
   Test #999: mklq_cpu_MKLQCpuTester.CountsOnlyDenseSamplingMatchesSequentialSamplingWithSameSeed
   Test #1000: mklq_metal_MKLQMetalTester.SimulatorSamplesResidentDenseStateWithoutReadback
 """
@@ -2185,6 +2187,8 @@ Test project /repo/build-python
         "mklq_cpu_MKLQCpuTester.CountsOnlyFullRegisterSamplingReportsNativePhases",
         "mklq_cpu_MKLQCpuTester.CountsOnlyPartialRegisterSamplingReportsNativePhases",
         "mklq_cpu_MKLQCpuTester.SequentialFullRegisterSamplingReportsNativePhases",
+        "mklq_cpu_MKLQCpuTester.FullRegisterProbabilityFillReportsNativeCounter",
+        "mklq_cpu_MKLQCpuTester.MarginalProbabilityFillReportsNativeCounter",
     ]
 
 
@@ -2278,7 +2282,7 @@ Test project /tmp/build
     assert report["summary"]["expected"] == len(module.COUNTER_TEST_SUFFIXES)
     assert report["summary"]["missing"] == len(module.COUNTER_TEST_SUFFIXES) - 1
     assert (module.TEST_PREFIX +
-            "SequentialFullRegisterSamplingReportsNativePhases"
+            "MarginalProbabilityFillReportsNativeCounter"
             in report["missing_counter_tests"])
 
 
@@ -2289,6 +2293,8 @@ def _cpu_sampling_counter_summary_fixture():
         "mklq_cpu_MKLQCpuTester.CountsOnlyFullRegisterSamplingReportsNativePhases",
         "mklq_cpu_MKLQCpuTester.CountsOnlyPartialRegisterSamplingReportsNativePhases",
         "mklq_cpu_MKLQCpuTester.SequentialFullRegisterSamplingReportsNativePhases",
+        "mklq_cpu_MKLQCpuTester.FullRegisterProbabilityFillReportsNativeCounter",
+        "mklq_cpu_MKLQCpuTester.MarginalProbabilityFillReportsNativeCounter",
     ]
     return {
         "schema_version": "mklq-cpu-sampling-counter-probe-v1",
@@ -2305,6 +2311,7 @@ def _cpu_sampling_counter_summary_fixture():
         "boundary": {
             "runtime_counter_evidence": True,
             "sampling_phase_counter_evidence": True,
+            "probability_fill_counter_evidence": True,
             "release_signoff": False,
             "performance_benchmark": False,
             "cross_machine_performance_proof": False,
@@ -2332,10 +2339,10 @@ def test_mklq_cpu_sampling_counter_summary_groups_phase_coverage(tmp_path):
     assert summary["summary"] == {
         "status": "passed",
         "report_count": 1,
-        "expected": 5,
-        "selected": 5,
+        "expected": 7,
+        "selected": 7,
         "missing": 0,
-        "passed": 5,
+        "passed": 7,
         "failed": 0,
     }
     categories = {
@@ -2347,6 +2354,7 @@ def test_mklq_cpu_sampling_counter_summary_groups_phase_coverage(tmp_path):
     assert categories["counts_only_full_register"]["passed"] == 1
     assert categories["counts_only_partial_register"]["passed"] == 1
     assert categories["sequential_full_register"]["passed"] == 1
+    assert categories["probability_fill"]["passed"] == 2
 
 
 def test_mklq_cpu_sampling_counter_summary_renders_markdown(tmp_path):
@@ -2359,6 +2367,7 @@ def test_mklq_cpu_sampling_counter_summary_renders_markdown(tmp_path):
 
     assert "# MKL-Q CPU Sampling Counter Summary" in markdown
     assert "sampling phase counter evidence" in markdown
+    assert "probability-fill counter evidence" in markdown
     assert "not release sign-off" in markdown
     assert "not a benchmark result" in markdown
     assert "not cross-machine performance proof" in markdown
@@ -2417,6 +2426,7 @@ def test_mklq_public_healthcheck_parses_cpu_sampling_counter_probe(tmp_path):
         "boundary": {
             "runtime_counter_evidence": True,
             "sampling_phase_counter_evidence": True,
+            "probability_fill_counter_evidence": True,
             "release_signoff": False,
             "performance_benchmark": False,
             "cross_machine_performance_proof": False,
@@ -2455,6 +2465,7 @@ def test_mklq_public_healthcheck_parses_cpu_sampling_counter_probe(tmp_path):
         "boundary": {
             "runtime_counter_evidence": True,
             "sampling_phase_counter_evidence": True,
+            "probability_fill_counter_evidence": False,
             "release_signoff": False,
             "performance_benchmark": True,
             "cross_machine_performance_proof": False,
@@ -2474,6 +2485,7 @@ def test_mklq_public_healthcheck_parses_cpu_sampling_counter_probe(tmp_path):
     assert result["status"] == "failed"
     failures = "\n".join(result["details"]["failures"])
     assert "performance_benchmark" in failures
+    assert "probability_fill_counter_evidence" in failures
     assert "missing counter test count" in failures
     assert "raw stdout" in failures
 

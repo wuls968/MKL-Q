@@ -6,7 +6,7 @@
 # the terms of the Apache License 2.0 which accompanies this distribution.     #
 # ============================================================================ #
 
-"""Render bounded MKL-Q CPU sampling counter evidence for public docs."""
+"""Render bounded MKL-Q CPU sampling/probability counter evidence."""
 
 import argparse
 import json
@@ -32,6 +32,8 @@ CATEGORY_DESCRIPTIONS = {
         "Counts-only partial-register sampling phase counter tests",
     "sequential_full_register":
         "Sequential full-register sampling phase counter tests",
+    "probability_fill":
+        "Full-register and marginal probability-fill counter tests",
     "other": "Unclassified CPU sampling counter tests",
 }
 
@@ -41,6 +43,7 @@ CATEGORY_RULES = (
     ("counts_only_full_register", ("CountsOnlyFullRegister",)),
     ("counts_only_partial_register", ("CountsOnlyPartialRegister",)),
     ("sequential_full_register", ("SequentialFullRegister",)),
+    ("probability_fill", ("ProbabilityFill",)),
 )
 
 
@@ -92,6 +95,7 @@ def boundary_summary(reports: list[dict[str, Any]]) -> dict[str, Any]:
         return {
             "runtime_counter_evidence": False,
             "sampling_phase_counter_evidence": False,
+            "probability_fill_counter_evidence": False,
             "release_signoff": False,
             "performance_benchmark": False,
             "cross_machine_performance_proof": False,
@@ -107,6 +111,7 @@ def boundary_summary(reports: list[dict[str, Any]]) -> dict[str, Any]:
         return {
             "runtime_counter_evidence": False,
             "sampling_phase_counter_evidence": False,
+            "probability_fill_counter_evidence": False,
             "release_signoff": False,
             "performance_benchmark": False,
             "cross_machine_performance_proof": False,
@@ -118,6 +123,9 @@ def boundary_summary(reports: list[dict[str, Any]]) -> dict[str, Any]:
             for boundary in boundaries),
         "sampling_phase_counter_evidence": all(
             bool(boundary.get("sampling_phase_counter_evidence"))
+            for boundary in boundaries),
+        "probability_fill_counter_evidence": all(
+            bool(boundary.get("probability_fill_counter_evidence"))
             for boundary in boundaries),
         "release_signoff": any(
             bool(boundary.get("release_signoff")) for boundary in boundaries),
@@ -154,6 +162,8 @@ def build_report_digest(path: Path, report: dict[str, Any]) -> dict[str, Any]:
             boundary.get("runtime_counter_evidence")),
         "sampling_phase_counter_evidence": bool(
             boundary.get("sampling_phase_counter_evidence")),
+        "probability_fill_counter_evidence": bool(
+            boundary.get("probability_fill_counter_evidence")),
         "release_signoff": bool(boundary.get("release_signoff")),
         "performance_benchmark": bool(boundary.get("performance_benchmark")),
         "cross_machine_performance_proof": bool(
@@ -205,6 +215,7 @@ def build_summary(paths: list[Path]) -> dict[str, Any]:
     boundary_ok = (
         bool(boundary["runtime_counter_evidence"])
         and bool(boundary["sampling_phase_counter_evidence"])
+        and bool(boundary["probability_fill_counter_evidence"])
         and not bool(boundary["release_signoff"])
         and not bool(boundary["performance_benchmark"])
         and not bool(boundary["cross_machine_performance_proof"])
@@ -242,9 +253,10 @@ def render_markdown(summary: dict[str, Any]) -> str:
         "This file is generated from bounded `.cpu-counter.json` reports "
         "under `benchmarks/mklq/reports/`.",
         "",
-        "Caveat: this is sampling phase counter evidence from selected "
-        "build-tree ctest cases. It is not release sign-off, not a benchmark "
-        "result, and not cross-machine performance proof.",
+        "Caveat: this is sampling phase counter evidence and "
+        "probability-fill counter evidence from selected build-tree ctest "
+        "cases. It is not release sign-off, not a benchmark result, and not "
+        "cross-machine performance proof.",
         "",
         "## Aggregate",
         "",
@@ -263,6 +275,7 @@ def render_markdown(summary: dict[str, Any]) -> str:
         "| --- | --- |",
     ])
     for key in ("runtime_counter_evidence", "sampling_phase_counter_evidence",
+                "probability_fill_counter_evidence",
                 "release_signoff", "performance_benchmark",
                 "cross_machine_performance_proof", "raw_logs_truncated"):
         lines.append(
