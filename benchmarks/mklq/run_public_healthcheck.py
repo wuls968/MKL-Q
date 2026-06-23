@@ -310,6 +310,7 @@ def public_metadata_requirements() -> list[tuple[str, str]]:
         ("docs/mklq/public-readiness.md", "Public Readiness"),
         ("docs/mklq/public-readiness.md", "run_public_readiness_audit.py"),
         ("docs/mklq/cpu-sampling-counters.md", "sampling phase counter evidence"),
+        ("docs/mklq/cpu-sampling-counters.md", "probability-fill counter evidence"),
         ("docs/mklq/validation.md", "not a release certification"),
         ("docs/mklq/benchmark-evidence.md", "cross-machine performance certification"),
         ("benchmarks/mklq/README.md", "Public Claim Boundary Guard"),
@@ -628,6 +629,9 @@ def run_cpu_sampling_counter_probe_parse(
         if boundary.get("sampling_phase_counter_evidence") is not True:
             failures.append(
                 f"{relative}: sampling_phase_counter_evidence must be true")
+        if boundary.get("probability_fill_counter_evidence") is not True:
+            failures.append(
+                f"{relative}: probability_fill_counter_evidence must be true")
         if boundary.get("release_signoff") is not False:
             failures.append(f"{relative}: release_signoff must be false")
         if boundary.get("performance_benchmark") is not False:
@@ -1013,7 +1017,7 @@ def build_steps(config: HealthcheckConfig) -> list[Step]:
              "Check experimental Metal benchmark evidence boundaries.",
              run_metal_evidence_check),
         Step("cpu_sampling_counter_probe_parse",
-             "Parse bounded CPU sampling phase counter evidence.",
+             "Parse bounded CPU sampling and probability counter evidence.",
              run_cpu_sampling_counter_probe_parse),
         Step("cpu_sampling_counter_docs",
              "Compare tracked CPU sampling counter docs with regenerated output.",

@@ -850,6 +850,24 @@ CUDAQ_TEST(MKLQCpuTester, DenseFullRegisterProbabilitiesLargeStateMatchNorms) {
   EXPECT_DOUBLE_EQ(maxDiff, 0.0);
 }
 
+CUDAQ_TEST(MKLQCpuTester, FullRegisterProbabilityFillReportsNativeCounter) {
+  MklqCpuCircuitSimulatorTester sim;
+  sim.setStateForTest({{3.0, 4.0}, {0.5, -0.5}, {0.0, 0.0}, {-2.0, 1.5}});
+
+  EXPECT_EQ(sim.fullRegisterProbabilityFillsForTest(), 0);
+  EXPECT_EQ(sim.marginalProbabilityFillsForTest(), 0);
+
+  const auto probabilities = sim.fullRegisterProbabilitiesForTest();
+
+  ASSERT_EQ(probabilities.size(), 4);
+  EXPECT_DOUBLE_EQ(probabilities[0], 25.0);
+  EXPECT_DOUBLE_EQ(probabilities[1], 0.5);
+  EXPECT_DOUBLE_EQ(probabilities[2], 0.0);
+  EXPECT_DOUBLE_EQ(probabilities[3], 6.25);
+  EXPECT_EQ(sim.fullRegisterProbabilityFillsForTest(), 1);
+  EXPECT_EQ(sim.marginalProbabilityFillsForTest(), 0);
+}
+
 CUDAQ_TEST(MKLQCpuTester,
            MarginalProbabilitiesPreserveRequestedSampleBitOrder) {
   constexpr std::size_t qubitCount = 6;
@@ -872,6 +890,34 @@ CUDAQ_TEST(MKLQCpuTester,
   ASSERT_EQ(probabilities.size(), expected.size());
   for (std::size_t outcome = 0; outcome < expected.size(); ++outcome)
     EXPECT_DOUBLE_EQ(probabilities[outcome], expected[outcome]);
+}
+
+CUDAQ_TEST(MKLQCpuTester, MarginalProbabilityFillReportsNativeCounter) {
+  constexpr std::size_t qubitCount = 3;
+  constexpr std::size_t dimension = 1ULL << qubitCount;
+  std::vector<std::complex<double>> state(dimension);
+  std::array<double, 4> expected{};
+  for (std::size_t basis = 0; basis < dimension; ++basis) {
+    const auto amplitude = static_cast<double>(basis + 1);
+    state[basis] = {amplitude, 0.0};
+    const auto outcome = ((basis & (1ULL << 2)) ? 1ULL << 0 : 0) |
+                         ((basis & (1ULL << 0)) ? 1ULL << 1 : 0);
+    expected[outcome] += amplitude * amplitude;
+  }
+
+  MklqCpuCircuitSimulatorTester sim;
+  sim.setStateForTest(std::move(state));
+
+  EXPECT_EQ(sim.fullRegisterProbabilityFillsForTest(), 0);
+  EXPECT_EQ(sim.marginalProbabilityFillsForTest(), 0);
+
+  const auto probabilities = sim.marginalProbabilitiesForTest({2, 0});
+
+  ASSERT_EQ(probabilities.size(), expected.size());
+  for (std::size_t outcome = 0; outcome < expected.size(); ++outcome)
+    EXPECT_DOUBLE_EQ(probabilities[outcome], expected[outcome]);
+  EXPECT_EQ(sim.fullRegisterProbabilityFillsForTest(), 0);
+  EXPECT_EQ(sim.marginalProbabilityFillsForTest(), 1);
 }
 
 CUDAQ_TEST(MKLQCpuTester,
