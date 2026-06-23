@@ -63,6 +63,7 @@ jobs:
           test -f benchmarks/mklq/check_metal_evidence.py
           test -f benchmarks/mklq/check_metal_runtime_counter_docs.py
           test -f benchmarks/mklq/check_performance_evidence.py
+          test -f benchmarks/mklq/run_cpu_scaling_benchmark.py
           test -f benchmarks/mklq/run_metal_runtime_counter_probe.py
           test -f benchmarks/mklq/run_preflight_audit.py
           test -f benchmarks/mklq/run_public_readiness_audit.py
@@ -157,6 +158,7 @@ jobs:
           grep -q 'Metal Runtime Counter Probe' benchmarks/mklq/README.md
           grep -q 'Metal Runtime Counter Summary' benchmarks/mklq/README.md
           grep -q 'Metal Runtime Counter Docs Guard' benchmarks/mklq/README.md
+          grep -q 'run_cpu_scaling_benchmark.py' docs/mklq/validation.md
           python3 - <<'PY'
           from pathlib import Path
 
@@ -220,6 +222,24 @@ jobs:
             --pattern '*.summary.json' \
             --summary-id local-crz-distance-sweep-cpu-q20-2026-06-22 \
             --required-ratios "${required_ratios}"
+
+      - name: Check multi-control performance evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 benchmarks/mklq/check_performance_evidence.py \
+            --pattern '*.summary.json' \
+            --summary-id local-multi-control-cpu-q20-2026-06-22 \
+            --required-ratios multi_control_state_q20
+
+      - name: Check CPU scaling performance evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 benchmarks/mklq/check_performance_evidence.py \
+            --pattern '*.summary.json' \
+            --summary-id local-scaling-cpu-multi-control-q18-q22-2026-06-22 \
+            --required-ratios multi_control_state_q18,multi_control_state_q20,multi_control_state_q22
 
       - name: Check experimental Metal evidence
         shell: bash
@@ -305,6 +325,7 @@ jobs:
             benchmarks/mklq/check_performance_evidence.py \
             benchmarks/mklq/make_summary.py \
             benchmarks/mklq/run_clean_cpu_benchmark.py \
+            benchmarks/mklq/run_cpu_scaling_benchmark.py \
             benchmarks/mklq/run_correctness_gate.py \
             benchmarks/mklq/run_metal_runtime_counter_probe.py \
             benchmarks/mklq/run_preflight_audit.py \

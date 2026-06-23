@@ -215,11 +215,12 @@ python3 benchmarks/mklq/run_public_healthcheck.py
 
 The default mode checks Git remotes and shallow state, tracked artifact hygiene,
 public metadata and banned tokens, sanitized benchmark summary JSON, the static
-clean CPU performance evidence guard, the static experimental Metal evidence
-boundary guard, bounded Metal runtime counter probe JSON, helper syntax, local
-markdown links, regenerated benchmark-evidence and Metal counter docs
-consistency, and the benchmark harness tests. It writes an ignored JSON report under
-`benchmarks/mklq/results/`.
+clean CPU performance evidence guards, including focused CRZ distance,
+multi-control, and q18-q22 CPU scaling evidence, the static experimental Metal
+evidence boundary guard, bounded Metal runtime counter probe JSON, helper
+syntax, local markdown links, regenerated benchmark-evidence and Metal counter
+docs consistency, and the benchmark harness tests. It writes an ignored JSON
+report under `benchmarks/mklq/results/`.
 
 Before describing a commit as public-ready, run the heavier local gate:
 
