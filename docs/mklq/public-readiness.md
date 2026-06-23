@@ -4,7 +4,7 @@ This page records the public repository readiness snapshot for MKL-Q. It is a
 source-only repository audit, not a release certification, package
 certification, Apple Silicon CI replacement, or performance certification.
 
-Snapshot date: 2026-06-22.
+Snapshot date: 2026-06-23.
 
 ## Scope
 
@@ -106,6 +106,15 @@ tracked benchmark summary parseability, bounded Metal runtime counter probe
 parseability with complete expected counter-test coverage, and benchmark helper
 syntax. It does not build CUDA-Q or run Apple Silicon backend correctness tests.
 
+The pushed-public readiness audit is handled by
+`benchmarks/mklq/run_public_readiness_audit.py`. In addition to repository
+identity and latest workflow status, it checks that the public issue template
+set is intentional, every issue-template label is declared in
+`.github/labels.yml`, live GitHub label metadata matches the tracked label
+taxonomy, live `main` branch protection matches
+`.github/branch-protection-main.json`, and the public claim-boundary guard
+passes.
+
 ## Branch Protection
 
 The public `main` branch is intended to be protected with:
@@ -121,22 +130,24 @@ The public `main` branch is intended to be protected with:
 
 The branch protection policy is documented in
 [`branch-protection.md`](branch-protection.md), and the machine-readable API
-payload is `.github/branch-protection-main.json`.
+payload is `.github/branch-protection-main.json`. The public readiness audit
+compares the live core protection fields against that JSON reference.
 
 ## Validation Snapshot
 
 The latest public local validation evidence is recorded in
-[`validation.md`](validation.md):
+[`validation.md`](validation.md), with a public metadata refresh on
+2026-06-23:
 
 - latest validation refresh date: 2026-06-22;
 - source state: the ignored raw healthcheck JSON records the exact local Git
   state for the latest runtime validation gate;
 - install-prefix build: passed;
-- full public healthcheck: passed with 16/16 steps passed;
+- default public healthcheck: passed with 21/21 steps passed;
 - one-command correctness gate: passed with 4/4 steps passed, including
   `metal_runtime_counter_probe`;
 - public example smoke gate: passed with 30/30 steps passed;
-- current benchmark harness tests: `82 passed`;
+- current benchmark harness tests: `118 passed`;
 - standalone install-prefix Python subset: `35 passed`;
 - `python_target_smoke`: `57 passed`;
 - `nvqpp_smoke`: `2 passed`;
@@ -162,7 +173,8 @@ checks local tuning provenance, ignored raw payload paths, successful Metal
 rows, and wording that keeps the experimental mixed-path/host boundary clear.
 It also includes `check_metal_runtime_counter_docs.py`, which fails if the
 public Metal runtime counter summary drifts from the tracked bounded counter
-reports.
+reports. The public readiness audit additionally runs the static
+`check_public_claims.py` guard before accepting the pushed repository state.
 
 ## No Tags Or Releases
 
@@ -224,6 +236,9 @@ Expected result:
 - `main` is the default branch;
 - `main` is protected;
 - the latest pushed commit has a successful `MKL-Q public hygiene` run;
+- live issue labels match `.github/labels.yml`;
+- live branch protection matches `.github/branch-protection-main.json`;
+- the public claim-boundary guard passes;
 - no release tags or GitHub Releases exist in the current source-only phase;
 - only intentional MKL-Q public docs, issue templates, branch protection config,
   and the lightweight workflow are tracked.

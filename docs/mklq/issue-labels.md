@@ -12,6 +12,8 @@ separately.
 
 | Label | Use For | Remove When |
 | --- | --- | --- |
+| `bug` | Reproducible failures, regressions, crashes, wrong results, or build/runtime errors. | The report is reclassified as a feature request, docs task, or support discussion. |
+| `enhancement` | New feature requests, backend capability proposals, usability improvements, or workflow improvements. | The request is reclassified as a bug or release-policy task. |
 | `backend:cpu` | `mklq-cpu` correctness, runtime behavior, sampling, state import/export, or CPU performance-sensitive paths. | The issue is no longer specific to `mklq-cpu`. |
 | `backend:metal` | Experimental `mklq-metal`, resident Metal paths, mixed Metal/CPU fallback, Metal measurement/reset, or Metal precision behavior. | The issue is no longer specific to `mklq-metal`. |
 | `build` | CMake, source build, install prefix, `nvq++` discovery, target YAML installation, or toolchain problems. | The root cause is reclassified as backend/runtime/docs. |

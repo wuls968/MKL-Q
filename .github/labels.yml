@@ -1,7 +1,16 @@
 # MKL-Q issue label taxonomy.
 #
-# This file documents the labels expected on the public GitHub repository. It is
-# not consumed by automation yet; maintainers apply it with GitHub CLI or API.
+# This file documents the labels expected on the public GitHub repository.
+# Public readiness checks compare it with live GitHub label metadata.
+# Maintainers apply label changes with GitHub CLI or API.
+
+- name: bug
+  color: "d73a4a"
+  description: Something isn't working
+
+- name: enhancement
+  color: "a2eeef"
+  description: New feature or request
 
 - name: backend:cpu
   color: "1d76db"

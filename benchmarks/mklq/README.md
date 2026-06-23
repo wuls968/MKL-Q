@@ -285,6 +285,14 @@ Then audit the pushed public fork state:
 python3 benchmarks/mklq/run_public_readiness_audit.py
 ```
 
+The readiness audit is intended for a clean local `main` that matches
+`origin/main`. It checks the public fork identity, tracked workflow set, issue
+template set, issue-template labels, live GitHub label metadata, live branch
+protection drift against `.github/branch-protection-main.json`, public claim
+boundaries, latest hygiene workflow success for the pushed commit, and the
+source-only no-tags/no-releases boundary. It does not run backend correctness
+tests or refresh benchmark evidence.
+
 `--full` adds the install-prefix build and one-command correctness gate. It does
 not refresh benchmark evidence. To intentionally refresh clean CPU benchmark
 evidence, run from a clean worktree:

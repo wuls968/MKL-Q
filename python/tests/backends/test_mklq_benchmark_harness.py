@@ -2716,9 +2716,132 @@ def _readiness_repo_payload():
     }
 
 
+def _write_readiness_local_files(root: Path, *, label_color="1d76db"):
+    github = root / ".github"
+    issue_templates = github / "ISSUE_TEMPLATE"
+    issue_templates.mkdir(parents=True)
+    (github / "workflows").mkdir(parents=True)
+    (github / "workflows" / "mklq-public-hygiene.yml").write_text(
+        "name: MKL-Q public hygiene\n", encoding="utf-8")
+    (github / "branch-protection-main.json").write_text(
+        json.dumps({
+            "required_status_checks": {
+                "strict": True,
+                "contexts": ["Source-only repository checks"],
+            },
+            "enforce_admins": True,
+            "required_pull_request_reviews": None,
+            "restrictions": None,
+            "required_linear_history": False,
+            "allow_force_pushes": False,
+            "allow_deletions": False,
+            "block_creations": False,
+            "required_conversation_resolution": False,
+            "lock_branch": False,
+            "allow_fork_syncing": False,
+        }),
+        encoding="utf-8")
+    (github / "labels.yml").write_text(
+        "\n".join([
+            "- name: bug",
+            "  color: \"d73a4a\"",
+            "  description: Something isn't working",
+            "",
+            "- name: enhancement",
+            "  color: \"a2eeef\"",
+            "  description: New feature or request",
+            "",
+            "- name: backend:cpu",
+            f"  color: \"{label_color}\"",
+            "  description: MKL-Q CPU backend correctness, runtime behavior, or performance.",
+            "",
+            "- name: backend:metal",
+            "  color: \"a371f7\"",
+            "  description: Experimental MKL-Q Metal backend or mixed Metal/CPU behavior.",
+            "",
+            "- name: build",
+            "  color: \"bfd4f2\"",
+            "  description: CMake, toolchain, install prefix, or source build problems.",
+            "",
+            "- name: performance",
+            "  color: \"f9d0c4\"",
+            "  description: Local benchmark evidence, performance regressions, or tuning.",
+            "",
+            "- name: docs",
+            "  color: \"0075ca\"",
+            "  description: Documentation, public metadata, runbooks, or examples.",
+            "",
+            "- name: upstream-sync",
+            "  color: \"fbca04\"",
+            "  description: Syncing, merging, or reviewing NVIDIA CUDA-Q upstream changes.",
+            "",
+            "- name: release-policy",
+            "  color: \"d93f0b\"",
+            "  description: Source-only policy, release artifacts, tags, wheels, or PyPI.",
+            "",
+            "- name: needs-repro",
+            "  color: \"d876e3\"",
+            "  description: Needs a minimal reproducer, environment details, or gate output.",
+            "",
+        ]),
+        encoding="utf-8")
+    (issue_templates / "bug_report.yaml").write_text(
+        "\n".join([
+            "name: Bug report",
+            "description: Report a reproducible MKL-Q issue.",
+            "labels: [\"bug\", \"needs-repro\"]",
+            "body: []",
+            "",
+        ]),
+        encoding="utf-8")
+    (issue_templates / "feature_request.yaml").write_text(
+        "\n".join([
+            "name: Feature request",
+            "description: Suggest an MKL-Q improvement.",
+            "labels: [\"enhancement\"]",
+            "body: []",
+            "",
+        ]),
+        encoding="utf-8")
+
+
+def _readiness_live_labels_payload(*, cpu_color="1d76db"):
+    labels = {
+        "bug": ("d73a4a", "Something isn't working"),
+        "enhancement": ("a2eeef", "New feature or request"),
+        "backend:cpu": (cpu_color,
+                        "MKL-Q CPU backend correctness, runtime behavior, or performance."),
+        "backend:metal":
+            ("a371f7",
+             "Experimental MKL-Q Metal backend or mixed Metal/CPU behavior."),
+        "build": ("bfd4f2",
+                  "CMake, toolchain, install prefix, or source build problems."),
+        "performance":
+            ("f9d0c4",
+             "Local benchmark evidence, performance regressions, or tuning."),
+        "docs": ("0075ca",
+                 "Documentation, public metadata, runbooks, or examples."),
+        "upstream-sync":
+            ("fbca04",
+             "Syncing, merging, or reviewing NVIDIA CUDA-Q upstream changes."),
+        "release-policy":
+            ("d93f0b",
+             "Source-only policy, release artifacts, tags, wheels, or PyPI."),
+        "needs-repro":
+            ("d876e3",
+             "Needs a minimal reproducer, environment details, or gate output."),
+    }
+    return [{
+        "name": name,
+        "color": color,
+        "description": description,
+    } for name, (color, description) in labels.items()]
+
+
 def test_mklq_public_readiness_audit_builds_passing_report(monkeypatch,
                                                            tmp_path):
     module = _load_public_readiness_audit_module()
+    _write_readiness_local_files(tmp_path)
     config = module.AuditConfig(
         repo_root=tmp_path,
         repo="wuls968/MKL-Q",
@@ -2743,12 +2866,29 @@ def test_mklq_public_readiness_audit_builds_passing_report(monkeypatch,
             return "\n".join([
                 "README.md",
                 ".github/workflows/mklq-public-hygiene.yml",
+                ".github/ISSUE_TEMPLATE/bug_report.yaml",
+                ".github/ISSUE_TEMPLATE/feature_request.yaml",
+                ".github/branch-protection-main.json",
+                ".github/labels.yml",
                 "docs/mklq/public-readiness.md",
             ])
         if command == ["git", "ls-files", ".github/workflows"]:
             return ".github/workflows/mklq-public-hygiene.yml"
+        if command == ["git", "ls-files", ".github/ISSUE_TEMPLATE"]:
+            return "\n".join([
+                ".github/ISSUE_TEMPLATE/bug_report.yaml",
+                ".github/ISSUE_TEMPLATE/feature_request.yaml",
+            ])
+        if (len(command) >= 2 and command[0] == sys.executable
+                and command[1].endswith("check_public_claims.py")):
+            return json.dumps({"summary": {"status": "passed"}})
         if command[:3] == ["gh", "repo", "view"]:
             return json.dumps(_readiness_repo_payload())
+        if command == [
+                "gh", "label", "list", "--repo", "wuls968/MKL-Q", "--limit",
+                "100", "--json", "name,color,description"
+        ]:
+            return json.dumps(_readiness_live_labels_payload())
         if command[:3] == ["gh", "api", "repos/wuls968/MKL-Q/branches/main"]:
             return json.dumps({
                 "name": "main",
@@ -2773,6 +2913,21 @@ def test_mklq_public_readiness_audit_builds_passing_report(monkeypatch,
                 "enforce_admins": {
                     "enabled": True,
                 },
+                "required_linear_history": {
+                    "enabled": False,
+                },
+                "block_creations": {
+                    "enabled": False,
+                },
+                "required_conversation_resolution": {
+                    "enabled": False,
+                },
+                "lock_branch": {
+                    "enabled": False,
+                },
+                "allow_fork_syncing": {
+                    "enabled": False,
+                },
             })
         if command[:3] == ["gh", "run", "list"]:
             return json.dumps([{
@@ -2794,6 +2949,10 @@ def test_mklq_public_readiness_audit_builds_passing_report(monkeypatch,
     assert report["summary"]["failed"] == 0
     checks = {check["name"]: check for check in report["checks"]}
     assert checks["github_repository"]["status"] == "passed"
+    assert checks["issue_templates"]["status"] == "passed"
+    assert checks["github_labels"]["status"] == "passed"
+    assert checks["public_claim_boundaries"]["status"] == "passed"
+    assert checks["branch_protection_reference"]["status"] == "passed"
     assert checks["branch_protection"]["status"] == "passed"
     assert checks["latest_public_hygiene"]["details"]["headSha"] == "abc123"
     assert any(call[:3] == ["gh", "repo", "view"] for call in calls)
@@ -2802,6 +2961,7 @@ def test_mklq_public_readiness_audit_builds_passing_report(monkeypatch,
 def test_mklq_public_readiness_audit_rejects_release_tags_and_unprotected_main(
         monkeypatch, tmp_path):
     module = _load_public_readiness_audit_module()
+    _write_readiness_local_files(tmp_path, label_color="000000")
     config = module.AuditConfig(
         repo_root=tmp_path,
         repo="wuls968/MKL-Q",
@@ -2821,11 +2981,31 @@ def test_mklq_public_readiness_audit_rejects_release_tags_and_unprotected_main(
         if command == ["git", "ls-remote", "--tags", "origin", "refs/tags/*"]:
             return "abc123\trefs/tags/v0.1.0"
         if command == ["git", "ls-files"]:
-            return "README.md"
+            return "\n".join([
+                "README.md",
+                ".github/workflows/mklq-public-hygiene.yml",
+                ".github/ISSUE_TEMPLATE/bug_report.yaml",
+                ".github/ISSUE_TEMPLATE/feature_request.yaml",
+                ".github/branch-protection-main.json",
+                ".github/labels.yml",
+            ])
         if command == ["git", "ls-files", ".github/workflows"]:
             return ".github/workflows/mklq-public-hygiene.yml"
+        if command == ["git", "ls-files", ".github/ISSUE_TEMPLATE"]:
+            return "\n".join([
+                ".github/ISSUE_TEMPLATE/bug_report.yaml",
+                ".github/ISSUE_TEMPLATE/feature_request.yaml",
+            ])
+        if (len(command) >= 2 and command[0] == sys.executable
+                and command[1].endswith("check_public_claims.py")):
+            return json.dumps({"summary": {"status": "failed"}})
         if command[:3] == ["gh", "repo", "view"]:
             return json.dumps(_readiness_repo_payload())
+        if command == [
+                "gh", "label", "list", "--repo", "wuls968/MKL-Q", "--limit",
+                "100", "--json", "name,color,description"
+        ]:
+            return json.dumps(_readiness_live_labels_payload())
         if command[:3] == ["gh", "api", "repos/wuls968/MKL-Q/branches/main"]:
             return json.dumps({
                 "name": "main",
@@ -2850,6 +3030,21 @@ def test_mklq_public_readiness_audit_rejects_release_tags_and_unprotected_main(
                 "enforce_admins": {
                     "enabled": False,
                 },
+                "required_linear_history": {
+                    "enabled": False,
+                },
+                "block_creations": {
+                    "enabled": False,
+                },
+                "required_conversation_resolution": {
+                    "enabled": False,
+                },
+                "lock_branch": {
+                    "enabled": False,
+                },
+                "allow_fork_syncing": {
+                    "enabled": False,
+                },
             })
         if command[:3] == ["gh", "run", "list"]:
             return json.dumps([{
@@ -2871,6 +3066,9 @@ def test_mklq_public_readiness_audit_rejects_release_tags_and_unprotected_main(
     assert "branch is not protected" in failures
     assert "administrator enforcement is not enabled" in failures
     assert "release tags exist" in failures
+    assert "live label metadata differs from .github/labels.yml" in failures
+    assert "public claim-boundary check failed" in failures
+    assert "branch protection differs from .github/branch-protection-main.json" in failures
 
 
 def _preflight_config(module, tmp_path, *, require_clean=True, check_github=True):
