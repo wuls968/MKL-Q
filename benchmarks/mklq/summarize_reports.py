@@ -59,6 +59,8 @@ def format_run_shape(config: dict[str, Any]) -> str:
             parts.append(f"{key}={config[key]}")
     if config.get("isolate_rows"):
         parts.append("isolate_rows=true")
+    if config.get("profile_sampling_breakdown"):
+        parts.append("profile_sampling_breakdown=true")
     return "; ".join(parts) if parts else "-"
 
 
@@ -93,6 +95,39 @@ def metal_path_labels(rows: object) -> list[dict[str, str]]:
             "source": str(row.get("metal_path_label_source", "-")),
         })
     return labels
+
+
+def sampling_profile_rows(rows: object) -> list[dict[str, Any]]:
+    if not isinstance(rows, list):
+        return []
+
+    signals: list[dict[str, Any]] = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        if not row.get("sampling_profile_enabled"):
+            continue
+        signals.append({
+            "target":
+                row.get("target", "-"),
+            "case":
+                row.get("case", "-"),
+            "qubits":
+                row.get("qubits", "-"),
+            "shots":
+                row.get("shots", "-"),
+            "elapsed_seconds_median":
+                row.get("elapsed_seconds_median"),
+            "sampling_kernel_build_seconds_median":
+                row.get("sampling_kernel_build_seconds_median"),
+            "sampling_call_seconds_median":
+                row.get("sampling_call_seconds_median"),
+            "sampling_result_counts_materialization_seconds_median":
+                row.get("sampling_result_counts_materialization_seconds_median"),
+            "sampling_profile_boundary":
+                row.get("sampling_profile_boundary", "-"),
+        })
+    return signals
 
 
 def format_status_counts(counts: dict[str, int]) -> str:
@@ -146,6 +181,7 @@ def digest_summary(path: Path) -> dict[str, Any]:
         "raw_results": format_raw_results(summary.get("raw_results")),
         "comparison": summary.get("comparison", {}),
         "interpretation": summary.get("interpretation", {}),
+        "sampling_profile_rows": sampling_profile_rows(rows),
         "metal_path_labels": metal_path_labels(rows),
     }
 
@@ -223,6 +259,20 @@ def metal_path_label_signals(
     return signals
 
 
+def sampling_profile_signals(
+        digests: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    signals: list[dict[str, Any]] = []
+    for digest in digests:
+        for row in digest.get("sampling_profile_rows", []):
+            if not isinstance(row, dict):
+                continue
+            signals.append({
+                "summary_id": str(digest["summary_id"]),
+                **row,
+            })
+    return signals
+
+
 def render_markdown(digests: list[dict[str, Any]]) -> str:
     lines = [
         "# MKL-Q Benchmark Evidence",
@@ -283,6 +333,53 @@ def render_markdown(digests: list[dict[str, Any]]) -> str:
     else:
         lines.append("No numeric comparison signals are recorded.")
 
+    sampling_signals = sampling_profile_signals(digests)
+    lines.extend([
+        "",
+        "## Sampling Profile Signals",
+        "",
+        "These rows expose benchmark-harness diagnostic timings around "
+        "`cudaq.sample`. They are not native backend internal phase counters.",
+        "",
+    ])
+    if sampling_signals:
+        lines.extend([
+            "| Summary ID | Target | Case | Qubits | Shots | Elapsed | Kernel "
+            "build | Sample call | Counts materialization | Boundary |",
+            "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
+        ])
+        for signal in sampling_signals:
+            lines.append(
+                "| {summary_id} | {target} | {case} | {qubits} | {shots} | "
+                "{elapsed} | {build} | {call} | {materialize} | "
+                "{boundary} |".format(
+                    summary_id=markdown_escape(signal["summary_id"]),
+                    target=markdown_escape(signal["target"]),
+                    case=markdown_escape(signal["case"]),
+                    qubits=markdown_escape(signal["qubits"]),
+                    shots=markdown_escape(signal["shots"]),
+                    elapsed=markdown_escape(
+                        format_metric_value("elapsed_seconds_median",
+                                            signal["elapsed_seconds_median"])),
+                    build=markdown_escape(
+                        format_metric_value(
+                            "sampling_kernel_build_seconds_median",
+                            signal["sampling_kernel_build_seconds_median"])),
+                    call=markdown_escape(
+                        format_metric_value("sampling_call_seconds_median",
+                                            signal[
+                                                "sampling_call_seconds_median"])),
+                    materialize=markdown_escape(
+                        format_metric_value(
+                            "sampling_result_counts_materialization_seconds_median",
+                            signal[
+                                "sampling_result_counts_materialization_seconds_median"])),
+                    boundary=markdown_escape(
+                        signal["sampling_profile_boundary"]),
+                ))
+    else:
+        lines.append("No sampling profile signals are recorded.")
+
     path_labels = metal_path_label_signals(digests)
     lines.extend([
         "",
@@ -332,6 +429,7 @@ def build_payload(digests: list[dict[str, Any]]) -> dict[str, Any]:
         "source_schema_version": SUMMARY_SCHEMA_VERSION,
         "reports": digests,
         "comparison_signals": comparison_signals(digests),
+        "sampling_profile_signals": sampling_profile_signals(digests),
         "metal_path_labels": metal_path_label_signals(digests),
         "caveat": (
             "These entries are local benchmark evidence from development or "

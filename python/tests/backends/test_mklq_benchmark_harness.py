@@ -338,6 +338,44 @@ def test_mklq_summary_generator_builds_sanitized_summary(tmp_path):
     assert elapsed["sample_full_register_q20_1024_shots"] == 1.0
 
 
+def test_mklq_summary_generator_preserves_sampling_profile_flag(tmp_path):
+    module = _load_summary_generator_module()
+    raw_path = tmp_path / "sampling-profile.json"
+    row = _benchmark_row("mklq-cpu",
+                         "sample-partial-register",
+                         0.075,
+                         shots=65536)
+    row["metrics"].update({
+        "sampling_profile_enabled": True,
+        "sampling_kernel_build_seconds_median": 0.001,
+        "sampling_call_seconds_median": 0.075,
+        "sampling_result_counts_materialization_seconds_median": 0.00001,
+    })
+    raw_report = _raw_benchmark_report(cases=["sample-partial-register"],
+                                       results=[row])
+    raw_report["config"]["profile_sampling_breakdown"] = True
+    raw_path.write_text(json.dumps(raw_report), encoding="utf-8")
+
+    summary = module.build_summary(
+        raw_paths=[raw_path],
+        summary_id="local-sampling-profile-test",
+        evidence_kind="local_tuning_evidence",
+        reference_target="qpp-cpu",
+        candidate_target="mklq-cpu",
+        ratio_group=None,
+        performance_scope="local test only",
+        summary_text="Synthetic sampling profile summary.",
+    )
+
+    assert summary["config"]["profile_sampling_breakdown"] is True
+    public_row = summary["rows"][0]
+    assert public_row["sampling_profile_enabled"] is True
+    assert public_row["sampling_kernel_build_seconds_median"] == 0.001
+    assert public_row["sampling_call_seconds_median"] == 0.075
+    assert public_row[
+        "sampling_result_counts_materialization_seconds_median"] == 0.00001
+
+
 def test_mklq_summary_renderer_orders_crz_distance_signals_numerically():
     module = _load_summary_renderer_module()
 
@@ -2471,8 +2509,22 @@ def test_mklq_summary_renderer_builds_stable_markdown(tmp_path):
             "warmups": 1,
             "layers": 8,
             "isolate_rows": True,
+            "profile_sampling_breakdown": True,
         },
         "rows": [{
+            "status": "ok",
+            "target": "mklq-cpu",
+            "case": "sample-full-register",
+            "qubits": 20,
+            "shots": 1024,
+            "elapsed_seconds_median": 0.075,
+            "sampling_profile_enabled": True,
+            "sampling_kernel_build_seconds_median": 0.001,
+            "sampling_call_seconds_median": 0.075,
+            "sampling_result_counts_materialization_seconds_median": 0.00001,
+            "sampling_profile_boundary":
+                "benchmark harness diagnostic timing",
+        }, {
             "status": "ok",
             "target": "mklq-metal",
             "case": "y-state",
@@ -2521,12 +2573,17 @@ def test_mklq_summary_renderer_builds_stable_markdown(tmp_path):
     assert "local benchmark evidence" in markdown
     assert "Apple M5, 10 logical cores, 16 GiB RAM, macOS 26.5.1" in markdown
     assert (
-        "shots=1024; repeats=2; warmups=1; layers=8; isolate_rows=true"
+        "shots=1024; repeats=2; warmups=1; layers=8; isolate_rows=true; "
+        "profile_sampling_breakdown=true"
         in markdown)
-    assert "error=1, ok=1" in markdown
+    assert "error=1, ok=2" in markdown
     assert "sha256=abcdef123456" in markdown
     assert "`same_day_ratio.qpp_cpu_over_mklq_cpu` | 2.50x" in markdown
     assert "`probe_seconds` | 0.125 s" in markdown
+    assert "## Sampling Profile Signals" in markdown
+    assert "sample-full-register" in markdown
+    assert "0.075 s" in markdown
+    assert "benchmark harness diagnostic timing" in markdown
     assert "## Metal Path Labels" in markdown
     assert "mklq_metal_resident_single_gate_state_host_readback" in markdown
     assert "benchmark_harness_static_case_map" in markdown
