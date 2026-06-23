@@ -65,6 +65,7 @@ jobs:
           test -f benchmarks/mklq/check_metal_evidence.py
           test -f benchmarks/mklq/check_metal_runtime_counter_docs.py
           test -f benchmarks/mklq/check_performance_evidence.py
+          test -f benchmarks/mklq/check_public_claims.py
           test -f benchmarks/mklq/check_sampling_profile_evidence.py
           test -f benchmarks/mklq/run_cpu_sampling_counter_probe.py
           test -f benchmarks/mklq/run_cpu_scaling_benchmark.py
@@ -94,6 +95,7 @@ jobs:
           grep -q 'every operation stays on Metal' docs/mklq/testing-matrix.md
           grep -q 'check_metal_evidence.py' docs/mklq/testing-matrix.md
           grep -q 'check_performance_evidence.py' docs/mklq/testing-matrix.md
+          grep -q 'check_public_claims.py' docs/mklq/testing-matrix.md
           grep -q 'check_sampling_profile_evidence.py' docs/mklq/testing-matrix.md
           grep -q 'run_cpu_sampling_counter_probe.py' docs/mklq/testing-matrix.md
           grep -q 'check_cpu_sampling_counter_docs.py' docs/mklq/testing-matrix.md
@@ -167,6 +169,8 @@ jobs:
           grep -q 'release-policy.md' .github/pull_request_template.md
           grep -q 'mklq-metal' .github/pull_request_template.md
           grep -q 'not a release certification' docs/mklq/validation.md
+          grep -q 'Public Claim Boundary Guard' benchmarks/mklq/README.md
+          grep -q 'check_public_claims.py' benchmarks/mklq/README.md
           grep -q 'Preflight Audit' benchmarks/mklq/README.md
           grep -q 'CPU Sampling Counter Probe' benchmarks/mklq/README.md
           grep -q 'CPU Sampling Counter Summary' benchmarks/mklq/README.md
@@ -204,6 +208,12 @@ jobs:
           if failures:
               raise SystemExit("\n".join(failures))
           PY
+
+      - name: Check public claim boundaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 benchmarks/mklq/check_public_claims.py
 
       - name: Parse benchmark summaries
         shell: bash
@@ -427,6 +437,7 @@ jobs:
             benchmarks/mklq/check_metal_evidence.py \
             benchmarks/mklq/check_metal_runtime_counter_docs.py \
             benchmarks/mklq/check_performance_evidence.py \
+            benchmarks/mklq/check_public_claims.py \
             benchmarks/mklq/check_sampling_profile_evidence.py \
             benchmarks/mklq/make_summary.py \
             benchmarks/mklq/run_clean_cpu_benchmark.py \

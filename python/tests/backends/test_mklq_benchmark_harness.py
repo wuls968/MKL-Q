@@ -127,6 +127,17 @@ def _load_sampling_profile_evidence_module():
     return module
 
 
+def _load_public_claims_module():
+    repo_root = Path(__file__).resolve().parents[3]
+    script = repo_root / "benchmarks" / "mklq" / "check_public_claims.py"
+    spec = importlib.util.spec_from_file_location("check_public_claims",
+                                                  script)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    return module
+
+
 def _load_public_readiness_audit_module():
     repo_root = Path(__file__).resolve().parents[3]
     script = repo_root / "benchmarks" / "mklq" / (
@@ -992,6 +1003,7 @@ def test_mklq_public_healthcheck_plan_lists_escalating_gates(tmp_path):
         "git_repository",
         "tracked_artifacts",
         "public_metadata",
+        "public_claim_boundary",
         "benchmark_summary_parse",
         "performance_evidence_guard",
         "crz_distance_evidence_guard",
@@ -1024,6 +1036,10 @@ def test_mklq_public_healthcheck_plans_crz_distance_guard(tmp_path):
     report = module.run_healthcheck(config)
     steps = [step["name"] for step in report["steps"]]
 
+    assert steps.index("public_metadata") < steps.index(
+        "public_claim_boundary")
+    assert steps.index("public_claim_boundary") < steps.index(
+        "benchmark_summary_parse")
     assert "crz_distance_evidence_guard" in steps
     assert "multi_control_evidence_guard" in steps
     assert "cpu_scaling_evidence_guard" in steps
@@ -1040,6 +1056,24 @@ def test_mklq_public_healthcheck_plans_crz_distance_guard(tmp_path):
         "sampling_profile_evidence_guard")
     assert steps.index("sampling_profile_evidence_guard") < steps.index(
         "metal_evidence_guard")
+
+
+def test_mklq_public_healthcheck_runs_public_claim_guard(monkeypatch,
+                                                         tmp_path):
+    module = _load_public_healthcheck_module()
+    config = _public_healthcheck_config(module, tmp_path)
+    seen = {}
+
+    def fake_run_command(config, command, env_overlay=None):
+        seen["command"] = command
+        return {"returncode": 0, "command": command}
+
+    monkeypatch.setattr(module, "run_command", fake_run_command)
+
+    result = module.run_public_claim_boundary_check(config)
+
+    assert result["status"] == "passed"
+    assert seen["command"][1].endswith("check_public_claims.py")
 
 
 def test_mklq_public_healthcheck_runs_crz_distance_guard(monkeypatch,
@@ -1243,6 +1277,49 @@ def test_mklq_sampling_profile_evidence_guard_rejects_missing_row():
     assert result["status"] == "failed"
     assert any("sample-full-register q22 shots=65536" in failure
                for failure in result["failures"])
+
+
+def test_mklq_public_claim_guard_accepts_negated_boundary_text():
+    module = _load_public_claims_module()
+
+    failures = module.check_text(
+        "docs/mklq/architecture.md",
+        "\n".join([
+            "mklq-metal is experimental and not release-ready.",
+            "It does not prove fully Metal-native execution.",
+            "Local evidence is not cross-machine performance certification.",
+        ]),
+    )
+
+    assert failures == []
+
+
+def test_mklq_public_claim_guard_accepts_stop_condition_context():
+    module = _load_public_claims_module()
+
+    failures = module.check_text(
+        "docs/mklq/release-policy.md",
+        "\n".join([
+            "## Forbidden Now",
+            "Do not do these without a reviewed release plan:",
+            "- Describe mklq-metal as full Metal-native or release-ready.",
+            "- Claim cross-machine performance certification.",
+        ]),
+    )
+
+    assert failures == []
+
+
+def test_mklq_public_claim_guard_rejects_unbounded_public_claims():
+    module = _load_public_claims_module()
+
+    failures = module.check_text(
+        "README.md",
+        "mklq-metal is release-ready and fully Metal-native.",
+    )
+
+    assert any("release-ready" in failure for failure in failures)
+    assert any("fully Metal-native" in failure for failure in failures)
 
 
 def test_mklq_public_healthcheck_rejects_tracked_artifacts(monkeypatch,
@@ -2546,6 +2623,13 @@ def test_mklq_public_healthcheck_compiles_sampling_profile_guard():
         module.PY_COMPILE_FILES)
 
 
+def test_mklq_public_healthcheck_compiles_public_claim_guard():
+    module = _load_public_healthcheck_module()
+
+    assert "benchmarks/mklq/check_public_claims.py" in (
+        module.PY_COMPILE_FILES)
+
+
 def test_mklq_public_healthcheck_requires_cpu_sampling_counter_metadata():
     module = _load_public_healthcheck_module()
 
@@ -2557,6 +2641,19 @@ def test_mklq_public_healthcheck_requires_cpu_sampling_counter_metadata():
             "CPU Sampling Counter Probe") in requirements
     assert ("docs/mklq/testing-matrix.md",
             "run_cpu_sampling_counter_probe.py") in requirements
+
+
+def test_mklq_public_healthcheck_requires_public_claim_guard_metadata():
+    module = _load_public_healthcheck_module()
+
+    requirements = set(module.public_metadata_requirements())
+
+    assert ("benchmarks/mklq/README.md",
+            "Public Claim Boundary Guard") in requirements
+    assert ("benchmarks/mklq/README.md",
+            "check_public_claims.py") in requirements
+    assert ("docs/mklq/testing-matrix.md",
+            "check_public_claims.py") in requirements
 
 
 def test_mklq_public_healthcheck_writes_json_report(monkeypatch, tmp_path):

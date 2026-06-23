@@ -37,6 +37,7 @@ BENCHMARK_HELPERS = (
     "benchmarks/mklq/check_metal_evidence.py",
     "benchmarks/mklq/check_metal_runtime_counter_docs.py",
     "benchmarks/mklq/check_performance_evidence.py",
+    "benchmarks/mklq/check_public_claims.py",
     "benchmarks/mklq/check_sampling_profile_evidence.py",
     "benchmarks/mklq/make_summary.py",
     "benchmarks/mklq/run_clean_cpu_benchmark.py",
@@ -309,6 +310,8 @@ def public_metadata_requirements() -> list[tuple[str, str]]:
         ("docs/mklq/cpu-sampling-counters.md", "sampling phase counter evidence"),
         ("docs/mklq/validation.md", "not a release certification"),
         ("docs/mklq/benchmark-evidence.md", "cross-machine performance certification"),
+        ("benchmarks/mklq/README.md", "Public Claim Boundary Guard"),
+        ("benchmarks/mklq/README.md", "check_public_claims.py"),
         ("benchmarks/mklq/README.md", "Performance Evidence Guard"),
         ("benchmarks/mklq/README.md", "Metal Evidence Guard"),
         ("benchmarks/mklq/README.md", "CPU Sampling Counter Probe"),
@@ -320,6 +323,7 @@ def public_metadata_requirements() -> list[tuple[str, str]]:
         ("benchmarks/mklq/README.md", "Metal Runtime Counter Docs Guard"),
         ("docs/mklq/metal-runtime-counters.md", "runtime counter evidence"),
         ("docs/mklq/testing-matrix.md", "check_performance_evidence.py"),
+        ("docs/mklq/testing-matrix.md", "check_public_claims.py"),
         ("docs/mklq/testing-matrix.md", "check_metal_evidence.py"),
         ("docs/mklq/testing-matrix.md", "run_cpu_sampling_counter_probe.py"),
         ("docs/mklq/testing-matrix.md", "check_cpu_sampling_counter_docs.py"),
@@ -388,6 +392,20 @@ def run_public_metadata_check(config: HealthcheckConfig) -> dict[str, Any]:
     }
     failures = missing + banned_failures
     return failed("public metadata check failed", details) if failures else passed(details)
+
+
+def run_public_claim_boundary_check(config: HealthcheckConfig) -> dict[str, Any]:
+    script = config.repo_root / "benchmarks" / "mklq" / "check_public_claims.py"
+    command = [
+        config.python_executable,
+        str(script),
+        "--root",
+        str(config.repo_root),
+    ]
+    result = run_command(config, command)
+    if result["returncode"] != 0:
+        return failed("public claim-boundary check failed", result)
+    return passed(result)
 
 
 def run_benchmark_summary_parse(config: HealthcheckConfig) -> dict[str, Any]:
@@ -964,6 +982,9 @@ def build_steps(config: HealthcheckConfig) -> list[Step]:
              run_tracked_artifact_check),
         Step("public_metadata", "Check public metadata keywords and banned tokens.",
              run_public_metadata_check),
+        Step("public_claim_boundary",
+             "Check public release, Metal, and performance claim boundaries.",
+             run_public_claim_boundary_check),
         Step("benchmark_summary_parse", "Parse sanitized benchmark summary JSON.",
              run_benchmark_summary_parse),
         Step("performance_evidence_guard",
