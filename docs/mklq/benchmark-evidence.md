@@ -17,6 +17,7 @@ Caveat: these entries are local benchmark evidence from development or release-p
 | local-metal-three-qubit-resident-q20-2026-06-22 | local_tuning_evidence | Apple M5, 10 logical cores, 16 GiB RAM, macOS 26.5.1 | qpp-cpu, mklq-cpu, mklq-metal | three-qubit-state | 20 | shot_counts=1024; repeats=2; warmups=1; layers=8; isolate_rows=true | ok=3 | benchmarks/mklq/results/local-metal-three-qubit-resident-q20-2026-06-22.json sha256=daed4c1deb2d |
 | local-metal-y-cy-resident-isolated-q20-2026-06-19 | local_tuning_evidence | Apple M5, 10 logical cores, 16 GiB RAM, macOS 26.5.1 | qpp-cpu, mklq-cpu, mklq-metal | y-state, cy-state | 20 | shots=1024; repeats=2; warmups=1; layers=8; isolate_rows=true | ok=6 | benchmarks/mklq/results/local-metal-y-cy-resident-isolated-q20-2026-06-19.json sha256=84891e8f907c |
 | local-multi-control-cpu-q20-2026-06-22 | clean_local_benchmark_evidence | Apple M5, 10 logical cores, 16 GiB RAM, macOS 26.5.1 | qpp-cpu, mklq-cpu | multi-control-state | 20 | shot_counts=1024; repeats=5; warmups=2; layers=8; isolate_rows=true | ok=2 | benchmarks/mklq/results/local-clean-cpu-multi-control-q20-2026-06-22.json sha256=6c483e023c90 |
+| local-sampling-profile-breakdown-cpu-q20-q22-2026-06-23 | local_tuning_evidence | Apple M5, 10 logical cores, 16 GiB RAM, macOS 26.5.1 | mklq-cpu | sample-full-register, sample-partial-register | 20, 22 | shot_counts=1024, 65536; repeats=2; warmups=1; layers=8; isolate_rows=true; profile_sampling_breakdown=true | ok=8 | benchmarks/mklq/results/local-sampling-profile-breakdown-cpu-q20-q22-2026-06-23.json sha256=9821493c7e24 |
 | local-sampling-scaling-cpu-q18-q22-2026-06-23 | clean_local_benchmark_evidence | Apple M5, 10 logical cores, 16 GiB RAM, macOS 26.5.1 | qpp-cpu, mklq-cpu | sample-full-register, sample-partial-register | 18, 20, 22 | shot_counts=1024, 65536; repeats=2; warmups=1; layers=8; isolate_rows=true | ok=24 | benchmarks/mklq/results/local-sampling-scaling-cpu-q18-q22-2026-06-23.json sha256=d0fc30326ee6 |
 | local-scaling-cpu-multi-control-q18-q22-2026-06-22 | clean_local_benchmark_evidence | Apple M5, 10 logical cores, 16 GiB RAM, macOS 26.5.1 | qpp-cpu, mklq-cpu | multi-control-state | 18, 20, 22 | shot_counts=1024; repeats=3; warmups=1; layers=8; isolate_rows=true | ok=6 | benchmarks/mklq/results/local-scaling-cpu-multi-control-q18-q22-2026-06-22.json sha256=be97c9f00a75 |
 | local-y-cy-fastpath-isolated-q20-2026-06-19 | local_tuning_evidence | Apple M5, 10 logical cores, 16 GiB RAM, macOS 26.5.1 | qpp-cpu, mklq-cpu | y-state, cy-state | 20 | shots=1024; repeats=2; warmups=1; layers=8; isolate_rows=true | ok=4 | benchmarks/mklq/results/local-y-cy-fastpath-isolated-q20-2026-06-19.json sha256=93bce3b77fcc |
@@ -112,6 +113,14 @@ The values below are copied from each summary's bounded `comparison` object. Kee
 | local-metal-y-cy-resident-isolated-q20-2026-06-19 | `same_day_cross_target_ratio.qpp_cpu_over_mklq_metal_y_state_q20` | 56.16x |
 | local-multi-control-cpu-q20-2026-06-22 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_multi_control_state_q20` | 45.09x |
 | local-multi-control-cpu-q20-2026-06-22 | `mklq_cpu_elapsed_seconds_median.multi_control_state_q20` | 0.174905 s |
+| local-sampling-profile-breakdown-cpu-q20-q22-2026-06-23 | `mklq_cpu_elapsed_seconds_median.sample_full_register_q20_1024_shots` | 0.0282634 s |
+| local-sampling-profile-breakdown-cpu-q20-q22-2026-06-23 | `mklq_cpu_elapsed_seconds_median.sample_full_register_q20_65536_shots` | 0.0203374 s |
+| local-sampling-profile-breakdown-cpu-q20-q22-2026-06-23 | `mklq_cpu_elapsed_seconds_median.sample_full_register_q22_1024_shots` | 0.0832497 s |
+| local-sampling-profile-breakdown-cpu-q20-q22-2026-06-23 | `mklq_cpu_elapsed_seconds_median.sample_full_register_q22_65536_shots` | 0.0846335 s |
+| local-sampling-profile-breakdown-cpu-q20-q22-2026-06-23 | `mklq_cpu_elapsed_seconds_median.sample_partial_register_q20_1024_shots` | 0.0128818 s |
+| local-sampling-profile-breakdown-cpu-q20-q22-2026-06-23 | `mklq_cpu_elapsed_seconds_median.sample_partial_register_q20_65536_shots` | 0.0141688 s |
+| local-sampling-profile-breakdown-cpu-q20-q22-2026-06-23 | `mklq_cpu_elapsed_seconds_median.sample_partial_register_q22_1024_shots` | 0.0914932 s |
+| local-sampling-profile-breakdown-cpu-q20-q22-2026-06-23 | `mklq_cpu_elapsed_seconds_median.sample_partial_register_q22_65536_shots` | 0.0758121 s |
 | local-sampling-scaling-cpu-q18-q22-2026-06-23 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_sample_full_register_q18_1024_shots` | 78.52x |
 | local-sampling-scaling-cpu-q18-q22-2026-06-23 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_sample_full_register_q18_65536_shots` | 45.24x |
 | local-sampling-scaling-cpu-q18-q22-2026-06-23 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_sample_full_register_q20_1024_shots` | 81.56x |
@@ -144,6 +153,21 @@ The values below are copied from each summary's bounded `comparison` object. Kee
 | local-scaling-cpu-multi-control-q18-q22-2026-06-22 | `mklq_cpu_elapsed_seconds_median.multi_control_state_q22` | 0.771644 s |
 | local-y-cy-fastpath-isolated-q20-2026-06-19 | `same_day_cross_target_ratio.qpp_cpu_over_mklq_cpu_cy_state_q20` | 103.85x |
 | local-y-cy-fastpath-isolated-q20-2026-06-19 | `same_day_cross_target_ratio.qpp_cpu_over_mklq_cpu_y_state_q20` | 167.38x |
+
+## Sampling Profile Signals
+
+These rows expose benchmark-harness diagnostic timings around `cudaq.sample`. They are not native backend internal phase counters.
+
+| Summary ID | Target | Case | Qubits | Shots | Elapsed | Kernel build | Sample call | Counts materialization | Boundary |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| local-sampling-profile-breakdown-cpu-q20-q22-2026-06-23 | mklq-cpu | sample-full-register | 20 | 1024 | 0.0282634 s | 0.000992167 s | 0.0282634 s | 1.01455e-05 s | Additional benchmark harness timings for kernel construction, cudaq.sample calls, and result count-map materialization; not native backend internal phase counters such as probability fill, draw, or counts aggregation. |
+| local-sampling-profile-breakdown-cpu-q20-q22-2026-06-23 | mklq-cpu | sample-full-register | 20 | 65536 | 0.0203374 s | 0.000781354 s | 0.0203374 s | 1.1563e-05 s | Additional benchmark harness timings for kernel construction, cudaq.sample calls, and result count-map materialization; not native backend internal phase counters such as probability fill, draw, or counts aggregation. |
+| local-sampling-profile-breakdown-cpu-q20-q22-2026-06-23 | mklq-cpu | sample-full-register | 22 | 1024 | 0.0832497 s | 0.000854646 s | 0.0832497 s | 7.875e-06 s | Additional benchmark harness timings for kernel construction, cudaq.sample calls, and result count-map materialization; not native backend internal phase counters such as probability fill, draw, or counts aggregation. |
+| local-sampling-profile-breakdown-cpu-q20-q22-2026-06-23 | mklq-cpu | sample-full-register | 22 | 65536 | 0.0846335 s | 0.00101577 s | 0.0846335 s | 1.44165e-05 s | Additional benchmark harness timings for kernel construction, cudaq.sample calls, and result count-map materialization; not native backend internal phase counters such as probability fill, draw, or counts aggregation. |
+| local-sampling-profile-breakdown-cpu-q20-q22-2026-06-23 | mklq-cpu | sample-partial-register | 20 | 1024 | 0.0128818 s | 0.000869979 s | 0.0128818 s | 7.896e-06 s | Additional benchmark harness timings for kernel construction, cudaq.sample calls, and result count-map materialization; not native backend internal phase counters such as probability fill, draw, or counts aggregation. |
+| local-sampling-profile-breakdown-cpu-q20-q22-2026-06-23 | mklq-cpu | sample-partial-register | 20 | 65536 | 0.0141688 s | 0.00102417 s | 0.0141688 s | 9.29201e-06 s | Additional benchmark harness timings for kernel construction, cudaq.sample calls, and result count-map materialization; not native backend internal phase counters such as probability fill, draw, or counts aggregation. |
+| local-sampling-profile-breakdown-cpu-q20-q22-2026-06-23 | mklq-cpu | sample-partial-register | 22 | 1024 | 0.0914932 s | 0.00123794 s | 0.0914932 s | 8.12502e-06 s | Additional benchmark harness timings for kernel construction, cudaq.sample calls, and result count-map materialization; not native backend internal phase counters such as probability fill, draw, or counts aggregation. |
+| local-sampling-profile-breakdown-cpu-q20-q22-2026-06-23 | mklq-cpu | sample-partial-register | 22 | 65536 | 0.0758121 s | 0.00114002 s | 0.0758121 s | 1.12915e-05 s | Additional benchmark harness timings for kernel construction, cudaq.sample calls, and result count-map materialization; not native backend internal phase counters such as probability fill, draw, or counts aggregation. |
 
 ## Metal Path Labels
 

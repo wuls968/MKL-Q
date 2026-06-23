@@ -268,6 +268,10 @@ def build_comparison(rows: list[dict[str, Any]],
 
 def build_config(reports: list[dict[str, Any]]) -> dict[str, Any]:
     configs = [raw_config(report) for report in reports]
+    profile_sampling_values = [
+        cfg.get("profile_sampling_breakdown") for cfg in configs
+        if "profile_sampling_breakdown" in cfg
+    ]
     config: dict[str, Any] = {
         "targets": first_seen([item for cfg in configs for item in [cfg.get("targets")]]),
         "cases": first_seen([item for cfg in configs for item in [cfg.get("cases")]]),
@@ -286,6 +290,9 @@ def build_config(reports: list[dict[str, Any]]) -> dict[str, Any]:
             "isolate_rows", [cfg.get("isolate_rows") for cfg in configs]),
         "commands": [cfg.get("command") for cfg in configs if cfg.get("command")],
     }
+    if profile_sampling_values:
+        config["profile_sampling_breakdown"] = require_same(
+            "profile_sampling_breakdown", profile_sampling_values)
     if config["shot_counts"]:
         config["shots"] = config["shot_counts"][0]
     return config
