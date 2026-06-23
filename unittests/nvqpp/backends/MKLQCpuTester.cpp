@@ -128,6 +128,30 @@ public:
     return sparseDrawCountMaps;
   }
 
+  std::size_t fullRegisterProbabilityFillsForTest() const {
+    return fullRegisterProbabilityFills;
+  }
+
+  std::size_t marginalProbabilityFillsForTest() const {
+    return marginalProbabilityFills;
+  }
+
+  std::size_t sparseFullRegisterScansForTest() const {
+    return sparseFullRegisterScans;
+  }
+
+  std::size_t countsOnlySampleDrawBatchesForTest() const {
+    return countsOnlySampleDrawBatches;
+  }
+
+  std::size_t sequentialSampleDrawBatchesForTest() const {
+    return sequentialSampleDrawBatches;
+  }
+
+  std::size_t sampleExpectationReductionsForTest() const {
+    return sampleExpectationReductions;
+  }
+
   std::size_t countsOnlyNamedRegisterRemapsForTest() const {
     return countsOnlyNamedRegisterRemaps;
   }
@@ -400,6 +424,46 @@ CUDAQ_TEST(MKLQCpuTester,
 }
 
 CUDAQ_TEST(MKLQCpuTester,
+           CountsOnlyFullRegisterSamplingReportsNativePhases) {
+  constexpr std::size_t qubitCount = 17;
+  constexpr std::size_t dimension = 1ULL << qubitCount;
+  constexpr int shots = 4096;
+  constexpr std::size_t nonzeroOutcomes = 65;
+  const double amplitude =
+      1.0 / std::sqrt(static_cast<double>(nonzeroOutcomes));
+
+  std::vector<std::complex<double>> state(dimension, {0.0, 0.0});
+  for (std::size_t index = 0; index < nonzeroOutcomes; ++index)
+    state[index] = {amplitude, 0.0};
+
+  MklqCpuCircuitSimulatorTester sim;
+  sim.setRandomSeed(13);
+  sim.setStateForTest(std::move(state));
+
+  std::vector<std::size_t> qubits;
+  qubits.reserve(qubitCount);
+  for (std::size_t qubit = 0; qubit < qubitCount; ++qubit)
+    qubits.push_back(qubit);
+
+  const auto counts =
+      sim.sampleQubitsWithoutSequentialDataForTest(qubits, shots);
+
+  std::size_t total = 0;
+  for (const auto &[bits, count] : counts.counts)
+    total += count;
+  EXPECT_EQ(total, shots);
+  EXPECT_TRUE(counts.sequentialData.empty());
+  EXPECT_EQ(sim.sparseFullRegisterScansForTest(), 1);
+  EXPECT_EQ(sim.fullRegisterProbabilityFillsForTest(), 1);
+  EXPECT_EQ(sim.marginalProbabilityFillsForTest(), 0);
+  EXPECT_EQ(sim.countsOnlySampleDrawBatchesForTest(), 1);
+  EXPECT_EQ(sim.sequentialSampleDrawBatchesForTest(), 0);
+  EXPECT_EQ(sim.sampleExpectationReductionsForTest(), 1);
+  EXPECT_EQ(sim.denseDrawCountBuffersForTest(), 0);
+  EXPECT_EQ(sim.sparseDrawCountMapsForTest(), 1);
+}
+
+CUDAQ_TEST(MKLQCpuTester,
            NonExplicitSamplePolicyUsesCountsOnlyFullRegisterSampling) {
   constexpr std::size_t qubitCount = 17;
   constexpr std::size_t dimension = 1ULL << qubitCount;
@@ -499,6 +563,77 @@ CUDAQ_TEST(MKLQCpuTester,
   EXPECT_TRUE(counts.sequentialData.empty());
   EXPECT_LE(sim.bitStringConversionsForTest(), 8);
   EXPECT_EQ(sim.denseDrawCountBuffersForTest(), 1);
+  EXPECT_EQ(sim.sparseDrawCountMapsForTest(), 0);
+}
+
+CUDAQ_TEST(MKLQCpuTester,
+           CountsOnlyPartialRegisterSamplingReportsNativePhases) {
+  constexpr std::size_t qubitCount = 7;
+  constexpr std::size_t dimension = 1ULL << qubitCount;
+  constexpr int shots = 4096;
+  const double amplitude =
+      1.0 / std::sqrt(static_cast<double>(dimension));
+
+  std::vector<std::complex<double>> state(dimension, {amplitude, 0.0});
+
+  MklqCpuCircuitSimulatorTester sim;
+  sim.setRandomSeed(13);
+  sim.setStateForTest(std::move(state));
+
+  const auto counts =
+      sim.sampleQubitsWithoutSequentialDataForTest({0, 2, 4}, shots);
+
+  std::size_t total = 0;
+  for (const auto &[bits, count] : counts.counts)
+    total += count;
+  EXPECT_EQ(total, shots);
+  EXPECT_TRUE(counts.sequentialData.empty());
+  EXPECT_EQ(sim.sparseFullRegisterScansForTest(), 0);
+  EXPECT_EQ(sim.fullRegisterProbabilityFillsForTest(), 0);
+  EXPECT_EQ(sim.marginalProbabilityFillsForTest(), 1);
+  EXPECT_EQ(sim.countsOnlySampleDrawBatchesForTest(), 1);
+  EXPECT_EQ(sim.sequentialSampleDrawBatchesForTest(), 0);
+  EXPECT_EQ(sim.sampleExpectationReductionsForTest(), 1);
+  EXPECT_EQ(sim.denseDrawCountBuffersForTest(), 1);
+  EXPECT_EQ(sim.sparseDrawCountMapsForTest(), 0);
+}
+
+CUDAQ_TEST(MKLQCpuTester,
+           SequentialFullRegisterSamplingReportsNativePhases) {
+  constexpr std::size_t qubitCount = 7;
+  constexpr std::size_t dimension = 1ULL << qubitCount;
+  constexpr int shots = 512;
+  constexpr std::size_t nonzeroOutcomes = 65;
+  const double amplitude =
+      1.0 / std::sqrt(static_cast<double>(nonzeroOutcomes));
+
+  std::vector<std::complex<double>> state(dimension, {0.0, 0.0});
+  for (std::size_t index = 0; index < nonzeroOutcomes; ++index)
+    state[index] = {amplitude, 0.0};
+
+  MklqCpuCircuitSimulatorTester sim;
+  sim.setRandomSeed(17);
+  sim.setStateForTest(std::move(state));
+
+  std::vector<std::size_t> qubits;
+  qubits.reserve(qubitCount);
+  for (std::size_t qubit = 0; qubit < qubitCount; ++qubit)
+    qubits.push_back(qubit);
+
+  const auto counts = sim.sampleQubits(qubits, shots);
+
+  std::size_t total = 0;
+  for (const auto &[bits, count] : counts.counts)
+    total += count;
+  EXPECT_EQ(total, shots);
+  EXPECT_EQ(counts.sequentialData.size(), shots);
+  EXPECT_EQ(sim.sparseFullRegisterScansForTest(), 1);
+  EXPECT_EQ(sim.fullRegisterProbabilityFillsForTest(), 1);
+  EXPECT_EQ(sim.marginalProbabilityFillsForTest(), 0);
+  EXPECT_EQ(sim.countsOnlySampleDrawBatchesForTest(), 0);
+  EXPECT_EQ(sim.sequentialSampleDrawBatchesForTest(), 1);
+  EXPECT_EQ(sim.sampleExpectationReductionsForTest(), 1);
+  EXPECT_EQ(sim.denseDrawCountBuffersForTest(), 0);
   EXPECT_EQ(sim.sparseDrawCountMapsForTest(), 0);
 }
 

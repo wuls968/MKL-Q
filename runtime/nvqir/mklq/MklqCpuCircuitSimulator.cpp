@@ -227,6 +227,12 @@ protected:
   mutable std::size_t swapApplications = 0;
   mutable std::size_t denseDrawCountBuffers = 0;
   mutable std::size_t sparseDrawCountMaps = 0;
+  mutable std::size_t fullRegisterProbabilityFills = 0;
+  mutable std::size_t marginalProbabilityFills = 0;
+  mutable std::size_t sparseFullRegisterScans = 0;
+  mutable std::size_t countsOnlySampleDrawBatches = 0;
+  mutable std::size_t sequentialSampleDrawBatches = 0;
+  mutable std::size_t sampleExpectationReductions = 0;
   mutable std::size_t metalCpuFallbackApplications = 0;
   mutable std::size_t threeQubitRowSparseApplications = 0;
 #endif
@@ -1499,6 +1505,9 @@ protected:
   void drawAndAppendSampleOutcomeCounts(
       cudaq::ExecutionResult &counts, const std::vector<double> &probabilities,
       int shots, std::size_t bitCount) {
+#if defined(MKLQ_ENABLE_TEST_ACCESSORS)
+    ++countsOnlySampleDrawBatches;
+#endif
     if (probabilities.size() <= denseDrawCountOutcomeLimit) {
       appendSampleOutcomeCounts(counts,
                                 drawDenseOutcomeCounts(probabilities, shots),
@@ -1513,6 +1522,9 @@ protected:
 
   void setExpectationFromSampleCounts(cudaq::ExecutionResult &counts,
                                       int shots) const {
+#if defined(MKLQ_ENABLE_TEST_ACCESSORS)
+    ++sampleExpectationReductions;
+#endif
     double expectation = 0.0;
     for (auto &[bits, count] : counts.counts) {
       const auto sign =
@@ -1527,6 +1539,10 @@ protected:
       throw std::runtime_error(
           MKLQ_SIMULATOR_DIAGNOSTIC_PREFIX
           " probability buffer does not match state size.");
+
+#if defined(MKLQ_ENABLE_TEST_ACCESSORS)
+    ++fullRegisterProbabilityFills;
+#endif
 
 #if defined(MKLQ_ENABLE_METAL_RUNTIME)
     if (metalExecutor.hasResidentState(state.size())) {
@@ -1579,6 +1595,9 @@ protected:
 
   void fillMarginalProbabilities(std::vector<double> &probabilities,
                                  const std::vector<std::size_t> &qubits) {
+#if defined(MKLQ_ENABLE_TEST_ACCESSORS)
+    ++marginalProbabilityFills;
+#endif
     auto foldFullRegisterProbabilities =
         [&](const std::vector<double> &fullRegisterProbabilities) {
           std::fill(probabilities.begin(), probabilities.end(), 0.0);
@@ -1635,6 +1654,9 @@ protected:
 
   bool trySampleSparseFullRegister(cudaq::ExecutionResult &counts, int shots,
                                    bool includeSequentialData) {
+#if defined(MKLQ_ENABLE_TEST_ACCESSORS)
+    ++sparseFullRegisterScans;
+#endif
 #if defined(MKLQ_ENABLE_METAL_RUNTIME)
     if (metalStateHostDirty) {
       synchronizeHostStateFromMetal();
@@ -1661,6 +1683,13 @@ protected:
       throw std::runtime_error(MKLQ_SIMULATOR_DIAGNOSTIC_PREFIX
                                " cannot sample a zero-norm state.");
     validateProbabilityWeights(probabilities, "sparse sampler");
+
+#if defined(MKLQ_ENABLE_TEST_ACCESSORS)
+    if (includeSequentialData)
+      ++sequentialSampleDrawBatches;
+    else
+      ++countsOnlySampleDrawBatches;
+#endif
 
     if (outcomes.size() == 1) {
       appendSampleOutcomeCount(counts, outcomes.front(), nQubitsAllocated,
@@ -1711,6 +1740,9 @@ protected:
 
       std::discrete_distribution<std::size_t> distribution(
           probabilities.begin(), probabilities.end());
+#if defined(MKLQ_ENABLE_TEST_ACCESSORS)
+      ++sequentialSampleDrawBatches;
+#endif
       for (int shot = 0; shot < shots; ++shot) {
         const auto outcome = distribution(randomEngine);
         appendSampleOutcome(counts, outcome, qubits.size(),
@@ -1736,6 +1768,9 @@ protected:
 
     std::discrete_distribution<std::size_t> distribution(probabilities.begin(),
                                                          probabilities.end());
+#if defined(MKLQ_ENABLE_TEST_ACCESSORS)
+    ++sequentialSampleDrawBatches;
+#endif
     for (int shot = 0; shot < shots; ++shot) {
       const auto outcome = distribution(randomEngine);
       appendSampleOutcome(counts, outcome, qubits.size(),
