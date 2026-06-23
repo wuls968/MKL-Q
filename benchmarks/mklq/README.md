@@ -296,6 +296,22 @@ python3 benchmarks/mklq/run_public_healthcheck.py \
   --refresh-clean-cpu-benchmark
 ```
 
+## Public Claim Boundary Guard
+
+Use the static claim-boundary guard when a change touches public README or
+`docs/mklq` wording about source-only status, Metal readiness, release status,
+or performance evidence:
+
+```bash
+python3 benchmarks/mklq/check_public_claims.py
+```
+
+The guard does not run benchmarks. It scans public Markdown for required
+source-only, experimental Metal, non-release, and non-cross-machine wording,
+and rejects non-negated claims such as release-ready Metal support, full
+Metal-native execution, release certification, or cross-machine performance
+certification.
+
 ## Performance Evidence Guard
 
 Use the static guard when a change touches tracked sanitized benchmark summaries
