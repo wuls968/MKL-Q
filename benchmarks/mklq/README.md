@@ -105,6 +105,8 @@ The JSON report includes:
 - for sampling rows with `--profile-sampling-breakdown`, diagnostic
   harness-level `sampling_kernel_build_seconds_*`, `sampling_call_seconds_*`,
   and `sampling_result_counts_materialization_seconds_*` fields
+- CPU sampling phase counter evidence lives outside benchmark rows in bounded
+  `.cpu-counter.json` reports and `docs/mklq/cpu-sampling-counters.md`
 - for `mklq-metal` rows, conservative static path labels that state the
   mixed-path/resident/host boundary without implying all-Metal execution
 
@@ -174,6 +176,41 @@ work and explicitly labels rows with
 `sampling_profile_boundary`; do not interpret those fields as internal
 probability-fill, draw, or count-aggregation counters.
 
+## CPU Sampling Counter Probe
+
+Use the CPU sampling counter probe when changing `mklq-cpu` sampling internals
+or the native sampling phase counter tests:
+
+```bash
+python3 benchmarks/mklq/run_cpu_sampling_counter_probe.py \
+  --build-dir build-python \
+  --output benchmarks/mklq/reports/local-cpu-sampling-counter-probe-YYYY-MM-DD.cpu-counter.json
+```
+
+The report is bounded evidence from selected build-tree ctest cases. It records
+whether the complete expected CPU sampling phase counter test set is present
+and passing; it is not a benchmark result, release sign-off, or cross-machine
+performance proof.
+
+## CPU Sampling Counter Summary
+
+Regenerate the public CPU sampling counter Markdown summary from tracked
+bounded reports:
+
+```bash
+python3 benchmarks/mklq/summarize_cpu_sampling_counters.py \
+  --reports benchmarks/mklq/reports \
+  --output docs/mklq/cpu-sampling-counters.md
+```
+
+## CPU Sampling Counter Docs Guard
+
+Check that the tracked public Markdown matches the tracked bounded reports:
+
+```bash
+python3 benchmarks/mklq/check_cpu_sampling_counter_docs.py
+```
+
 Measured timings are post-warmup execution calls; target setup and kernel
 construction are outside the timed region. `process_max_rss_bytes` is the
 maximum RSS for the benchmark Python process. The JSON field is named
@@ -230,10 +267,10 @@ The default mode checks Git remotes and shallow state, tracked artifact hygiene,
 public metadata and banned tokens, sanitized benchmark summary JSON, the static
 clean CPU performance evidence guards, including focused CRZ distance,
 multi-control, q18-q22 CPU scaling, and q18-q22 sampling scaling evidence, the
-static experimental Metal evidence boundary guard, bounded Metal runtime
-counter probe JSON, helper syntax, local markdown links, regenerated
-benchmark-evidence and Metal counter docs consistency, and the benchmark
-harness tests. It writes an ignored JSON report under
+static experimental Metal evidence boundary guard, bounded CPU sampling phase
+counter evidence, bounded Metal runtime counter probe JSON, helper syntax,
+local markdown links, regenerated benchmark-evidence plus CPU and Metal counter
+docs consistency, and the benchmark harness tests. It writes an ignored JSON report under
 `benchmarks/mklq/results/`.
 
 Before describing a commit as public-ready, run the heavier local gate:

@@ -45,6 +45,7 @@ jobs:
           test -f .github/labels.yml
           test -f docs/mklq/branch-protection.md
           test -f docs/mklq/public-readiness.md
+          test -f docs/mklq/cpu-sampling-counters.md
           test -f docs/mklq/metal-runtime-counters.md
           test -f .github/branch-protection-main.json
           test -f .github/pull_request_template.md
@@ -60,16 +61,20 @@ jobs:
           test -f examples/mklq/cpp/ghz.cpp
           test -f examples/mklq/cpp/parametric.cpp
           test -f examples/mklq/cpp/phase_kickback.cpp
+          test -f benchmarks/mklq/check_cpu_sampling_counter_docs.py
           test -f benchmarks/mklq/check_metal_evidence.py
           test -f benchmarks/mklq/check_metal_runtime_counter_docs.py
           test -f benchmarks/mklq/check_performance_evidence.py
+          test -f benchmarks/mklq/run_cpu_sampling_counter_probe.py
           test -f benchmarks/mklq/run_cpu_scaling_benchmark.py
           test -f benchmarks/mklq/run_sampling_scaling_benchmark.py
           test -f benchmarks/mklq/run_metal_runtime_counter_probe.py
           test -f benchmarks/mklq/run_preflight_audit.py
           test -f benchmarks/mklq/run_public_readiness_audit.py
           test -f benchmarks/mklq/run_public_healthcheck.py
+          test -f benchmarks/mklq/summarize_cpu_sampling_counters.py
           test -f benchmarks/mklq/summarize_metal_runtime_counters.py
+          test -f benchmarks/mklq/reports/local-cpu-sampling-counter-probe-2026-06-23.cpu-counter.json
           test -f benchmarks/mklq/reports/local-metal-runtime-counter-probe-2026-06-22.counter.json
           grep -q 'examples/mklq' README.md
           grep -q 'mklq-cpu' examples/mklq/README.md
@@ -88,6 +93,9 @@ jobs:
           grep -q 'every operation stays on Metal' docs/mklq/testing-matrix.md
           grep -q 'check_metal_evidence.py' docs/mklq/testing-matrix.md
           grep -q 'check_performance_evidence.py' docs/mklq/testing-matrix.md
+          grep -q 'run_cpu_sampling_counter_probe.py' docs/mklq/testing-matrix.md
+          grep -q 'check_cpu_sampling_counter_docs.py' docs/mklq/testing-matrix.md
+          grep -q 'summarize_cpu_sampling_counters.py' docs/mklq/testing-matrix.md
           grep -q 'run_metal_runtime_counter_probe.py' docs/mklq/testing-matrix.md
           grep -q 'check_metal_runtime_counter_docs.py' docs/mklq/testing-matrix.md
           grep -q 'run_preflight_audit.py' docs/mklq/testing-matrix.md
@@ -141,6 +149,8 @@ jobs:
           grep -q 'Branch Protection' docs/mklq/public-readiness.md
           grep -q 'No Tags Or Releases' docs/mklq/public-readiness.md
           grep -q 'not a release certification' docs/mklq/public-readiness.md
+          grep -q 'sampling phase counter evidence' docs/mklq/cpu-sampling-counters.md
+          grep -q 'not release sign-off' docs/mklq/cpu-sampling-counters.md
           grep -q 'runtime counter evidence' docs/mklq/metal-runtime-counters.md
           grep -q 'not release sign-off' docs/mklq/metal-runtime-counters.md
           grep -q 'allow_force_pushes' .github/branch-protection-main.json
@@ -156,6 +166,9 @@ jobs:
           grep -q 'mklq-metal' .github/pull_request_template.md
           grep -q 'not a release certification' docs/mklq/validation.md
           grep -q 'Preflight Audit' benchmarks/mklq/README.md
+          grep -q 'CPU Sampling Counter Probe' benchmarks/mklq/README.md
+          grep -q 'CPU Sampling Counter Summary' benchmarks/mklq/README.md
+          grep -q 'CPU Sampling Counter Docs Guard' benchmarks/mklq/README.md
           grep -q 'Metal Runtime Counter Probe' benchmarks/mklq/README.md
           grep -q 'Metal Runtime Counter Summary' benchmarks/mklq/README.md
           grep -q 'Metal Runtime Counter Docs Guard' benchmarks/mklq/README.md
@@ -257,6 +270,76 @@ jobs:
           set -euo pipefail
           python3 benchmarks/mklq/check_metal_evidence.py
 
+      - name: Parse CPU sampling counter probe
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          reports = sorted(Path("benchmarks/mklq/reports").glob("*.cpu-counter.json"))
+          if not reports:
+              raise SystemExit("No CPU sampling counter probe reports found.")
+          selected = 0
+          for path in reports:
+              payload = json.loads(path.read_text(encoding="utf-8"))
+              if payload.get("schema_version") != "mklq-cpu-sampling-counter-probe-v1":
+                  raise SystemExit(f"{path}: unexpected schema_version")
+              if payload.get("evidence_kind") != "local_runtime_counter_probe":
+                  raise SystemExit(f"{path}: unexpected evidence_kind")
+              summary = payload.get("summary", {})
+              if summary.get("status") != "passed":
+                  raise SystemExit(f"{path}: summary is not passed")
+              expected = summary.get("expected")
+              selected_count = summary.get("selected")
+              if not isinstance(expected, int) or expected <= 0:
+                  raise SystemExit(f"{path}: expected count must be positive")
+              if selected_count != expected:
+                  raise SystemExit(f"{path}: selected count does not match expected")
+              if summary.get("missing") != 0:
+                  raise SystemExit(f"{path}: missing count is not zero")
+              if summary.get("failed") != 0:
+                  raise SystemExit(f"{path}: failed count is not zero")
+              expected_counter_tests = payload.get("expected_counter_tests")
+              if (
+                  not isinstance(expected_counter_tests, list)
+                  or len(expected_counter_tests) != expected
+              ):
+                  raise SystemExit(f"{path}: expected_counter_tests length mismatch")
+              if payload.get("missing_counter_tests") != []:
+                  raise SystemExit(f"{path}: missing_counter_tests must be empty")
+              boundary = payload.get("boundary", {})
+              if boundary.get("runtime_counter_evidence") is not True:
+                  raise SystemExit(f"{path}: runtime_counter_evidence must be true")
+              if boundary.get("sampling_phase_counter_evidence") is not True:
+                  raise SystemExit(f"{path}: sampling_phase_counter_evidence must be true")
+              if boundary.get("release_signoff") is not False:
+                  raise SystemExit(f"{path}: release_signoff must be false")
+              if boundary.get("performance_benchmark") is not False:
+                  raise SystemExit(f"{path}: performance_benchmark must be false")
+              if boundary.get("cross_machine_performance_proof") is not False:
+                  raise SystemExit(f"{path}: cross_machine_performance_proof must be false")
+              tests = payload.get("tests", [])
+              if len(tests) != selected_count:
+                  raise SystemExit(f"{path}: selected count does not match tests")
+              if [test.get("name") for test in tests] != expected_counter_tests:
+                  raise SystemExit(f"{path}: test names do not match expected list")
+              for test in tests:
+                  if test.get("status") != "passed":
+                      raise SystemExit(f"{path}: a counter test did not pass")
+                  if "stdout" in test or "stderr" in test:
+                      raise SystemExit(f"{path}: raw test log leaked")
+              selected += len(tests)
+          print(f"Parsed {len(reports)} CPU counter report(s), {selected} test(s).")
+          PY
+
+      - name: Check CPU sampling counter docs
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 benchmarks/mklq/check_cpu_sampling_counter_docs.py
+
       - name: Parse Metal runtime counter probe
         shell: bash
         run: |
@@ -330,6 +413,7 @@ jobs:
           python3 -m py_compile \
             benchmarks/mklq/bench_mklq_targets.py \
             benchmarks/mklq/bench_probability_kernels.py \
+            benchmarks/mklq/check_cpu_sampling_counter_docs.py \
             benchmarks/mklq/check_metal_evidence.py \
             benchmarks/mklq/check_metal_runtime_counter_docs.py \
             benchmarks/mklq/check_performance_evidence.py \
@@ -338,10 +422,12 @@ jobs:
             benchmarks/mklq/run_cpu_scaling_benchmark.py \
             benchmarks/mklq/run_sampling_scaling_benchmark.py \
             benchmarks/mklq/run_correctness_gate.py \
+            benchmarks/mklq/run_cpu_sampling_counter_probe.py \
             benchmarks/mklq/run_metal_runtime_counter_probe.py \
             benchmarks/mklq/run_preflight_audit.py \
             benchmarks/mklq/run_public_readiness_audit.py \
             benchmarks/mklq/run_public_healthcheck.py \
+            benchmarks/mklq/summarize_cpu_sampling_counters.py \
             benchmarks/mklq/summarize_metal_runtime_counters.py \
             benchmarks/mklq/summarize_reports.py \
             examples/mklq/python/bell.py \
