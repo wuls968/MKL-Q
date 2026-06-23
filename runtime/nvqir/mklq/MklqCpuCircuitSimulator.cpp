@@ -227,6 +227,7 @@ protected:
   mutable std::size_t swapApplications = 0;
   mutable std::size_t denseDrawCountBuffers = 0;
   mutable std::size_t sparseDrawCountMaps = 0;
+  mutable std::size_t sortedSparseDrawCountMaps = 0;
   mutable std::size_t fullRegisterProbabilityFills = 0;
   mutable std::size_t marginalProbabilityFills = 0;
   mutable std::size_t sparseFullRegisterScans = 0;
@@ -1491,14 +1492,40 @@ protected:
   drawSparseOutcomeCounts(const std::vector<double> &probabilities, int shots) {
 #if defined(MKLQ_ENABLE_TEST_ACCESSORS)
     ++sparseDrawCountMaps;
+    ++sortedSparseDrawCountMaps;
 #endif
-    std::discrete_distribution<std::size_t> distribution(probabilities.begin(),
-                                                         probabilities.end());
+    const auto totalWeight =
+        std::accumulate(probabilities.begin(), probabilities.end(), 0.0);
+    std::uniform_real_distribution<double> distribution(0.0, totalWeight);
+    std::vector<double> draws;
+    draws.reserve(static_cast<std::size_t>(shots));
+    for (int shot = 0; shot < shots; ++shot)
+      draws.push_back(distribution(randomEngine));
+    std::sort(draws.begin(), draws.end());
+
     std::unordered_map<std::size_t, std::size_t> drawCounts;
     drawCounts.reserve(
         std::min(probabilities.size(), static_cast<std::size_t>(shots)));
-    for (int shot = 0; shot < shots; ++shot)
-      ++drawCounts[distribution(randomEngine)];
+
+    std::size_t drawIndex = 0;
+    std::size_t lastPositiveOutcome = 0;
+    double cumulative = 0.0;
+    for (std::size_t outcome = 0; outcome < probabilities.size(); ++outcome) {
+      const auto probability = probabilities[outcome];
+      if (probability == 0.0)
+        continue;
+      lastPositiveOutcome = outcome;
+      cumulative += probability;
+      while (drawIndex < draws.size() && draws[drawIndex] < cumulative) {
+        ++drawCounts[outcome];
+        ++drawIndex;
+      }
+    }
+
+    while (drawIndex < draws.size()) {
+      ++drawCounts[lastPositiveOutcome];
+      ++drawIndex;
+    }
     return drawCounts;
   }
 

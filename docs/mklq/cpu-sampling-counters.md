@@ -47,7 +47,7 @@ Caveat: this is sampling phase counter evidence from selected build-tree ctest c
 
 | Report | Created | Status | Expected | Selected | Missing | Passed | Failed |
 | --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
-| benchmarks/mklq/reports/local-cpu-sampling-counter-probe-2026-06-23.cpu-counter.json | 2026-06-23T03:10:32.069719+00:00 | passed | 3 | 3 | 0 | 3 | 0 |
+| benchmarks/mklq/reports/local-cpu-sampling-counter-probe-2026-06-23.cpu-counter.json | 2026-06-23T03:24:49.386239+00:00 | passed | 3 | 3 | 0 | 3 | 0 |
 
 Regenerate with:
 

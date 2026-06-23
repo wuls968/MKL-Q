@@ -128,6 +128,18 @@ public:
     return sparseDrawCountMaps;
   }
 
+  std::size_t sortedSparseDrawCountMapsForTest() const {
+    return sortedSparseDrawCountMaps;
+  }
+
+  cudaq::ExecutionResult drawSampleOutcomeCountsForTest(
+      const std::vector<double> &probabilities, int shots,
+      std::size_t bitCount) {
+    cudaq::ExecutionResult counts;
+    drawAndAppendSampleOutcomeCounts(counts, probabilities, shots, bitCount);
+    return counts;
+  }
+
   std::size_t fullRegisterProbabilityFillsForTest() const {
     return fullRegisterProbabilityFills;
   }
@@ -421,6 +433,37 @@ CUDAQ_TEST(MKLQCpuTester,
   EXPECT_LE(sim.bitStringConversionsForTest(), nonzeroOutcomes);
   EXPECT_EQ(sim.denseDrawCountBuffersForTest(), 0);
   EXPECT_EQ(sim.sparseDrawCountMapsForTest(), 1);
+  EXPECT_EQ(sim.sortedSparseDrawCountMapsForTest(), 1);
+}
+
+CUDAQ_TEST(MKLQCpuTester,
+           CountsOnlyLargeSparseDrawUsesSortedSingleScanAggregation) {
+  constexpr std::size_t qubitCount = 17;
+  constexpr std::size_t outcomeCount = 1ULL << qubitCount;
+  constexpr std::size_t hotOutcome = (1ULL << 16) + 7;
+  constexpr int shots = 64;
+
+  std::vector<double> probabilities(outcomeCount, 0.0);
+  probabilities[hotOutcome] = 1.0;
+
+  MklqCpuCircuitSimulatorTester sim;
+  sim.setRandomSeed(23);
+  const auto counts =
+      sim.drawSampleOutcomeCountsForTest(probabilities, shots, qubitCount);
+
+  std::string hotBits;
+  hotBits.reserve(qubitCount);
+  for (std::size_t bit = 0; bit < qubitCount; ++bit)
+    hotBits.push_back((hotOutcome & (1ULL << bit)) ? '1' : '0');
+
+  ASSERT_EQ(counts.counts.size(), 1);
+  ASSERT_TRUE(counts.counts.contains(hotBits));
+  EXPECT_EQ(counts.counts.at(hotBits), shots);
+  EXPECT_TRUE(counts.sequentialData.empty());
+  EXPECT_EQ(sim.denseDrawCountBuffersForTest(), 0);
+  EXPECT_EQ(sim.sparseDrawCountMapsForTest(), 1);
+  EXPECT_EQ(sim.sortedSparseDrawCountMapsForTest(), 1);
+  EXPECT_EQ(sim.bitStringConversionsForTest(), 1);
 }
 
 CUDAQ_TEST(MKLQCpuTester,
@@ -461,6 +504,7 @@ CUDAQ_TEST(MKLQCpuTester,
   EXPECT_EQ(sim.sampleExpectationReductionsForTest(), 1);
   EXPECT_EQ(sim.denseDrawCountBuffersForTest(), 0);
   EXPECT_EQ(sim.sparseDrawCountMapsForTest(), 1);
+  EXPECT_EQ(sim.sortedSparseDrawCountMapsForTest(), 1);
 }
 
 CUDAQ_TEST(MKLQCpuTester,
@@ -492,6 +536,7 @@ CUDAQ_TEST(MKLQCpuTester,
   EXPECT_LE(sim.bitStringConversionsForTest(), nonzeroOutcomes);
   EXPECT_EQ(sim.denseDrawCountBuffersForTest(), 0);
   EXPECT_EQ(sim.sparseDrawCountMapsForTest(), 1);
+  EXPECT_EQ(sim.sortedSparseDrawCountMapsForTest(), 1);
 }
 
 CUDAQ_TEST(MKLQCpuTester,
@@ -535,6 +580,7 @@ CUDAQ_TEST(MKLQCpuTester,
   EXPECT_LE(sim.bitStringConversionsForTest(), nonzeroOutcomes);
   EXPECT_EQ(sim.denseDrawCountBuffersForTest(), 0);
   EXPECT_EQ(sim.sparseDrawCountMapsForTest(), 1);
+  EXPECT_EQ(sim.sortedSparseDrawCountMapsForTest(), 1);
   EXPECT_GT(sim.countsOnlyNamedRegisterRemapsForTest(), 0);
   EXPECT_EQ(sim.sequentialNamedRegisterRemapsForTest(), 0);
 }
