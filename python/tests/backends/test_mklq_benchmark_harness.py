@@ -4005,6 +4005,125 @@ def test_mklq_benchmark_dry_run_accepts_sample_partial_register_case(tmp_path):
     assert rows[0]["estimated_state_bytes"] == 16 * (1 << 5)
 
 
+def test_mklq_benchmark_dry_run_records_sampling_profile_flag(tmp_path):
+    repo_root = Path(__file__).resolve().parents[3]
+    script = repo_root / "benchmarks" / "mklq" / "bench_mklq_targets.py"
+    output = tmp_path / "dry-run-sampling-profile.json"
+    env = os.environ.copy()
+    env.pop("PYTHONPATH", None)
+
+    subprocess.run([
+        sys.executable,
+        str(script),
+        "--dry-run",
+        "--profile-sampling-breakdown",
+        "--targets",
+        "mklq-cpu",
+        "--cases",
+        "sample-partial-register",
+        "--qubits",
+        "5",
+        "--output",
+        str(output),
+    ],
+                   check=True,
+                   capture_output=True,
+                   text=True,
+                   env=env)
+
+    report = json.loads(output.read_text(encoding="utf-8"))
+    assert report["config"]["profile_sampling_breakdown"] is True
+
+
+def test_mklq_benchmark_sampling_profile_records_breakdown_metrics(monkeypatch):
+    module = _load_benchmark_module()
+
+    class FakeSampleResult:
+
+        def __init__(self):
+            self.payload = {"000": 8, "101": 8}
+
+        def items(self):
+            return self.payload.items()
+
+    class FakeKernel:
+
+        def __init__(self):
+            self.operations = []
+
+        def qalloc(self, qubits):
+            return list(range(qubits))
+
+        def ry(self, theta, target):
+            self.operations.append(("ry", theta, target))
+
+        def rz(self, theta, target):
+            self.operations.append(("rz", theta, target))
+
+        def mz(self, target):
+            self.operations.append(("mz", target))
+
+    class FakeCudaq:
+
+        def __init__(self):
+            self.kernels = []
+            self.sample_calls = 0
+
+        def reset_target(self):
+            pass
+
+        def set_target(self, target):
+            assert target == "mklq-cpu"
+
+        def set_random_seed(self, seed):
+            assert seed == 13
+
+        def make_kernel(self):
+            kernel = FakeKernel()
+            self.kernels.append(kernel)
+            return kernel
+
+        def sample(self, kernel, shots_count):
+            assert shots_count == 16
+            self.sample_calls += 1
+            return FakeSampleResult()
+
+    def fake_timed_repeats(action, repeats):
+        assert repeats == 1
+        action()
+        return [0.25]
+
+    monkeypatch.setattr(module, "timed_repeats", fake_timed_repeats)
+    monkeypatch.setattr(module, "process_max_rss_bytes", lambda: 8192)
+
+    fake_cudaq = FakeCudaq()
+    row = module.run_case(fake_cudaq,
+                          "mklq-cpu",
+                          "sample-partial-register",
+                          qubits=5,
+                          shots=16,
+                          repeats=1,
+                          warmups=0,
+                          layers=2,
+                          profile_sampling_breakdown=True)
+
+    assert row["status"] == "ok"
+    metrics = row["metrics"]
+    assert metrics["sampling_profile_enabled"] is True
+    assert metrics["sampling_profile_scope"] == (
+        "benchmark_harness_diagnostic_timing_not_native_backend_counters")
+    assert "not native backend internal phase counters" in metrics[
+        "sampling_profile_boundary"]
+    assert metrics["sampling_kernel_build_seconds_median"] == 0.25
+    assert metrics["sampling_call_seconds_median"] == 0.25
+    assert metrics[
+        "sampling_result_counts_materialization_seconds_median"] == 0.25
+    assert metrics["sampling_profile_extra_sample_calls"] == 1
+    assert metrics["measured_qubit_count"] == 3
+    assert metrics["marginal_outcome_count"] == 8
+    assert fake_cudaq.sample_calls == 2
+
+
 def test_mklq_benchmark_dry_run_expands_shot_counts(tmp_path):
     repo_root = Path(__file__).resolve().parents[3]
     script = repo_root / "benchmarks" / "mklq" / "bench_mklq_targets.py"
