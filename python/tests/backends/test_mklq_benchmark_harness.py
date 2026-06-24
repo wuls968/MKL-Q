@@ -1048,6 +1048,7 @@ def test_mklq_public_healthcheck_plan_lists_escalating_gates(tmp_path):
         "example_source_files",
         "markdown_links",
         "benchmark_evidence_regeneration",
+        "healthcheck_snapshot_docs",
         "benchmark_harness_tests",
         "install_prefix_build",
         "correctness_gate",
@@ -1088,6 +1089,59 @@ def test_mklq_public_healthcheck_plans_crz_distance_guard(tmp_path):
         "sampling_profile_evidence_guard")
     assert steps.index("sampling_profile_evidence_guard") < steps.index(
         "metal_evidence_guard")
+    assert steps.index("benchmark_evidence_regeneration") < steps.index(
+        "healthcheck_snapshot_docs")
+
+
+def _write_healthcheck_snapshot_docs(tmp_path, default_count, full_count):
+    docs = tmp_path / "docs" / "mklq"
+    docs.mkdir(parents=True, exist_ok=True)
+    (docs / "validation.md").write_text(
+        f"""
+Latest full public healthcheck: passed on 2026-06-24, with {full_count} steps passed
+  and 0 failed.
+Default public healthcheck: passed on 2026-06-24, with {default_count} steps passed
+  and 0 failed.
+
+Latest default 2026-06-24 result: `{default_count}/{default_count}` steps passed.
+The latest full 2026-06-24 result is `{full_count}/{full_count}` steps passed.
+""",
+        encoding="utf-8",
+    )
+    (docs / "public-readiness.md").write_text(
+        f"""
+- default public healthcheck: passed with {default_count}/{default_count} steps passed;
+- full public healthcheck: passed with {full_count}/{full_count} steps passed;
+""",
+        encoding="utf-8",
+    )
+
+
+def test_mklq_public_healthcheck_checks_snapshot_doc_step_counts(tmp_path):
+    module = _load_public_healthcheck_module()
+    config = _public_healthcheck_config(module, tmp_path)
+    counts = module.public_snapshot_step_counts(config)
+    _write_healthcheck_snapshot_docs(tmp_path, counts["default"],
+                                     counts["full"])
+
+    result = module.run_healthcheck_snapshot_docs_check(config)
+
+    assert result["status"] == "passed"
+    assert result["details"]["expected_counts"] == counts
+
+
+def test_mklq_public_healthcheck_rejects_stale_snapshot_doc_counts(tmp_path):
+    module = _load_public_healthcheck_module()
+    config = _public_healthcheck_config(module, tmp_path)
+    counts = module.public_snapshot_step_counts(config)
+    _write_healthcheck_snapshot_docs(tmp_path, counts["default"] - 1,
+                                     counts["full"] - 1)
+
+    result = module.run_healthcheck_snapshot_docs_check(config)
+
+    assert result["status"] == "failed"
+    assert "healthcheck snapshot docs are stale" in result["message"]
+    assert any("validation.md" in item for item in result["details"]["missing"])
 
 
 def test_mklq_public_healthcheck_runs_public_claim_guard(monkeypatch,
