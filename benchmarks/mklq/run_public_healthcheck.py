@@ -16,7 +16,7 @@ import subprocess
 import sys
 import tempfile
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
@@ -968,6 +968,83 @@ def run_benchmark_evidence_check(config: HealthcheckConfig) -> dict[str, Any]:
     return passed({"expected": command_path(config.repo_root, expected)})
 
 
+def public_snapshot_step_counts(config: HealthcheckConfig) -> dict[str, int]:
+    baseline = replace(config,
+                       full=False,
+                       include_harness_tests=True,
+                       refresh_clean_cpu_benchmark=False,
+                       plan_only=True)
+    full = replace(baseline, full=True)
+    return {
+        "default": len(build_steps(baseline)),
+        "full": len(build_steps(full)),
+    }
+
+
+def run_healthcheck_snapshot_docs_check(
+        config: HealthcheckConfig) -> dict[str, Any]:
+    counts = public_snapshot_step_counts(config)
+    default_count = counts["default"]
+    full_count = counts["full"]
+    requirements = [
+        (
+            "docs/mklq/validation.md",
+            "default repository hygiene gate count",
+            rf"Latest default \d{{4}}-\d{{2}}-\d{{2}} result: "
+            rf"`{default_count}/{default_count}` steps passed",
+        ),
+        (
+            "docs/mklq/validation.md",
+            "full repository hygiene gate count",
+            rf"latest full\s+\d{{4}}-\d{{2}}-\d{{2}} result "
+            rf"(?:is|remains) `{full_count}/{full_count}` steps passed",
+        ),
+        (
+            "docs/mklq/validation.md",
+            "full evidence snapshot step count",
+            rf"Latest full public healthcheck: passed on "
+            rf"\d{{4}}-\d{{2}}-\d{{2}}, with {full_count} steps passed",
+        ),
+        (
+            "docs/mklq/validation.md",
+            "default evidence snapshot step count",
+            rf"Default public healthcheck: passed on "
+            rf"\d{{4}}-\d{{2}}-\d{{2}}, with {default_count} steps passed",
+        ),
+        (
+            "docs/mklq/public-readiness.md",
+            "public readiness default gate count",
+            rf"default public healthcheck: passed with "
+            rf"{default_count}/{default_count} steps passed",
+        ),
+        (
+            "docs/mklq/public-readiness.md",
+            "public readiness full gate count",
+            rf"full public healthcheck: passed with "
+            rf"{full_count}/{full_count} steps passed",
+        ),
+    ]
+    missing: list[str] = []
+    checked: list[dict[str, str]] = []
+    for relative_path, label, pattern in requirements:
+        path = config.repo_root / relative_path
+        checked.append({"path": relative_path, "label": label})
+        if not path.is_file():
+            missing.append(f"{relative_path}: file is missing")
+            continue
+        text = path.read_text(encoding="utf-8", errors="replace")
+        if not re.search(pattern, text):
+            missing.append(f"{relative_path}: missing {label}")
+
+    details = {
+        "expected_counts": counts,
+        "checked": checked,
+        "missing": missing,
+    }
+    return failed("healthcheck snapshot docs are stale",
+                  details) if missing else passed(details)
+
+
 def run_harness_tests(config: HealthcheckConfig) -> dict[str, Any]:
     command = [
         config.python_executable,
@@ -1113,6 +1190,9 @@ def build_steps(config: HealthcheckConfig) -> list[Step]:
         Step("benchmark_evidence_regeneration",
              "Regenerate benchmark evidence markdown to a temp file and compare.",
              run_benchmark_evidence_check),
+        Step("healthcheck_snapshot_docs",
+             "Check public healthcheck snapshot step counts in docs.",
+             run_healthcheck_snapshot_docs_check),
     ]
     if config.include_harness_tests:
         steps.append(
