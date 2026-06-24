@@ -221,7 +221,7 @@ passes for the branch, merge through GitHub and then confirm `main`:
 ```bash
 gh pr create --repo wuls968/MKL-Q --base main --head codex/upstream-sync-YYYYMMDD
 gh pr checks --repo wuls968/MKL-Q --watch
-gh pr merge --repo wuls968/MKL-Q --squash --delete-branch
+gh pr merge --repo wuls968/MKL-Q --merge --delete-branch
 git switch main
 git pull --ff-only origin main
 gh run watch <run-id> --repo wuls968/MKL-Q --exit-status
