@@ -254,6 +254,21 @@ uncommitted changes, or `--skip-github` for offline local-only checks. A
 short-lived Git lock is rechecked once before the audit reports it as a stale
 lock failure.
 
+## Public Release Checklist Audit
+
+Use the release checklist audit when public release instructions, source-only
+boundaries, or maintenance gates change:
+
+```bash
+python3 benchmarks/mklq/run_public_release_checklist_audit.py
+```
+
+The audit checks that `docs/mklq/public-release-checklist.md` still contains
+the required source-only sections, the public hygiene and full local gate
+commands, referenced docs/scripts, and stop conditions. It writes ignored JSON
+under `benchmarks/mklq/results/`. It does not run builds, benchmarks, GitHub
+Actions, or backend correctness tests.
+
 ## Public Health Check
 
 Use the public health check as the default local pre-push maintenance command:
@@ -264,13 +279,14 @@ python3 benchmarks/mklq/run_public_healthcheck.py
 ```
 
 The default mode checks Git remotes and shallow state, tracked artifact hygiene,
-public metadata and banned tokens, sanitized benchmark summary JSON, the static
-clean CPU performance evidence guards, including focused CRZ distance,
-multi-control, q18-q22 CPU scaling, and q18-q22 sampling scaling evidence, the
-static experimental Metal evidence boundary guard, bounded CPU sampling phase
-counter evidence, bounded Metal runtime counter probe JSON, helper syntax,
-local markdown links, regenerated benchmark-evidence plus CPU and Metal counter
-docs consistency, and the benchmark harness tests. It writes an ignored JSON report under
+public metadata and banned tokens, the public release checklist audit,
+sanitized benchmark summary JSON, the static clean CPU performance evidence
+guards, including focused CRZ distance, multi-control, q18-q22 CPU scaling, and
+q18-q22 sampling scaling evidence, the static experimental Metal evidence
+boundary guard, bounded CPU sampling phase counter evidence, bounded Metal
+runtime counter probe JSON, helper syntax, local markdown links, regenerated
+benchmark-evidence plus CPU and Metal counter docs consistency, and the
+benchmark harness tests. It writes an ignored JSON report under
 `benchmarks/mklq/results/`.
 
 Before describing a commit as public-ready, run the heavier local gate:

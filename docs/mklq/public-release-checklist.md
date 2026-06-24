@@ -48,6 +48,8 @@ Check:
   `NOTICE` do not misdirect users to NVIDIA-only project contacts or workflows.
 - [ ] `docs/mklq/known-limitations.md` is linked from the README and explains
   the current support boundary.
+- [ ] `docs/mklq/validation.md` is linked from the README and records the
+  current local validation evidence and its non-certification boundary.
 - [ ] `docs/mklq/testing-matrix.md` is linked from the README and explains
   which local gates prove which target/backend behavior.
 - [ ] `docs/mklq/release-policy.md` is linked from the README and explains
@@ -145,6 +147,7 @@ Run the same classes of checks as `.github/workflows/mklq-public-hygiene.yml`:
 
 ```bash
 python3 benchmarks/mklq/run_preflight_audit.py --require-clean
+python3 benchmarks/mklq/run_public_release_checklist_audit.py
 python3 benchmarks/mklq/run_public_healthcheck.py
 ```
 
@@ -159,20 +162,34 @@ The underlying lightweight checks include:
 
 ```bash
 git diff --check
+python3 benchmarks/mklq/run_public_release_checklist_audit.py
 python3 benchmarks/mklq/check_performance_evidence.py
 python3 benchmarks/mklq/check_metal_evidence.py
+python3 benchmarks/mklq/check_public_claims.py
+python3 benchmarks/mklq/check_sampling_profile_evidence.py
+python3 benchmarks/mklq/check_cpu_sampling_counter_docs.py
+python3 benchmarks/mklq/check_metal_runtime_counter_docs.py
 python3 -m py_compile \
   benchmarks/mklq/bench_mklq_targets.py \
   benchmarks/mklq/bench_probability_kernels.py \
+  benchmarks/mklq/check_cpu_sampling_counter_docs.py \
   benchmarks/mklq/check_metal_evidence.py \
+  benchmarks/mklq/check_metal_runtime_counter_docs.py \
   benchmarks/mklq/check_performance_evidence.py \
+  benchmarks/mklq/check_public_claims.py \
+  benchmarks/mklq/check_sampling_profile_evidence.py \
   benchmarks/mklq/make_summary.py \
   benchmarks/mklq/run_clean_cpu_benchmark.py \
+  benchmarks/mklq/run_cpu_scaling_benchmark.py \
+  benchmarks/mklq/run_sampling_scaling_benchmark.py \
   benchmarks/mklq/run_correctness_gate.py \
+  benchmarks/mklq/run_cpu_sampling_counter_probe.py \
   benchmarks/mklq/run_metal_runtime_counter_probe.py \
   benchmarks/mklq/run_preflight_audit.py \
+  benchmarks/mklq/run_public_release_checklist_audit.py \
   benchmarks/mklq/run_public_readiness_audit.py \
   benchmarks/mklq/run_public_healthcheck.py \
+  benchmarks/mklq/summarize_cpu_sampling_counters.py \
   benchmarks/mklq/summarize_metal_runtime_counters.py \
   benchmarks/mklq/summarize_reports.py \
   examples/mklq/python/bell.py \
@@ -186,6 +203,8 @@ python3 -m py_compile \
 Expected:
 
 - [ ] Public metadata keywords are present.
+- [ ] `run_public_release_checklist_audit.py` passes and confirms this
+  checklist still references the required source-only release gates.
 - [ ] Public example files exist under `examples/mklq/`.
 - [ ] Banned upstream workflow/contact tokens are absent from public metadata
   and `.github`.

@@ -47,6 +47,7 @@ BENCHMARK_HELPERS = (
     "benchmarks/mklq/run_cpu_sampling_counter_probe.py",
     "benchmarks/mklq/run_metal_runtime_counter_probe.py",
     "benchmarks/mklq/run_preflight_audit.py",
+    "benchmarks/mklq/run_public_release_checklist_audit.py",
     "benchmarks/mklq/run_public_readiness_audit.py",
     "benchmarks/mklq/run_public_healthcheck.py",
     "benchmarks/mklq/summarize_cpu_sampling_counters.py",
@@ -290,6 +291,7 @@ def public_metadata_requirements() -> list[tuple[str, str]]:
         ("docs/mklq/upstream-sync.md", "Post-merge Gates"),
         ("docs/mklq/release-policy.md", "source-only"),
         ("docs/mklq/public-release-checklist.md", "GitHub Verification"),
+        ("docs/mklq/public-release-checklist.md", "run_public_release_checklist_audit.py"),
         ("docs/mklq/public-release-checklist.md", "check_performance_evidence.py"),
         ("docs/mklq/public-release-checklist.md", "check_metal_evidence.py"),
         ("docs/mklq/public-release-checklist.md", "run_preflight_audit.py"),
@@ -321,6 +323,7 @@ def public_metadata_requirements() -> list[tuple[str, str]]:
         ("benchmarks/mklq/README.md", "CPU Sampling Counter Summary"),
         ("benchmarks/mklq/README.md", "CPU Sampling Counter Docs Guard"),
         ("benchmarks/mklq/README.md", "Preflight Audit"),
+        ("benchmarks/mklq/README.md", "Public Release Checklist Audit"),
         ("benchmarks/mklq/README.md", "Metal Runtime Counter Probe"),
         ("benchmarks/mklq/README.md", "Metal Runtime Counter Summary"),
         ("benchmarks/mklq/README.md", "Metal Runtime Counter Docs Guard"),
@@ -334,6 +337,7 @@ def public_metadata_requirements() -> list[tuple[str, str]]:
         ("docs/mklq/testing-matrix.md", "run_metal_runtime_counter_probe.py"),
         ("docs/mklq/testing-matrix.md", "check_metal_runtime_counter_docs.py"),
         ("docs/mklq/testing-matrix.md", "run_preflight_audit.py"),
+        ("docs/mklq/testing-matrix.md", "run_public_release_checklist_audit.py"),
         ("docs/mklq/testing-matrix.md", "summarize_metal_runtime_counters.py"),
         (".github/pull_request_template.md", "Compatibility Boundary"),
         (".github/pull_request_template.md", "Benchmark Evidence"),
@@ -410,6 +414,25 @@ def run_public_claim_boundary_check(config: HealthcheckConfig) -> dict[str, Any]
     result = run_command(config, command)
     if result["returncode"] != 0:
         return failed("public claim-boundary check failed", result)
+    return passed(result)
+
+
+def run_public_release_checklist_audit(
+        config: HealthcheckConfig) -> dict[str, Any]:
+    script = config.repo_root / "benchmarks" / "mklq" / (
+        "run_public_release_checklist_audit.py")
+    command = [
+        config.python_executable,
+        str(script),
+        "--repo-root",
+        str(config.repo_root),
+        "--output",
+        str(config.repo_root / "benchmarks" / "mklq" / "results" /
+            f"public-release-checklist-audit-{config.stamp}.json"),
+    ]
+    result = run_command(config, command)
+    if result["returncode"] != 0:
+        return failed("public release checklist audit failed", result)
     return passed(result)
 
 
@@ -990,6 +1013,9 @@ def build_steps(config: HealthcheckConfig) -> list[Step]:
              run_tracked_artifact_check),
         Step("public_metadata", "Check public metadata keywords and banned tokens.",
              run_public_metadata_check),
+        Step("public_release_checklist_audit",
+             "Audit public release checklist coverage.",
+             run_public_release_checklist_audit),
         Step("public_claim_boundary",
              "Check public release, Metal, and performance claim boundaries.",
              run_public_claim_boundary_check),

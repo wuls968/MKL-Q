@@ -150,6 +150,18 @@ def _load_public_readiness_audit_module():
     return module
 
 
+def _load_public_release_checklist_audit_module():
+    repo_root = Path(__file__).resolve().parents[3]
+    script = repo_root / "benchmarks" / "mklq" / (
+        "run_public_release_checklist_audit.py")
+    spec = importlib.util.spec_from_file_location(
+        "run_public_release_checklist_audit", script)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    return module
+
+
 def _load_preflight_audit_module():
     repo_root = Path(__file__).resolve().parents[3]
     script = repo_root / "benchmarks" / "mklq" / "run_preflight_audit.py"
@@ -1003,6 +1015,7 @@ def test_mklq_public_healthcheck_plan_lists_escalating_gates(tmp_path):
         "git_repository",
         "tracked_artifacts",
         "public_metadata",
+        "public_release_checklist_audit",
         "public_claim_boundary",
         "benchmark_summary_parse",
         "performance_evidence_guard",
@@ -1037,6 +1050,8 @@ def test_mklq_public_healthcheck_plans_crz_distance_guard(tmp_path):
     steps = [step["name"] for step in report["steps"]]
 
     assert steps.index("public_metadata") < steps.index(
+        "public_release_checklist_audit")
+    assert steps.index("public_release_checklist_audit") < steps.index(
         "public_claim_boundary")
     assert steps.index("public_claim_boundary") < steps.index(
         "benchmark_summary_parse")
@@ -1074,6 +1089,25 @@ def test_mklq_public_healthcheck_runs_public_claim_guard(monkeypatch,
 
     assert result["status"] == "passed"
     assert seen["command"][1].endswith("check_public_claims.py")
+
+
+def test_mklq_public_healthcheck_runs_release_checklist_audit(monkeypatch,
+                                                              tmp_path):
+    module = _load_public_healthcheck_module()
+    config = _public_healthcheck_config(module, tmp_path)
+    seen = {}
+
+    def fake_run_command(config, command, env_overlay=None):
+        seen["command"] = command
+        return {"returncode": 0, "command": command}
+
+    monkeypatch.setattr(module, "run_command", fake_run_command)
+
+    result = module.run_public_release_checklist_audit(config)
+
+    assert result["status"] == "passed"
+    assert seen["command"][1].endswith(
+        "run_public_release_checklist_audit.py")
 
 
 def test_mklq_public_healthcheck_runs_crz_distance_guard(monkeypatch,
@@ -2642,6 +2676,13 @@ def test_mklq_public_healthcheck_compiles_public_claim_guard():
         module.PY_COMPILE_FILES)
 
 
+def test_mklq_public_healthcheck_compiles_release_checklist_audit():
+    module = _load_public_healthcheck_module()
+
+    assert "benchmarks/mklq/run_public_release_checklist_audit.py" in (
+        module.PY_COMPILE_FILES)
+
+
 def test_mklq_public_healthcheck_requires_cpu_sampling_counter_metadata():
     module = _load_public_healthcheck_module()
 
@@ -2666,6 +2707,19 @@ def test_mklq_public_healthcheck_requires_public_claim_guard_metadata():
             "check_public_claims.py") in requirements
     assert ("docs/mklq/testing-matrix.md",
             "check_public_claims.py") in requirements
+
+
+def test_mklq_public_healthcheck_requires_release_checklist_audit_metadata():
+    module = _load_public_healthcheck_module()
+
+    requirements = set(module.public_metadata_requirements())
+
+    assert ("docs/mklq/public-release-checklist.md",
+            "run_public_release_checklist_audit.py") in requirements
+    assert ("benchmarks/mklq/README.md",
+            "Public Release Checklist Audit") in requirements
+    assert ("docs/mklq/testing-matrix.md",
+            "run_public_release_checklist_audit.py") in requirements
 
 
 def test_mklq_public_healthcheck_writes_json_report(monkeypatch, tmp_path):
@@ -3081,6 +3135,209 @@ def test_mklq_public_readiness_audit_rejects_release_tags_and_unprotected_main(
     assert "live label metadata differs from .github/labels.yml" in failures
     assert "public claim-boundary check failed" in failures
     assert "branch protection differs from .github/branch-protection-main.json" in failures
+
+
+def _write_release_checklist_audit_fixture(root: Path, checklist_text: str):
+    docs = root / "docs" / "mklq"
+    benchmarks = root / "benchmarks" / "mklq"
+    github = root / ".github" / "workflows"
+    docs.mkdir(parents=True)
+    benchmarks.mkdir(parents=True)
+    github.mkdir(parents=True)
+    (docs / "public-release-checklist.md").write_text(checklist_text,
+                                                       encoding="utf-8")
+    for relative in [
+            "README.md",
+            "docs/mklq/release-policy.md",
+            "docs/mklq/public-readiness.md",
+            "docs/mklq/validation.md",
+            "docs/mklq/known-limitations.md",
+            "docs/mklq/testing-matrix.md",
+            "docs/mklq/maintainer-runbook.md",
+            "docs/mklq/branch-protection.md",
+            "docs/mklq/issue-labels.md",
+            ".github/workflows/mklq-public-hygiene.yml",
+            "benchmarks/mklq/run_preflight_audit.py",
+            "benchmarks/mklq/run_public_release_checklist_audit.py",
+            "benchmarks/mklq/run_public_healthcheck.py",
+            "benchmarks/mklq/run_public_readiness_audit.py",
+            "benchmarks/mklq/run_correctness_gate.py",
+            "benchmarks/mklq/run_clean_cpu_benchmark.py",
+            "benchmarks/mklq/check_performance_evidence.py",
+            "benchmarks/mklq/check_metal_evidence.py",
+            "benchmarks/mklq/check_public_claims.py",
+            "benchmarks/mklq/check_sampling_profile_evidence.py",
+            "benchmarks/mklq/check_cpu_sampling_counter_docs.py",
+            "benchmarks/mklq/check_metal_runtime_counter_docs.py",
+    ]:
+        path = root / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(f"{relative}\n", encoding="utf-8")
+
+
+def _release_checklist_text() -> str:
+    return """
+# MKL-Q Public Release Checklist
+
+This checklist is for source-only release-readiness. It is not a wheel, PyPI,
+binary, GitHub Release, release certification, or performance certification.
+
+## Scope
+
+- Keep the repository as an upstream-compatible fork of NVIDIA CUDA-Q.
+- Keep the first public version source-only.
+- Do not create tags, GitHub Releases, wheels, PyPI packages, installers, or
+  signed artifacts.
+- Keep `mklq-cpu` stable and `mklq-metal` experimental.
+
+## Git And Remotes
+
+```bash
+git status --short --branch
+git remote -v
+git rev-parse --is-shallow-repository
+git log --oneline -5
+```
+
+## Public Metadata
+
+- README.md
+- docs/mklq/release-policy.md
+- docs/mklq/public-readiness.md
+- docs/mklq/validation.md
+- docs/mklq/known-limitations.md
+- docs/mklq/testing-matrix.md
+- docs/mklq/maintainer-runbook.md
+- docs/mklq/branch-protection.md
+- docs/mklq/issue-labels.md
+
+## Tree Hygiene
+
+```bash
+python3 benchmarks/mklq/run_preflight_audit.py --require-clean
+git status --ignored --short
+git ls-files .github | sort
+git diff --check
+```
+
+## Local Build Gate
+
+```bash
+cmake --build build-python --target install -j 6
+```
+
+## Correctness Gate
+
+```bash
+python3 benchmarks/mklq/run_correctness_gate.py --install-prefix "${HOME}/.cudaq-mklq" --build-dir build-python
+```
+
+## Benchmark Evidence
+
+```bash
+python3 benchmarks/mklq/run_clean_cpu_benchmark.py --pythonpath "${HOME}/.cudaq-mklq" --stamp YYYY-MM-DD
+```
+
+## Public Hygiene Gate
+
+Run the same classes of checks as `.github/workflows/mklq-public-hygiene.yml`:
+
+```bash
+python3 benchmarks/mklq/run_preflight_audit.py --require-clean
+python3 benchmarks/mklq/run_public_release_checklist_audit.py
+python3 benchmarks/mklq/run_public_healthcheck.py
+python3 benchmarks/mklq/run_public_healthcheck.py --full --require-clean
+python3 benchmarks/mklq/check_performance_evidence.py
+python3 benchmarks/mklq/check_metal_evidence.py
+python3 benchmarks/mklq/check_public_claims.py
+python3 benchmarks/mklq/check_sampling_profile_evidence.py
+python3 benchmarks/mklq/check_cpu_sampling_counter_docs.py
+python3 benchmarks/mklq/check_metal_runtime_counter_docs.py
+```
+
+## Push And GitHub Verification
+
+```bash
+gh pr checks --repo wuls968/MKL-Q --watch
+gh pr merge --repo wuls968/MKL-Q --squash --delete-branch
+git ls-remote origin refs/heads/main
+gh repo view wuls968/MKL-Q --json nameWithOwner,isFork,parent,defaultBranchRef,url
+gh run list --repo wuls968/MKL-Q --branch main --limit 5
+python3 benchmarks/mklq/run_public_readiness_audit.py
+```
+
+## Stop Conditions
+
+- The worktree is dirty and the change was not intentionally reviewed.
+- Raw local benchmark payloads, generated files, build products, or private
+  artifacts are tracked.
+- `mklq-metal` is described as full Metal-native or default-ready.
+- Local benchmark evidence is described as release certification.
+- The GitHub Actions run for the pushed commit is failing or still unknown.
+"""
+
+
+def test_mklq_public_release_checklist_audit_builds_passing_report(tmp_path):
+    module = _load_public_release_checklist_audit_module()
+    _write_release_checklist_audit_fixture(tmp_path, _release_checklist_text())
+    config = module.AuditConfig(
+        repo_root=tmp_path,
+        output=tmp_path / "results" / "release-checklist-audit.json",
+    )
+
+    report = module.build_report(config)
+
+    assert report["schema_version"] == (
+        "mklq-public-release-checklist-audit-v1")
+    assert report["summary"] == {"status": "passed", "passed": 5, "failed": 0}
+    checks = {check["name"]: check for check in report["checks"]}
+    assert checks["checklist_structure"]["status"] == "passed"
+    assert checks["checklist_commands"]["status"] == "passed"
+    assert checks["referenced_files"]["status"] == "passed"
+    assert checks["source_only_boundaries"]["status"] == "passed"
+    assert checks["healthcheck_integration"]["status"] == "passed"
+
+
+def test_mklq_public_release_checklist_audit_rejects_missing_full_gate(
+        tmp_path):
+    module = _load_public_release_checklist_audit_module()
+    checklist = _release_checklist_text().replace(
+        "python3 benchmarks/mklq/run_public_healthcheck.py --full --require-clean",
+        "python3 benchmarks/mklq/run_public_healthcheck.py --full",
+    )
+    _write_release_checklist_audit_fixture(tmp_path, checklist)
+    config = module.AuditConfig(
+        repo_root=tmp_path,
+        output=tmp_path / "results" / "release-checklist-audit.json",
+    )
+
+    report = module.build_report(config)
+
+    assert report["summary"]["status"] == "failed"
+    checks = {check["name"]: check for check in report["checks"]}
+    assert checks["checklist_commands"]["status"] == "failed"
+    assert any("--full --require-clean" in item
+               for item in checks["checklist_commands"]["details"]["missing"])
+
+
+def test_mklq_public_release_checklist_audit_rejects_missing_self_gate(
+        tmp_path):
+    module = _load_public_release_checklist_audit_module()
+    checklist = _release_checklist_text().replace(
+        "python3 benchmarks/mklq/run_public_release_checklist_audit.py\n", "")
+    _write_release_checklist_audit_fixture(tmp_path, checklist)
+    config = module.AuditConfig(
+        repo_root=tmp_path,
+        output=tmp_path / "results" / "release-checklist-audit.json",
+    )
+
+    report = module.build_report(config)
+
+    assert report["summary"]["status"] == "failed"
+    checks = {check["name"]: check for check in report["checks"]}
+    assert checks["checklist_commands"]["status"] == "failed"
+    assert any("run_public_release_checklist_audit.py" in item
+               for item in checks["checklist_commands"]["details"]["missing"])
 
 
 def _preflight_config(module, tmp_path, *, require_clean=True, check_github=True):
