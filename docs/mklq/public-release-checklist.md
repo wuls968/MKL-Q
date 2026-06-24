@@ -56,6 +56,8 @@ Check:
   current local validation evidence and its non-certification boundary.
 - [ ] `docs/mklq/testing-matrix.md` is linked from the README and explains
   which local gates prove which target/backend behavior.
+- [ ] `docs/mklq/apple-silicon-ci.md` is linked from the README and explains
+  the self-hosted Apple Silicon CI activation boundary.
 - [ ] `docs/mklq/developer-workflow.md` is linked from the README and records
   the current local development, public hygiene, and PR workflow.
 - [ ] `docs/mklq/release-policy.md` is linked from the README and explains
@@ -79,6 +81,7 @@ Run:
 
 ```bash
 python3 benchmarks/mklq/run_preflight_audit.py --require-clean
+python3 benchmarks/mklq/run_self_hosted_ci_audit.py
 git status --ignored --short
 git ls-files .github | sort
 git diff --check
@@ -161,6 +164,7 @@ Run the same classes of checks as `.github/workflows/mklq-public-hygiene.yml`:
 ```bash
 python3 benchmarks/mklq/run_preflight_audit.py --require-clean
 python3 benchmarks/mklq/run_public_release_checklist_audit.py
+python3 benchmarks/mklq/run_self_hosted_ci_audit.py
 python3 benchmarks/mklq/run_public_healthcheck.py
 ```
 
@@ -176,6 +180,7 @@ The underlying lightweight checks include:
 ```bash
 git diff --check
 python3 benchmarks/mklq/run_public_release_checklist_audit.py
+python3 benchmarks/mklq/run_self_hosted_ci_audit.py
 python3 benchmarks/mklq/check_performance_evidence.py
 python3 benchmarks/mklq/check_metal_evidence.py
 python3 benchmarks/mklq/check_public_claims.py
@@ -202,6 +207,7 @@ python3 -m py_compile \
   benchmarks/mklq/run_public_release_checklist_audit.py \
   benchmarks/mklq/run_public_readiness_audit.py \
   benchmarks/mklq/run_public_healthcheck.py \
+  benchmarks/mklq/run_self_hosted_ci_audit.py \
   benchmarks/mklq/summarize_cpu_sampling_counters.py \
   benchmarks/mklq/summarize_metal_runtime_counters.py \
   benchmarks/mklq/summarize_reports.py \
@@ -218,6 +224,9 @@ Expected:
 - [ ] Public metadata keywords are present.
 - [ ] `run_public_release_checklist_audit.py` passes and confirms this
   checklist still references the required source-only release gates.
+- [ ] `run_self_hosted_ci_audit.py` passes and confirms the self-hosted Apple
+  Silicon CI readiness plan is documented while heavy correctness workflows
+  remain disabled by default.
 - [ ] Public example files exist under `examples/mklq/`.
 - [ ] Banned upstream workflow/contact tokens are absent from public metadata
   and `.github`.

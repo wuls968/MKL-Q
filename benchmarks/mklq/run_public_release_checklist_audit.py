@@ -49,6 +49,7 @@ REQUIRED_COMMAND_TOKENS = (
     "python3 benchmarks/mklq/run_public_release_checklist_audit.py",
     "python3 benchmarks/mklq/run_public_healthcheck.py",
     "python3 benchmarks/mklq/run_public_healthcheck.py --full --require-clean",
+    "python3 benchmarks/mklq/run_self_hosted_ci_audit.py",
     "python3 benchmarks/mklq/check_performance_evidence.py",
     "python3 benchmarks/mklq/check_metal_evidence.py",
     "python3 benchmarks/mklq/check_public_claims.py",
@@ -70,6 +71,7 @@ REQUIRED_REFERENCED_FILES = (
     "docs/mklq/validation.md",
     "docs/mklq/known-limitations.md",
     "docs/mklq/testing-matrix.md",
+    "docs/mklq/apple-silicon-ci.md",
     "docs/mklq/developer-workflow.md",
     "docs/mklq/maintainer-runbook.md",
     "docs/mklq/branch-protection.md",
@@ -80,6 +82,7 @@ REQUIRED_REFERENCED_FILES = (
     "benchmarks/mklq/run_public_release_checklist_audit.py",
     "benchmarks/mklq/run_public_healthcheck.py",
     "benchmarks/mklq/run_public_readiness_audit.py",
+    "benchmarks/mklq/run_self_hosted_ci_audit.py",
     "benchmarks/mklq/run_correctness_gate.py",
     "benchmarks/mklq/run_clean_cpu_benchmark.py",
     "benchmarks/mklq/check_performance_evidence.py",
@@ -119,6 +122,7 @@ DEVELOPER_WORKFLOW_REQUIRED_TOKENS = (
     "python3 benchmarks/mklq/run_preflight_audit.py",
     "python3 benchmarks/mklq/run_public_release_checklist_audit.py",
     "python3 benchmarks/mklq/run_public_healthcheck.py",
+    "python3 benchmarks/mklq/run_self_hosted_ci_audit.py",
     "git diff --check",
     "git ls-files .github/workflows | sort",
     "python3 benchmarks/mklq/check_public_claims.py",
@@ -137,6 +141,7 @@ DEVELOPER_WORKFLOW_REQUIRED_TOKENS = (
     "public_report_references",
     "workflows",
     "untracked report files",
+    "self-hosted Apple Silicon CI",
 )
 
 
@@ -281,6 +286,7 @@ def check_healthcheck_integration(config: AuditConfig,
         (
             "run_public_healthcheck.py",
             "run_public_readiness_audit.py",
+            "run_self_hosted_ci_audit.py",
             "mklq-public-hygiene.yml",
         ),
     )

@@ -161,6 +161,7 @@ Before pushing a public branch, run:
 ```bash
 python3 benchmarks/mklq/run_preflight_audit.py
 python3 benchmarks/mklq/run_public_release_checklist_audit.py
+python3 benchmarks/mklq/run_self_hosted_ci_audit.py
 python3 benchmarks/mklq/run_public_healthcheck.py
 git diff --check
 git ls-files .github/workflows | sort
@@ -189,6 +190,7 @@ python3 -m py_compile \
   benchmarks/mklq/run_public_release_checklist_audit.py \
   benchmarks/mklq/run_public_readiness_audit.py \
   benchmarks/mklq/run_public_healthcheck.py \
+  benchmarks/mklq/run_self_hosted_ci_audit.py \
   benchmarks/mklq/run_upstream_sync_audit.py \
   benchmarks/mklq/summarize_cpu_sampling_counters.py \
   benchmarks/mklq/summarize_metal_runtime_counters.py \
@@ -206,6 +208,11 @@ Expected workflow state:
 ```text
 .github/workflows/mklq-public-hygiene.yml
 ```
+
+For self-hosted Apple Silicon CI policy or workflow-boundary changes, also
+review [`apple-silicon-ci.md`](apple-silicon-ci.md). The current public branch
+keeps the heavy correctness workflow disabled by default; the audit checks that
+this activation boundary remains explicit.
 
 Run the full public release checklist before public release-style milestones:
 

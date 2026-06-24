@@ -45,6 +45,7 @@ gh repo view wuls968/MKL-Q --json nameWithOwner,isFork,parent,defaultBranchRef,u
 gh run list --repo wuls968/MKL-Q --branch main --limit 5
 python3 benchmarks/mklq/run_preflight_audit.py
 python3 benchmarks/mklq/run_public_readiness_audit.py
+python3 benchmarks/mklq/run_self_hosted_ci_audit.py
 python3 benchmarks/mklq/check_performance_evidence.py
 python3 benchmarks/mklq/check_metal_evidence.py
 python3 benchmarks/mklq/run_public_healthcheck.py
@@ -61,6 +62,8 @@ Expected state:
 - `main` branch protection matches [`branch-protection.md`](branch-protection.md).
 - `run_preflight_audit.py` passes before opening or updating public PRs.
 - `run_public_readiness_audit.py` passes for the pushed public state.
+- `run_self_hosted_ci_audit.py` passes before changing Apple Silicon
+  correctness CI policy or workflow boundaries.
 - [`public-readiness.md`](public-readiness.md) matches the current public GitHub
   repository state before describing the repository as ready.
 - `check_performance_evidence.py` passes before changing tracked sanitized
@@ -253,6 +256,11 @@ Before adding a heavier workflow, define:
 - secrets and permissions;
 - failure ownership;
 - whether upstream CUDA-Q workflows or bots are being copied.
+
+Use [`apple-silicon-ci.md`](apple-silicon-ci.md) and
+`benchmarks/mklq/run_self_hosted_ci_audit.py` before enabling any self-hosted
+Apple Silicon correctness workflow. The current policy keeps that heavy
+workflow disabled by default.
 
 Do not copy upstream release, bot, Slack, or required-check automation into
 MKL-Q without explicit review.

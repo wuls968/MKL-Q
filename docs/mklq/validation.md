@@ -58,14 +58,14 @@ and `benchmarks/mklq/results/example-smoke-2026-06-23.json`; these raw payloads
 are not tracked as public evidence.
 
 - Install-prefix build: passed.
-- Default public healthcheck: passed on 2026-06-24, with 24 steps passed and
+- Default public healthcheck: passed on 2026-06-24, with 25 steps passed and
   0 failed.
-- Latest full public healthcheck: passed on 2026-06-24, with 27 steps passed
+- Latest full public healthcheck: passed on 2026-06-24, with 28 steps passed
   and 0 failed.
 - One-command correctness gate: passed with 4 steps passed, 0 failed, and 0
   skipped, including the Metal runtime counter probe.
 - Public example smoke gate: passed, with 30 steps passed and 0 failed.
-- Current `benchmark_harness_tests`: `141 passed`.
+- Current `benchmark_harness_tests`: `149 passed`.
 - Current `cpu_sampling_counter_probe_parse`: 2 bounded reports, 14 expected,
   14 selected, 0 missing, and 0 failures; each report includes full-register
   and marginal probability-fill counter ctests.
@@ -215,22 +215,23 @@ python3 benchmarks/mklq/run_correctness_gate.py \
 python3 benchmarks/mklq/run_public_healthcheck.py --full --require-clean
 ```
 
-Latest default 2026-06-24 result: `24/24` steps passed. The latest full
-2026-06-24 result is `27/27` steps passed. The full gate includes Git
+Latest default 2026-06-24 result: `25/25` steps passed. The latest full
+2026-06-24 result is `28/28` steps passed. The full gate includes Git
 repository hygiene, tracked-artifact checks, public metadata checks, the public
-release checklist audit, the upstream sync audit, sanitized benchmark summary
-parsing, the clean CPU performance evidence guards, the Metal evidence boundary
-guard, bounded CPU sampling/probability counter evidence parsing, bounded Metal
-runtime counter evidence parsing, CPU and Metal counter docs drift detection,
-concrete public docs/workflows report-reference checks, helper `py_compile`,
-markdown links, benchmark evidence regeneration, healthcheck snapshot docs
-drift detection, benchmark harness tests, install-prefix build, the
-one-command correctness gate, and the public example smoke gate.
+release checklist audit, the upstream sync audit, the self-hosted Apple Silicon
+CI audit, sanitized benchmark summary parsing, the clean CPU performance
+evidence guards, the Metal evidence boundary guard, bounded CPU
+sampling/probability counter evidence parsing, bounded Metal runtime counter
+evidence parsing, CPU and Metal counter docs drift detection, concrete public
+docs/workflows report-reference checks, helper `py_compile`, markdown links,
+benchmark evidence regeneration, healthcheck snapshot docs drift detection,
+benchmark harness tests, install-prefix build, the one-command correctness
+gate, and the public example smoke gate.
 
 The ignored raw healthcheck JSON records the exact Git state for these local
 runs. The latest default healthcheck benchmark harness step reported
-`141 passed`; the latest full healthcheck benchmark harness step reported
-`141 passed`, the correctness gate reported 4 passed and 0 failed, and the
+`149 passed`; the latest full healthcheck benchmark harness step reported
+`149 passed`, the correctness gate reported 4 passed and 0 failed, and the
 public example smoke step reported 30 passed and 0 failed.
 
 ## Benchmark Evidence

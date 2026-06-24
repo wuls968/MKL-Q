@@ -163,6 +163,17 @@ def _load_public_release_checklist_audit_module():
     return module
 
 
+def _load_self_hosted_ci_audit_module():
+    repo_root = Path(__file__).resolve().parents[3]
+    script = repo_root / "benchmarks" / "mklq" / "run_self_hosted_ci_audit.py"
+    spec = importlib.util.spec_from_file_location("run_self_hosted_ci_audit",
+                                                  script)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    return module
+
+
 def _load_upstream_sync_audit_module():
     repo_root = Path(__file__).resolve().parents[3]
     script = repo_root / "benchmarks" / "mklq" / (
@@ -1031,6 +1042,7 @@ def test_mklq_public_healthcheck_plan_lists_escalating_gates(tmp_path):
         "public_metadata",
         "public_release_checklist_audit",
         "upstream_sync_audit",
+        "self_hosted_ci_audit",
         "public_claim_boundary",
         "benchmark_summary_parse",
         "performance_evidence_guard",
@@ -1070,6 +1082,8 @@ def test_mklq_public_healthcheck_plans_crz_distance_guard(tmp_path):
     assert steps.index("public_release_checklist_audit") < steps.index(
         "upstream_sync_audit")
     assert steps.index("upstream_sync_audit") < steps.index(
+        "self_hosted_ci_audit")
+    assert steps.index("self_hosted_ci_audit") < steps.index(
         "public_claim_boundary")
     assert steps.index("public_claim_boundary") < steps.index(
         "benchmark_summary_parse")
@@ -1217,6 +1231,24 @@ def test_mklq_public_healthcheck_passes_require_clean_to_upstream_sync_audit(
 
     assert result["status"] == "passed"
     assert "--require-clean" in seen["command"]
+
+
+def test_mklq_public_healthcheck_runs_self_hosted_ci_audit(monkeypatch,
+                                                           tmp_path):
+    module = _load_public_healthcheck_module()
+    config = _public_healthcheck_config(module, tmp_path)
+    seen = {}
+
+    def fake_run_command(config, command, env_overlay=None):
+        seen["command"] = command
+        return {"returncode": 0, "command": command}
+
+    monkeypatch.setattr(module, "run_command", fake_run_command)
+
+    result = module.run_self_hosted_ci_audit(config)
+
+    assert result["status"] == "passed"
+    assert seen["command"][1].endswith("run_self_hosted_ci_audit.py")
 
 
 def test_mklq_public_healthcheck_runs_crz_distance_guard(monkeypatch,
@@ -2803,6 +2835,13 @@ def test_mklq_public_healthcheck_compiles_upstream_sync_audit():
         module.PY_COMPILE_FILES)
 
 
+def test_mklq_public_healthcheck_compiles_self_hosted_ci_audit():
+    module = _load_public_healthcheck_module()
+
+    assert "benchmarks/mklq/run_self_hosted_ci_audit.py" in (
+        module.PY_COMPILE_FILES)
+
+
 def test_mklq_public_healthcheck_requires_cpu_sampling_counter_metadata():
     module = _load_public_healthcheck_module()
 
@@ -2861,6 +2900,21 @@ def test_mklq_public_hygiene_workflow_runs_release_checklist_audit():
         "Parse benchmark summaries")
 
 
+def test_mklq_public_hygiene_workflow_runs_self_hosted_ci_audit():
+    workflow = Path(".github/workflows/mklq-public-hygiene.yml").read_text(
+        encoding="utf-8")
+
+    assert "Audit self-hosted Apple Silicon CI readiness" in workflow
+    assert "python3 benchmarks/mklq/run_self_hosted_ci_audit.py" in workflow
+    assert "Self-hosted Apple Silicon CI Audit" in workflow
+    assert "benchmarks/mklq/README.md" in workflow
+    assert workflow.index("Audit public release checklist") < workflow.index(
+        "Audit self-hosted Apple Silicon CI readiness")
+    assert workflow.index(
+        "Audit self-hosted Apple Silicon CI readiness") < workflow.index(
+            "Parse benchmark summaries")
+
+
 def test_mklq_public_hygiene_workflow_checks_counter_report_files():
     workflow = Path(".github/workflows/mklq-public-hygiene.yml").read_text(
         encoding="utf-8")
@@ -2892,6 +2946,23 @@ def test_mklq_public_healthcheck_requires_upstream_sync_audit_metadata():
             "Upstream Sync Audit") in requirements
     assert ("docs/mklq/testing-matrix.md",
             "run_upstream_sync_audit.py") in requirements
+
+
+def test_mklq_public_healthcheck_requires_self_hosted_ci_audit_metadata():
+    module = _load_public_healthcheck_module()
+
+    requirements = set(module.public_metadata_requirements())
+
+    assert ("docs/mklq/apple-silicon-ci.md", "self-hosted") in requirements
+    assert ("docs/mklq/apple-silicon-ci.md",
+            "run_public_healthcheck.py --full --require-clean") in requirements
+    assert ("README.md", "apple-silicon-ci.md") in requirements
+    assert ("benchmarks/mklq/README.md",
+            "Self-hosted Apple Silicon CI Audit") in requirements
+    assert ("benchmarks/mklq/README.md",
+            "run_self_hosted_ci_audit.py") in requirements
+    assert ("docs/mklq/testing-matrix.md",
+            "run_self_hosted_ci_audit.py") in requirements
 
 
 def test_mklq_public_healthcheck_writes_json_report(monkeypatch, tmp_path):
@@ -3539,6 +3610,7 @@ def _write_release_checklist_audit_fixture(
             "docs/mklq/validation.md",
             "docs/mklq/known-limitations.md",
             "docs/mklq/testing-matrix.md",
+            "docs/mklq/apple-silicon-ci.md",
             "docs/mklq/maintainer-runbook.md",
             "docs/mklq/branch-protection.md",
             "docs/mklq/issue-labels.md",
@@ -3548,6 +3620,7 @@ def _write_release_checklist_audit_fixture(
             "benchmarks/mklq/run_public_release_checklist_audit.py",
             "benchmarks/mklq/run_public_healthcheck.py",
             "benchmarks/mklq/run_public_readiness_audit.py",
+            "benchmarks/mklq/run_self_hosted_ci_audit.py",
             "benchmarks/mklq/run_correctness_gate.py",
             "benchmarks/mklq/run_clean_cpu_benchmark.py",
             "benchmarks/mklq/check_performance_evidence.py",
@@ -3596,6 +3669,7 @@ git log --oneline -5
 - docs/mklq/validation.md
 - docs/mklq/known-limitations.md
 - docs/mklq/testing-matrix.md
+- docs/mklq/apple-silicon-ci.md
 - docs/mklq/developer-workflow.md
 - docs/mklq/maintainer-runbook.md
 - docs/mklq/branch-protection.md
@@ -3641,6 +3715,7 @@ python3 benchmarks/mklq/run_preflight_audit.py --require-clean
 python3 benchmarks/mklq/run_public_release_checklist_audit.py
 python3 benchmarks/mklq/run_public_healthcheck.py
 python3 benchmarks/mklq/run_public_healthcheck.py --full --require-clean
+python3 benchmarks/mklq/run_self_hosted_ci_audit.py
 python3 benchmarks/mklq/check_performance_evidence.py
 python3 benchmarks/mklq/check_metal_evidence.py
 python3 benchmarks/mklq/check_public_claims.py
@@ -3683,6 +3758,7 @@ Before pushing a public branch, run:
 python3 benchmarks/mklq/run_preflight_audit.py
 python3 benchmarks/mklq/run_public_release_checklist_audit.py
 python3 benchmarks/mklq/run_public_healthcheck.py
+python3 benchmarks/mklq/run_self_hosted_ci_audit.py
 git diff --check
 git ls-files .github/workflows | sort
 python3 benchmarks/mklq/check_public_claims.py
@@ -3704,6 +3780,8 @@ docs are summed across reports; repeated daily probes intentionally count the
 same selected counter tests once per report.
 The preflight `public_report_references` check fails when public docs or
 workflows reference untracked report files under `benchmarks/mklq/reports/*.json`.
+The self-hosted Apple Silicon CI readiness audit keeps the heavy correctness
+workflow disabled until a reviewed activation plan exists.
 """
 
 
@@ -3815,6 +3893,144 @@ def test_mklq_public_release_checklist_audit_rejects_missing_preflight_boundary(
     assert checks["preflight_reference_boundaries"]["status"] == "failed"
     assert "public_report_references" in (
         checks["preflight_reference_boundaries"]["details"]["missing"])
+
+
+def _self_hosted_ci_doc_text() -> str:
+    return """
+# MKL-Q Apple Silicon CI
+
+## Scope
+
+This self-hosted Apple Silicon plan is source-only and not release certification.
+It creates no tags, no GitHub Releases, and no wheels.
+
+## Runner Requirements
+
+Use self-hosted macOS ARM64 Apple Silicon with the mklq-apple-silicon label.
+The runner covers mklq-cpu and mklq-metal.
+
+## Workflow Policy
+
+Do not enable this heavy workflow by default. Use no secrets, read-only access,
+permissions: contents: read, timeout-minutes, and concurrency.
+
+## Validation Command
+
+Run run_public_healthcheck.py --full --require-clean and run_correctness_gate.py.
+Keep raw JSON under benchmarks/mklq/results/.
+
+## Activation Checklist
+
+Confirm no secrets and read-only permissions before enabling the workflow.
+
+## Failure Handling
+
+Classify build environment drift separately from backend regressions.
+
+## Security Boundary
+
+The runner must not publish artifacts and must not enable release automation.
+"""
+
+
+def _write_self_hosted_ci_audit_fixture(root: Path, doc_text: str):
+    docs = root / "docs" / "mklq"
+    workflow_dir = root / ".github" / "workflows"
+    docs.mkdir(parents=True)
+    workflow_dir.mkdir(parents=True)
+    (docs / "apple-silicon-ci.md").write_text(doc_text, encoding="utf-8")
+    (workflow_dir / "mklq-public-hygiene.yml").write_text("name: hygiene\n",
+                                                          encoding="utf-8")
+
+
+def test_mklq_self_hosted_ci_audit_builds_passing_report(monkeypatch,
+                                                         tmp_path):
+    module = _load_self_hosted_ci_audit_module()
+    _write_self_hosted_ci_audit_fixture(tmp_path, _self_hosted_ci_doc_text())
+    monkeypatch.setattr(
+        module, "command_output",
+        lambda root, args: ".github/workflows/mklq-public-hygiene.yml")
+    config = module.AuditConfig(repo_root=tmp_path,
+                                output=tmp_path / "results" /
+                                "self-hosted-ci-audit.json")
+
+    report = module.build_report(config)
+
+    assert report["schema_version"] == "mklq-self-hosted-ci-audit-v1"
+    assert report["summary"] == {"status": "passed", "passed": 4, "failed": 0}
+
+
+def test_mklq_self_hosted_ci_audit_rejects_missing_security_boundary(
+        monkeypatch, tmp_path):
+    module = _load_self_hosted_ci_audit_module()
+    _write_self_hosted_ci_audit_fixture(
+        tmp_path,
+        _self_hosted_ci_doc_text().replace("permissions: contents: read", ""))
+    monkeypatch.setattr(
+        module, "command_output",
+        lambda root, args: ".github/workflows/mklq-public-hygiene.yml")
+    config = module.AuditConfig(repo_root=tmp_path,
+                                output=tmp_path / "results" /
+                                "self-hosted-ci-audit.json")
+
+    report = module.build_report(config)
+
+    assert report["summary"]["status"] == "failed"
+    checks = {check["name"]: check for check in report["checks"]}
+    assert checks["doc_tokens"]["status"] == "failed"
+    assert "permissions: contents: read" in checks["doc_tokens"]["details"][
+        "missing"]
+
+
+def test_mklq_self_hosted_ci_audit_rejects_enabled_heavy_workflow(
+        monkeypatch, tmp_path):
+    module = _load_self_hosted_ci_audit_module()
+    _write_self_hosted_ci_audit_fixture(tmp_path, _self_hosted_ci_doc_text())
+    monkeypatch.setattr(
+        module, "command_output",
+        lambda root, args:
+        ".github/workflows/mklq-public-hygiene.yml\n.github/workflows/apple.yml")
+    config = module.AuditConfig(repo_root=tmp_path,
+                                output=tmp_path / "results" /
+                                "self-hosted-ci-audit.json")
+
+    report = module.build_report(config)
+
+    assert report["summary"]["status"] == "failed"
+    checks = {check["name"]: check for check in report["checks"]}
+    assert checks["workflow_boundary"]["status"] == "failed"
+    assert ".github/workflows/apple.yml" in checks["workflow_boundary"][
+        "details"]["unexpected_workflows"]
+
+
+def test_mklq_self_hosted_ci_audit_rejects_lightweight_heavy_command(
+        monkeypatch, tmp_path):
+    module = _load_self_hosted_ci_audit_module()
+    _write_self_hosted_ci_audit_fixture(tmp_path, _self_hosted_ci_doc_text())
+    (tmp_path / ".github" / "workflows" /
+     "mklq-public-hygiene.yml").write_text(
+         "name: hygiene\n"
+         "jobs:\n"
+         "  hygiene:\n"
+         "    runs-on: ubuntu-latest\n"
+         "    steps:\n"
+         "      - run: python3 benchmarks/mklq/run_public_healthcheck.py --full --require-clean\n",
+         encoding="utf-8")
+    monkeypatch.setattr(
+        module, "command_output",
+        lambda root, args: ".github/workflows/mklq-public-hygiene.yml")
+    config = module.AuditConfig(repo_root=tmp_path,
+                                output=tmp_path / "results" /
+                                "self-hosted-ci-audit.json")
+
+    report = module.build_report(config)
+
+    assert report["summary"]["status"] == "failed"
+    checks = {check["name"]: check for check in report["checks"]}
+    assert checks["workflow_boundary"]["status"] == "failed"
+    assert any(
+        "run_public_healthcheck.py --full" in item["token"]
+        for item in checks["workflow_boundary"]["details"]["forbidden_lines"])
 
 
 def _preflight_config(module,
