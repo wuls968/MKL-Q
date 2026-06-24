@@ -72,9 +72,9 @@ measurement/reset, benchmark scripts, or public release metadata.
 | Capability | Primary Evidence | Required When Changing | Current Gap |
 | --- | --- | --- | --- |
 | Target registration | `mklq_targets.config`, `test_mklq_targets.py`, `test_mklq_nvqpp_smoke.py` | Target YAML, backend name, preprocessor marker, install layout | Does not prove backend math |
-| Python target API | `test_mklq_python_api.py` | `cudaq.set_target`, Python runtime integration, observe/sample/run behavior | Limited to selected smoke kernels |
+| Python target API | `test_mklq_python_api.py` | `cudaq.set_target`, Python runtime integration, observe/sample/run behavior, and unsupported `noise_model` fail-fast behavior | Limited to selected smoke kernels |
 | C++ target API | `mklq_runtime_smoke.cpp`, `test_mklq_nvqpp_smoke.py` | `nvq++ --target`, target marker behavior, C++ runtime smoke | Not a broad C++ API suite |
-| CPU state-vector correctness | `test_mklq_cpu_correctness_fixtures.py`, `test_mklq_targets.py`, `MKLQCpuTester.cpp` | CPU gate semantics, sampling, state import/export, error handling, hot paths | Broader noise and full CUDA-Q backend parity are not covered |
+| CPU state-vector correctness | `test_mklq_cpu_correctness_fixtures.py`, `test_mklq_targets.py`, `MKLQCpuTester.cpp` | CPU gate semantics, sampling, state import/export, error handling, hot paths | No noisy simulation support; full CUDA-Q backend parity is not covered |
 | CPU performance-sensitive paths | `MKLQCpuTester.cpp`, `bench_mklq_targets.py`, clean CPU benchmark summaries, `run_cpu_sampling_counter_probe.py` | Single-qubit, controlled single-qubit, selected two-qubit, QFT-like composite, CRZ distance distribution and per-distance sweep diagnostics, seeded Clifford, probability, sampling fast paths, and selected native sampling phase plus probability-fill counter assertions | Benchmark evidence is local machine evidence only; CPU sampling/probability counter evidence is not timing evidence |
 | Metal resident gate paths | `test_mklq_metal_correctness_fixtures.py`, `MKLQMetalTester.cpp` | Resident single-target, controlled and multi-control single-target, parameterized Rx/Ry/Rz rotations, phase-family S/T/Sdg/Tdg gates, two-target, three-target, control gate kernels, and reupload after four-or-more-target unsupported gate fallback | Does not prove full GPU residency for every operation |
 | Metal probability/sampling paths | `MKLQMetalTester.cpp`, `bench_mklq_targets.py`, sanitized summaries, `run_metal_runtime_counter_probe.py` | Full-register probability fill, marginal probability, sampling path labels, static harness path-boundary labels, and selected runtime counter assertions | Sample draw/count accumulation remains host-side; static labels are not runtime counters |
@@ -104,7 +104,8 @@ measurement/reset, benchmark scripts, or public release metadata.
 - No GitHub-hosted Apple Silicon backend correctness CI yet.
 - No wheel, PyPI, installer, signing, or release artifact gate.
 - No claim of complete upstream CUDA-Q backend parity.
-- No broad noise-model validation for MKL-Q targets.
+- No noisy simulation support for MKL-Q targets; matching non-empty
+  `noise_model` usage is boundary-tested to fail fast.
 - No distributed simulation, multi-GPU, or remote QPU validation.
 - No guarantee that every operation stays on Metal for `mklq-metal`; unsupported paths may fall
   back to the MKL-Q fp64 CPU oracle.

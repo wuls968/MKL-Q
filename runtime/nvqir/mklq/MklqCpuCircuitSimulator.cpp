@@ -300,6 +300,31 @@ protected:
     validateUniqueQubits(task.controls, task.targets);
   }
 
+  void applyNoiseChannel(const std::string_view gateName,
+                         const std::vector<std::size_t> &controls,
+                         const std::vector<std::size_t> &targets,
+                         const std::vector<double> &params) override {
+    if (!cudaq::getExecutionContext())
+      return;
+
+    auto noiseModel = getNoiseModel();
+    if (!noiseModel)
+      return;
+
+    auto krausChannels = noiseModel->get_channels(std::string(gateName),
+                                                  targets, controls, params);
+    if (krausChannels.empty())
+      return;
+
+    deallocateState();
+    throw std::runtime_error(fmt::format(
+        MKLQ_SIMULATOR_DIAGNOSTIC_PREFIX
+        " noise_model is not supported yet for gate '{}'. Use a "
+        "noise-capable CUDA-Q target such as density-matrix-cpu for noisy "
+        "simulation.",
+        gateName));
+  }
+
   void validateSampleQubits(const std::vector<std::size_t> &qubits) const {
     std::unordered_set<std::size_t> seen;
     for (auto qubit : qubits) {

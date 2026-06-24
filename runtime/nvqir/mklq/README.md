@@ -178,10 +178,13 @@ target-marker output.
   state remains fp64 and is synchronized at CPU fallback/readback boundaries.
   Four-or-more-target gates and other unsupported paths still fall back to the
   MKL-Q CPU oracle, and the target is not yet a full Metal GPU backend.
+  `mklq-cpu` and `mklq-metal` are noiseless simulator targets: matching
+  non-empty `noise_model` usage fails fast, and noisy simulation remains future
+  work.
 - The first correctness gate covers basic state allocation, sampling, reset,
   state export/import, state index bounds, non-power-of-two state rejection,
   out-of-range qubit boundary checks, basic custom two-qubit operations,
   basic and parameterized observe paths, observe lists, shots-based observe,
   decorator-kernel `cudaq.run` mid-circuit feedback/reset paths, and
-  H/X/Y/Z/Rx/Ry/Rz/CNOT/CZ/SWAP circuits. Broader noise coverage should land
-  before treating MKL-Q as a complete drop-in CPU simulation target.
+  H/X/Y/Z/Rx/Ry/Rz/CNOT/CZ/SWAP circuits plus unsupported noise-model
+  fail-fast behavior.

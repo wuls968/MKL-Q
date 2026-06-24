@@ -81,6 +81,14 @@ That workflow checks public metadata, tracked artifact hygiene, benchmark
 summary parseability, and helper-script compilation. It does not build CUDA-Q,
 run the Apple Silicon simulator tests, or certify Metal runtime behavior.
 
+## Noise-Model Boundary
+
+`mklq-cpu` and `mklq-metal` are currently noiseless state-vector simulator
+targets. If a non-empty `noise_model` contains a channel matching an executed
+gate or measurement, MKL-Q fails fast instead of returning a noiseless result
+with only a warning. Use a noise-capable CUDA-Q target such as
+`density-matrix-cpu` for noisy simulation.
+
 ## Benchmark Boundary
 
 Tracked summaries under `benchmarks/mklq/reports/` are sanitized local evidence.
@@ -96,6 +104,8 @@ cross-machine performance certification.
 
 - No PyPI package, wheel, Homebrew formula, installer, or release tarball.
 - No claim of full CUDA-Q ecosystem replacement.
+- No noisy simulation support in `mklq-cpu` or `mklq-metal`; matching non-empty
+  `noise_model` usage is boundary-tested to fail fast.
 - No claim that `mklq-metal` is fully Metal-native or always faster than
   `mklq-cpu`.
 - No hosted CI coverage for Apple Silicon simulator correctness gates.
