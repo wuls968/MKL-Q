@@ -230,6 +230,9 @@ def render_markdown(summary: dict[str, Any]) -> str:
         "ctest cases. It is not release sign-off, not a benchmark result, "
         "and not proof that every operation stayed on Metal.",
         "",
+        "Aggregate counts are summed across tracked reports; repeated daily "
+        "probes intentionally count the same selected tests once per report.",
+        "",
         "## Aggregate",
         "",
         "| Field | Value |",

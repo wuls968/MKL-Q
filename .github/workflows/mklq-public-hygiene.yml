@@ -79,7 +79,9 @@ jobs:
           test -f benchmarks/mklq/summarize_cpu_sampling_counters.py
           test -f benchmarks/mklq/summarize_metal_runtime_counters.py
           test -f benchmarks/mklq/reports/local-cpu-sampling-counter-probe-2026-06-23.cpu-counter.json
+          test -f benchmarks/mklq/reports/local-cpu-sampling-counter-probe-2026-06-24.cpu-counter.json
           test -f benchmarks/mklq/reports/local-metal-runtime-counter-probe-2026-06-23.counter.json
+          test -f benchmarks/mklq/reports/local-metal-runtime-counter-probe-2026-06-24.counter.json
           grep -q 'examples/mklq' README.md
           grep -q 'mklq-cpu' examples/mklq/README.md
           grep -q 'mklq-metal' examples/mklq/README.md
@@ -133,8 +135,15 @@ jobs:
           grep -q 'Public Hygiene' docs/mklq/developer-workflow.md
           grep -q 'check_metal_evidence.py' docs/mklq/developer-workflow.md
           grep -q 'check_performance_evidence.py' docs/mklq/developer-workflow.md
+          grep -q 'check_public_claims.py' docs/mklq/developer-workflow.md
+          grep -q 'check_sampling_profile_evidence.py' docs/mklq/developer-workflow.md
+          grep -q 'check_cpu_sampling_counter_docs.py' docs/mklq/developer-workflow.md
+          grep -q 'check_metal_runtime_counter_docs.py' docs/mklq/developer-workflow.md
           grep -q 'run_preflight_audit.py' docs/mklq/developer-workflow.md
+          grep -q 'run_public_release_checklist_audit.py' docs/mklq/developer-workflow.md
           grep -q 'run_public_healthcheck.py' docs/mklq/developer-workflow.md
+          grep -q 'multiple bounded reports are tracked' docs/mklq/developer-workflow.md
+          grep -q 'selected counter tests once per report' docs/mklq/developer-workflow.md
           grep -q 'Maintainer Principles' docs/mklq/maintainer-runbook.md
           grep -q 'Routine Health Check' docs/mklq/maintainer-runbook.md
           grep -q 'check_metal_evidence.py' docs/mklq/maintainer-runbook.md
@@ -228,6 +237,12 @@ jobs:
         run: |
           set -euo pipefail
           python3 benchmarks/mklq/check_public_claims.py
+
+      - name: Audit public release checklist
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 benchmarks/mklq/run_public_release_checklist_audit.py
 
       - name: Parse benchmark summaries
         shell: bash

@@ -15,13 +15,16 @@ boundary and evidence limits.
 
 ## Current Evidence Snapshot
 
-Latest local validation refresh: 2026-06-23.
+Latest local validation refresh: 2026-06-24.
 
 The install-prefix build, one-command correctness gate, public example smoke
 gate, full public healthcheck, and standalone install-prefix Python subset were
 refreshed on the local MKL-Q branch after enforcing administrator branch
 protection and switching maintainer flow to PR-first. The full public
 healthcheck was refreshed after adding CPU probability-fill counter evidence.
+The default public healthcheck and one-command correctness gate were refreshed
+again on 2026-06-24 after syncing CUDA-Q upstream and before refreshing the
+tracked bounded CPU/Metal counter reports.
 The clean CPU benchmark summary was refreshed separately against
 `34f4b260d1c657ad626c526eed4e6b9d3a441be4` after adding QFT-like and seeded
 Clifford composite rows to the clean evidence gate.
@@ -31,37 +34,47 @@ resident built-in Rx/Ry/Rz, controlled-Rx/Ry/Rz, phase-family S/T/Sdg/Tdg,
 multi-control single-qubit resident, resident three-target gates, and
 four-or-more-target unsupported gate fallback/reupload fixtures. It also reran
 the full install/build/correctness/example gate on `main` after the CPU
-probability-fill evidence PR landed. The current CPU counter evidence adds
-explicit full-register and marginal probability-fill counter ctests alongside
-the existing sampling phase counter ctests.
+probability-fill evidence PR landed. The current tracked CPU counter evidence
+includes two bounded reports, each with explicit full-register and marginal
+probability-fill counter ctests alongside the existing sampling phase counter
+ctests. The current tracked Metal runtime counter evidence likewise includes
+two bounded reports. Counter-summary aggregate counts are summed across tracked
+reports, so repeated daily probes intentionally count the same selected tests
+once per report.
 
 Raw wrapper output was written to ignored local paths
+`benchmarks/mklq/results/public-healthcheck-2026-06-24.json`,
 `benchmarks/mklq/results/public-healthcheck-full-2026-06-22.json`,
 `benchmarks/mklq/results/public-healthcheck-full-2026-06-23.json`,
 `benchmarks/mklq/results/local-correctness-gate-2026-06-22.json`,
 `benchmarks/mklq/results/local-correctness-gate-2026-06-23.json`,
+`benchmarks/mklq/results/local-correctness-gate-2026-06-24.json`,
 `benchmarks/mklq/results/local-metal-runtime-counter-probe-2026-06-22.counter.json`,
 `benchmarks/mklq/results/local-metal-runtime-counter-probe-2026-06-23.counter.json`,
+`benchmarks/mklq/results/local-metal-runtime-counter-probe-2026-06-24.counter.json`,
 `benchmarks/mklq/results/local-sampling-scaling-cpu-q18-q22-2026-06-23.json`,
 and `benchmarks/mklq/results/example-smoke-2026-06-23.json`; these raw payloads
 are not tracked as public evidence.
 
 - Install-prefix build: passed.
-- Default public healthcheck: passed, with 21 steps passed and 0 failed.
-- Full public healthcheck: passed, with 24 steps passed and 0 failed.
+- Default public healthcheck: passed on 2026-06-24, with 23 steps passed and
+  0 failed.
+- Latest full public healthcheck: passed on 2026-06-23, with 24 steps passed
+  and 0 failed.
 - One-command correctness gate: passed with 4 steps passed, 0 failed, and 0
   skipped, including the Metal runtime counter probe.
 - Public example smoke gate: passed, with 30 steps passed and 0 failed.
-- Current `benchmark_harness_tests`: `118 passed`.
-- Current `cpu_sampling_counter_probe_parse`: 7 expected, 7 selected, 0
-  missing, and 7 passed, including full-register and marginal
-  probability-fill counter ctests.
+- Current `benchmark_harness_tests`: `139 passed`.
+- Current `cpu_sampling_counter_probe_parse`: 2 bounded reports, 14 expected,
+  14 selected, 0 missing, and 0 failures; each report includes full-register
+  and marginal probability-fill counter ctests.
 - Standalone install-prefix Python subset: `35 passed`.
 - `python_target_smoke`: `57 passed`.
 - `nvqpp_smoke`: `2 passed`.
 - Current `target_config_ctest`: `88/88 passed`.
-- Current `metal_runtime_counter_probe`: 20 expected, 20 selected, 0 missing,
-  and 20 passed, with each counter ctest run independently.
+- Current tracked `metal_runtime_counter_probe`: 2 bounded reports, 40
+  expected, 40 selected, 0 missing, and 0 failures; each report runs 20
+  counter ctests independently.
 - Clean CPU benchmark gate: passed, with 18 q20 `qpp-cpu`/`mklq-cpu` rows and
   18 rows reporting `status == "ok"`.
 - Focused multi-control CPU benchmark evidence: passed, with 2 q20
@@ -152,9 +165,8 @@ python3 benchmarks/mklq/run_correctness_gate.py \
   --build-dir build-python
 ```
 
-Latest local result: passed on 2026-06-23 inside the full public healthcheck
-after adding CPU probability-fill counter evidence. It reported 4 wrapper steps
-passed, 0 failed, and 0 skipped. The step-level results were:
+Latest local result: passed on 2026-06-24 after the upstream sync. It reported
+4 wrapper steps passed, 0 failed, and 0 skipped. The step-level results were:
 
 - `python_target_smoke`: `57 passed`.
 - `nvqpp_smoke`: `2 passed`.
@@ -201,19 +213,22 @@ python3 benchmarks/mklq/run_correctness_gate.py \
 python3 benchmarks/mklq/run_public_healthcheck.py --full --require-clean
 ```
 
-Latest 2026-06-23 result: `24/24` steps passed. This includes Git
+Latest default 2026-06-24 result: `23/23` steps passed. The latest full
+2026-06-23 result remains `24/24` steps passed. The full gate includes Git
 repository hygiene, tracked-artifact checks, public metadata checks, sanitized
 benchmark summary parsing, the clean CPU performance evidence guards, the Metal
 evidence boundary guard, bounded CPU sampling/probability counter evidence
 parsing, bounded Metal runtime counter evidence parsing, CPU and Metal counter
-docs drift detection, helper `py_compile`, markdown links, benchmark evidence
-regeneration, benchmark harness tests, install-prefix build, the one-command
-correctness gate, and the public example smoke gate.
+docs drift detection, concrete public docs/workflows report-reference checks,
+helper `py_compile`, markdown links, benchmark evidence regeneration,
+benchmark harness tests, install-prefix build, the one-command correctness
+gate, and the public example smoke gate.
 
-The ignored raw healthcheck JSON records the exact Git state for this local
-run. The benchmark harness step reported `118 passed`, the correctness gate
-reported 4 passed and 0 failed, and the public example smoke step reported 30
-passed and 0 failed.
+The ignored raw healthcheck JSON records the exact Git state for these local
+runs. The latest default healthcheck benchmark harness step reported
+`139 passed`; the latest full healthcheck benchmark harness step reported
+`118 passed`, the correctness gate reported 4 passed and 0 failed, and the
+public example smoke step reported 30 passed and 0 failed.
 
 ## Benchmark Evidence
 

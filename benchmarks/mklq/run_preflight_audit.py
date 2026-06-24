@@ -33,6 +33,8 @@ TRACKED_ARTIFACT_PATTERN = re.compile(
     r"\.pyc$|\.DS_Store$|^build(-python)?/|"
     r"^benchmarks/mklq/results/|^docs/superpowers/|"
     r"^(dist|wheelhouse)/|\.(whl|dmg|pkg|zip)$|\.tar\.gz$")
+REPORT_REFERENCE_PATTERN = re.compile(
+    r"benchmarks/mklq/reports/[^\s|)`'\"<>,]+\.json")
 
 
 @dataclass(frozen=True)
@@ -42,6 +44,7 @@ class PreflightConfig:
     output: Path
     require_clean: bool
     check_github: bool
+    preview_report_reference_adds: bool = False
 
 
 def repo_root() -> Path:
@@ -177,6 +180,75 @@ def check_tracked_artifacts(config: PreflightConfig) -> dict[str, Any]:
                   details) if bad else passed("tracked_artifacts", details)
 
 
+def public_reference_files(repo_root: Path) -> list[Path]:
+    paths = [
+        repo_root / "README.md",
+        repo_root / "benchmarks" / "mklq" / "README.md",
+        repo_root / "examples" / "mklq" / "README.md",
+        repo_root / ".github" / "pull_request_template.md",
+    ]
+    paths.extend((repo_root / "docs" / "mklq").glob("*.md"))
+    paths.extend((repo_root / ".github" / "workflows").glob("*.yml"))
+    paths.extend((repo_root / ".github" / "workflows").glob("*.yaml"))
+    return sorted(path for path in paths if path.exists())
+
+
+def is_concrete_report_reference(path: str) -> bool:
+    return "*" not in path and "YYYY-MM-DD" not in path
+
+
+def check_public_report_references(config: PreflightConfig) -> dict[str, Any]:
+    tracked = set(command_output(config.repo_root, ["git",
+                                                    "ls-files"]).splitlines())
+    references: list[dict[str, str]] = []
+    for path in public_reference_files(config.repo_root):
+        text = path.read_text(encoding="utf-8", errors="replace")
+        source = path.relative_to(config.repo_root).as_posix()
+        for match in REPORT_REFERENCE_PATTERN.finditer(text):
+            report = match.group(0)
+            if is_concrete_report_reference(report):
+                references.append({"source": source, "report": report})
+
+    reports = sorted({reference["report"] for reference in references})
+    preview_added: list[str] = []
+    if config.preview_report_reference_adds:
+        untracked_existing_reports = set(
+            command_output(config.repo_root, [
+                "git", "ls-files", "--others", "--exclude-standard", "--",
+                "benchmarks/mklq/reports"
+            ]).splitlines())
+        preview_added = sorted(
+            report for report in reports
+            if report in untracked_existing_reports and
+            (config.repo_root / report).exists())
+        tracked.update(preview_added)
+
+    missing = [
+        report for report in reports if not (config.repo_root / report).exists()
+    ]
+    untracked = [
+        report for report in reports
+        if (config.repo_root / report).exists() and report not in tracked
+    ]
+    details = {
+        "reference_count": len(references),
+        "references": references,
+        "referenced_reports": reports,
+        "missing_reports": missing,
+        "untracked_reports": untracked,
+        "preview_report_reference_adds": config.preview_report_reference_adds,
+        "preview_added_reports": preview_added,
+    }
+    failures = []
+    if missing:
+        failures.append("public docs or workflows reference missing report files")
+    if untracked:
+        failures.append("public docs or workflows reference untracked report files")
+    return failed("public_report_references", "; ".join(failures),
+                  details) if failures else passed("public_report_references",
+                                                   details)
+
+
 def check_ignored_local_artifacts(config: PreflightConfig) -> dict[str, Any]:
     status = command_output(config.repo_root,
                             ["git", "status", "--ignored", "--short"])
@@ -245,6 +317,7 @@ def build_report(config: PreflightConfig) -> dict[str, Any]:
         check_git_worktree(config),
         check_git_locks(config),
         check_tracked_artifacts(config),
+        check_public_report_references(config),
         check_ignored_local_artifacts(config),
         check_branch_protection(config),
     ]
@@ -273,6 +346,13 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--skip-github",
                         action="store_true",
                         help="Skip live GitHub branch protection checks.")
+    parser.add_argument(
+        "--preview-report-reference-adds",
+        action="store_true",
+        help=("Local planning only: treat existing untracked report files "
+              "referenced by public docs or workflows as if they were added to "
+              "Git for the public_report_references check. Does not modify the "
+              "Git index."))
     return parser.parse_args(argv)
 
 
@@ -286,7 +366,9 @@ def main(argv: list[str]) -> int:
                              repo=args.repo,
                              output=output,
                              require_clean=args.require_clean,
-                             check_github=not args.skip_github)
+                             check_github=not args.skip_github,
+                             preview_report_reference_adds=args.
+                             preview_report_reference_adds)
     report = build_report(config)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n",

@@ -10,6 +10,7 @@ import argparse
 import importlib.util
 import json
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -2180,6 +2181,8 @@ def test_mklq_metal_runtime_counter_summary_renders_markdown(tmp_path):
     assert "runtime counter evidence" in markdown
     assert "not release sign-off" in markdown
     assert "not proof that every operation stayed on Metal" in markdown
+    assert "Aggregate counts are summed across tracked reports" in markdown
+    assert "once per report" in markdown
 
 
 def test_mklq_metal_runtime_counter_summary_fails_unsafe_boundaries(tmp_path):
@@ -2459,6 +2462,8 @@ def test_mklq_cpu_sampling_counter_summary_renders_markdown(tmp_path):
     assert "not release sign-off" in markdown
     assert "not a benchmark result" in markdown
     assert "not cross-machine performance proof" in markdown
+    assert "Aggregate counts are summed across tracked reports" in markdown
+    assert "once per report" in markdown
 
 
 def test_mklq_cpu_sampling_counter_docs_guard_detects_stale_markdown(
@@ -2781,6 +2786,45 @@ def test_mklq_public_healthcheck_requires_release_checklist_audit_metadata():
             "Public Release Checklist Audit") in requirements
     assert ("docs/mklq/testing-matrix.md",
             "run_public_release_checklist_audit.py") in requirements
+    assert ("docs/mklq/developer-workflow.md",
+            "run_public_release_checklist_audit.py") in requirements
+    assert ("docs/mklq/developer-workflow.md",
+            "multiple bounded reports are tracked") in requirements
+    assert ("docs/mklq/developer-workflow.md",
+            "selected counter tests once per report") in requirements
+
+
+def test_mklq_public_hygiene_workflow_runs_release_checklist_audit():
+    workflow = Path(".github/workflows/mklq-public-hygiene.yml").read_text(
+        encoding="utf-8")
+
+    assert "Audit public release checklist" in workflow
+    assert "python3 benchmarks/mklq/run_public_release_checklist_audit.py" in (
+        workflow)
+    assert workflow.index("Check public claim boundaries") < workflow.index(
+        "Audit public release checklist")
+    assert workflow.index("Audit public release checklist") < workflow.index(
+        "Parse benchmark summaries")
+
+
+def test_mklq_public_hygiene_workflow_checks_counter_report_files():
+    workflow = Path(".github/workflows/mklq-public-hygiene.yml").read_text(
+        encoding="utf-8")
+    docs_text = "\n".join(
+        Path(path).read_text(encoding="utf-8") for path in [
+            "docs/mklq/cpu-sampling-counters.md",
+            "docs/mklq/metal-runtime-counters.md",
+        ])
+    reports = sorted(
+        set(
+            re.findall(
+                r"benchmarks/mklq/reports/[^\s|]+\.(?:cpu-counter|counter)\.json",
+                docs_text,
+            )))
+
+    assert reports
+    for report in reports:
+        assert f"test -f {report}" in workflow
 
 
 def test_mklq_public_healthcheck_requires_upstream_sync_audit_metadata():
@@ -3417,7 +3461,10 @@ def test_mklq_upstream_sync_audit_rejects_stale_remote_when_requested(
         "local-upstream-sha")
 
 
-def _write_release_checklist_audit_fixture(root: Path, checklist_text: str):
+def _write_release_checklist_audit_fixture(
+        root: Path,
+        checklist_text: str,
+        developer_workflow_text: str | None = None):
     docs = root / "docs" / "mklq"
     benchmarks = root / "benchmarks" / "mklq"
     github = root / ".github" / "workflows"
@@ -3426,6 +3473,10 @@ def _write_release_checklist_audit_fixture(root: Path, checklist_text: str):
     github.mkdir(parents=True)
     (docs / "public-release-checklist.md").write_text(checklist_text,
                                                        encoding="utf-8")
+    if developer_workflow_text is None:
+        developer_workflow_text = _developer_workflow_text()
+    (docs / "developer-workflow.md").write_text(developer_workflow_text,
+                                                encoding="utf-8")
     for relative in [
             "README.md",
             "docs/mklq/release-policy.md",
@@ -3491,6 +3542,7 @@ git log --oneline -5
 - docs/mklq/validation.md
 - docs/mklq/known-limitations.md
 - docs/mklq/testing-matrix.md
+- docs/mklq/developer-workflow.md
 - docs/mklq/maintainer-runbook.md
 - docs/mklq/branch-protection.md
 - docs/mklq/issue-labels.md
@@ -3503,6 +3555,10 @@ git status --ignored --short
 git ls-files .github | sort
 git diff --check
 ```
+
+The `public_report_references` check verifies concrete
+`benchmarks/mklq/reports/*.json` references in public docs and workflows and
+fails when public docs or workflows reference untracked report files.
 
 ## Local Build Gate
 
@@ -3561,6 +3617,42 @@ python3 benchmarks/mklq/run_public_readiness_audit.py
 """
 
 
+def _developer_workflow_text() -> str:
+    return """
+# MKL-Q Developer Workflow
+
+## Public Hygiene
+
+Before pushing a public branch, run:
+
+```bash
+python3 benchmarks/mklq/run_preflight_audit.py
+python3 benchmarks/mklq/run_public_release_checklist_audit.py
+python3 benchmarks/mklq/run_public_healthcheck.py
+git diff --check
+git ls-files .github/workflows | sort
+python3 benchmarks/mklq/check_public_claims.py
+python3 benchmarks/mklq/check_performance_evidence.py
+python3 benchmarks/mklq/check_metal_evidence.py
+python3 benchmarks/mklq/check_sampling_profile_evidence.py
+python3 benchmarks/mklq/check_cpu_sampling_counter_docs.py
+python3 benchmarks/mklq/check_metal_runtime_counter_docs.py
+python3 -m py_compile \
+  benchmarks/mklq/run_cpu_scaling_benchmark.py \
+  benchmarks/mklq/run_sampling_scaling_benchmark.py \
+  benchmarks/mklq/run_upstream_sync_audit.py \
+  benchmarks/mklq/summarize_cpu_sampling_counters.py \
+  benchmarks/mklq/summarize_metal_runtime_counters.py
+```
+
+When multiple bounded reports are tracked, aggregate counts in the generated
+docs are summed across reports; repeated daily probes intentionally count the
+same selected counter tests once per report.
+The preflight `public_report_references` check fails when public docs or
+workflows reference untracked report files under `benchmarks/mklq/reports/*.json`.
+"""
+
+
 def test_mklq_public_release_checklist_audit_builds_passing_report(tmp_path):
     module = _load_public_release_checklist_audit_module()
     _write_release_checklist_audit_fixture(tmp_path, _release_checklist_text())
@@ -3573,13 +3665,15 @@ def test_mklq_public_release_checklist_audit_builds_passing_report(tmp_path):
 
     assert report["schema_version"] == (
         "mklq-public-release-checklist-audit-v1")
-    assert report["summary"] == {"status": "passed", "passed": 5, "failed": 0}
+    assert report["summary"] == {"status": "passed", "passed": 7, "failed": 0}
     checks = {check["name"]: check for check in report["checks"]}
     assert checks["checklist_structure"]["status"] == "passed"
     assert checks["checklist_commands"]["status"] == "passed"
     assert checks["referenced_files"]["status"] == "passed"
     assert checks["source_only_boundaries"]["status"] == "passed"
+    assert checks["preflight_reference_boundaries"]["status"] == "passed"
     assert checks["healthcheck_integration"]["status"] == "passed"
+    assert checks["developer_workflow_commands"]["status"] == "passed"
 
 
 def test_mklq_public_release_checklist_audit_rejects_missing_full_gate(
@@ -3624,13 +3718,64 @@ def test_mklq_public_release_checklist_audit_rejects_missing_self_gate(
                for item in checks["checklist_commands"]["details"]["missing"])
 
 
-def _preflight_config(module, tmp_path, *, require_clean=True, check_github=True):
+def test_mklq_public_release_checklist_audit_rejects_stale_developer_workflow(
+        tmp_path):
+    module = _load_public_release_checklist_audit_module()
+    developer_workflow = _developer_workflow_text().replace(
+        "python3 benchmarks/mklq/check_cpu_sampling_counter_docs.py\n", "")
+    _write_release_checklist_audit_fixture(tmp_path,
+                                           _release_checklist_text(),
+                                           developer_workflow)
+    config = module.AuditConfig(
+        repo_root=tmp_path,
+        output=tmp_path / "results" / "release-checklist-audit.json",
+    )
+
+    report = module.build_report(config)
+
+    assert report["summary"]["status"] == "failed"
+    checks = {check["name"]: check for check in report["checks"]}
+    assert checks["developer_workflow_commands"]["status"] == "failed"
+    assert any("check_cpu_sampling_counter_docs.py" in item for item in
+               checks["developer_workflow_commands"]["details"]["missing"])
+
+
+def test_mklq_public_release_checklist_audit_rejects_missing_preflight_boundary(
+        tmp_path):
+    module = _load_public_release_checklist_audit_module()
+    checklist = _release_checklist_text().replace(
+        "The `public_report_references` check verifies concrete\n"
+        "`benchmarks/mklq/reports/*.json` references in public docs and workflows and\n"
+        "fails when public docs or workflows reference untracked report files.\n",
+        "")
+    _write_release_checklist_audit_fixture(tmp_path, checklist)
+    config = module.AuditConfig(
+        repo_root=tmp_path,
+        output=tmp_path / "results" / "release-checklist-audit.json",
+    )
+
+    report = module.build_report(config)
+
+    assert report["summary"]["status"] == "failed"
+    checks = {check["name"]: check for check in report["checks"]}
+    assert checks["preflight_reference_boundaries"]["status"] == "failed"
+    assert "public_report_references" in (
+        checks["preflight_reference_boundaries"]["details"]["missing"])
+
+
+def _preflight_config(module,
+                      tmp_path,
+                      *,
+                      require_clean=True,
+                      check_github=True,
+                      preview_report_reference_adds=False):
     return module.PreflightConfig(
         repo_root=tmp_path,
         repo="wuls968/MKL-Q",
         output=tmp_path / "preflight.json",
         require_clean=require_clean,
         check_github=check_github,
+        preview_report_reference_adds=preview_report_reference_adds,
     )
 
 
@@ -3714,11 +3859,12 @@ def test_mklq_preflight_audit_builds_passing_report(monkeypatch, tmp_path):
     assert report["schema_version"] == "mklq-preflight-audit-v1"
     assert report["summary"] == {
         "status": "passed",
-        "passed": 5,
+        "passed": 6,
         "failed": 0,
     }
     checks = {check["name"]: check for check in report["checks"]}
     assert checks["git_locks"]["details"]["lock_files"] == []
+    assert checks["public_report_references"]["status"] == "passed"
     assert checks["ignored_local_artifacts"]["details"]["ignored_count"] == 3
     assert checks["branch_protection"]["status"] == "passed"
     assert any(call[:2] == ["gh", "api"] for call in calls)
@@ -3828,6 +3974,193 @@ def test_mklq_preflight_audit_rejects_locks_raw_artifacts_and_bad_protection(
     assert "branch is not protected" in failures
     assert "required status check is missing" in failures
     assert "administrator enforcement is not enabled" in failures
+
+
+def test_mklq_preflight_audit_accepts_tracked_public_report_references(
+        monkeypatch, tmp_path):
+    module = _load_preflight_audit_module()
+    config = _preflight_config(module, tmp_path, check_github=False)
+    report = (
+        "benchmarks/mklq/reports/local-cpu-sampling-counter-probe.cpu-counter.json"
+    )
+    (tmp_path / "docs" / "mklq").mkdir(parents=True)
+    (tmp_path / ".github" / "workflows").mkdir(parents=True)
+    (tmp_path / "benchmarks" / "mklq" / "reports").mkdir(parents=True)
+    (tmp_path / "docs" / "mklq" / "cpu-sampling-counters.md").write_text(
+        "\n".join([
+            f"| {report} | passed |",
+            "benchmarks/mklq/reports/local-cpu-sampling-counter-probe-YYYY-MM-DD.cpu-counter.json",
+            "benchmarks/mklq/reports/*.counter.json",
+        ]),
+        encoding="utf-8")
+    (tmp_path / ".github" / "workflows" /
+     "mklq-public-hygiene.yml").write_text(
+         f"run: test -f {report}\n",
+         encoding="utf-8")
+    (tmp_path / report).write_text("{}", encoding="utf-8")
+
+    def fake_command_output(cwd, command):
+        if command == ["git", "ls-files"]:
+            return "\n".join([
+                "docs/mklq/cpu-sampling-counters.md",
+                ".github/workflows/mklq-public-hygiene.yml",
+                report,
+            ])
+        raise AssertionError(command)
+
+    monkeypatch.setattr(module, "command_output", fake_command_output)
+
+    result = module.check_public_report_references(config)
+
+    assert result["status"] == "passed"
+    assert result["details"]["referenced_reports"] == [report]
+    assert result["details"]["reference_count"] == 2
+    assert {
+        "source": ".github/workflows/mklq-public-hygiene.yml",
+        "report": report,
+    } in result["details"]["references"]
+    assert result["details"]["untracked_reports"] == []
+
+
+def test_mklq_preflight_audit_rejects_untracked_public_report_references(
+        monkeypatch, tmp_path):
+    module = _load_preflight_audit_module()
+    config = _preflight_config(module, tmp_path, check_github=False)
+    tracked_report = (
+        "benchmarks/mklq/reports/local-metal-runtime-counter-probe.counter.json"
+    )
+    untracked_report = (
+        "benchmarks/mklq/reports/local-metal-runtime-counter-probe-new.counter.json"
+    )
+    missing_report = (
+        "benchmarks/mklq/reports/local-cpu-sampling-counter-probe-missing.cpu-counter.json"
+    )
+    (tmp_path / "docs" / "mklq").mkdir(parents=True)
+    (tmp_path / "benchmarks" / "mklq" / "reports").mkdir(parents=True)
+    (tmp_path / "docs" / "mklq" / "metal-runtime-counters.md").write_text(
+        "\n".join([
+            f"| {tracked_report} | passed |",
+            f"| {untracked_report} | passed |",
+            f"| {missing_report} | passed |",
+        ]),
+        encoding="utf-8")
+    (tmp_path / tracked_report).write_text("{}", encoding="utf-8")
+    (tmp_path / untracked_report).write_text("{}", encoding="utf-8")
+
+    def fake_command_output(cwd, command):
+        if command == ["git", "ls-files"]:
+            return "\n".join([
+                "docs/mklq/metal-runtime-counters.md",
+                tracked_report,
+            ])
+        raise AssertionError(command)
+
+    monkeypatch.setattr(module, "command_output", fake_command_output)
+
+    result = module.check_public_report_references(config)
+
+    assert result["status"] == "failed"
+    assert "public docs or workflows reference untracked report files" in result[
+        "message"]
+    assert "public docs or workflows reference missing report files" in result[
+        "message"]
+    assert result["details"]["untracked_reports"] == [untracked_report]
+    assert result["details"]["missing_reports"] == [missing_report]
+
+
+def test_mklq_preflight_audit_previews_report_reference_adds(monkeypatch,
+                                                             tmp_path):
+    module = _load_preflight_audit_module()
+    config = _preflight_config(module,
+                               tmp_path,
+                               check_github=False,
+                               preview_report_reference_adds=True)
+    tracked_report = (
+        "benchmarks/mklq/reports/local-cpu-sampling-counter-probe.cpu-counter.json"
+    )
+    pending_report = (
+        "benchmarks/mklq/reports/local-cpu-sampling-counter-probe-new.cpu-counter.json"
+    )
+    missing_report = (
+        "benchmarks/mklq/reports/local-metal-runtime-counter-probe-missing.counter.json"
+    )
+    (tmp_path / "docs" / "mklq").mkdir(parents=True)
+    (tmp_path / ".github" / "workflows").mkdir(parents=True)
+    (tmp_path / "benchmarks" / "mklq" / "reports").mkdir(parents=True)
+    (tmp_path / "docs" / "mklq" / "cpu-sampling-counters.md").write_text(
+        "\n".join([
+            f"| {tracked_report} | passed |",
+            f"| {pending_report} | passed |",
+        ]),
+        encoding="utf-8")
+    (tmp_path / ".github" / "workflows" /
+     "mklq-public-hygiene.yml").write_text(
+         f"run: test -f {missing_report}\n",
+         encoding="utf-8")
+    (tmp_path / tracked_report).write_text("{}", encoding="utf-8")
+    (tmp_path / pending_report).write_text("{}", encoding="utf-8")
+
+    def fake_command_output(cwd, command):
+        if command == ["git", "ls-files"]:
+            return "\n".join([
+                "docs/mklq/cpu-sampling-counters.md",
+                ".github/workflows/mklq-public-hygiene.yml",
+                tracked_report,
+            ])
+        if command == [
+                "git", "ls-files", "--others", "--exclude-standard", "--",
+                "benchmarks/mklq/reports"
+        ]:
+            return pending_report
+        raise AssertionError(command)
+
+    monkeypatch.setattr(module, "command_output", fake_command_output)
+
+    result = module.check_public_report_references(config)
+
+    assert result["status"] == "failed"
+    assert result["details"]["preview_report_reference_adds"] is True
+    assert result["details"]["preview_added_reports"] == [pending_report]
+    assert result["details"]["untracked_reports"] == []
+    assert result["details"]["missing_reports"] == [missing_report]
+
+
+def test_mklq_preflight_audit_preview_passes_for_pending_report_adds(
+        monkeypatch, tmp_path):
+    module = _load_preflight_audit_module()
+    config = _preflight_config(module,
+                               tmp_path,
+                               check_github=False,
+                               preview_report_reference_adds=True)
+    pending_report = (
+        "benchmarks/mklq/reports/local-metal-runtime-counter-probe-new.counter.json"
+    )
+    (tmp_path / ".github" / "workflows").mkdir(parents=True)
+    (tmp_path / "benchmarks" / "mklq" / "reports").mkdir(parents=True)
+    (tmp_path / ".github" / "workflows" /
+     "mklq-public-hygiene.yml").write_text(
+         f"run: test -f {pending_report}\n",
+         encoding="utf-8")
+    (tmp_path / pending_report).write_text("{}", encoding="utf-8")
+
+    def fake_command_output(cwd, command):
+        if command == ["git", "ls-files"]:
+            return ".github/workflows/mklq-public-hygiene.yml"
+        if command == [
+                "git", "ls-files", "--others", "--exclude-standard", "--",
+                "benchmarks/mklq/reports"
+        ]:
+            return pending_report
+        raise AssertionError(command)
+
+    monkeypatch.setattr(module, "command_output", fake_command_output)
+
+    result = module.check_public_report_references(config)
+
+    assert result["status"] == "passed"
+    assert result["details"]["preview_added_reports"] == [pending_report]
+    assert result["details"]["untracked_reports"] == []
+    assert result["details"]["missing_reports"] == []
 
 
 def test_mklq_summary_renderer_builds_stable_markdown(tmp_path):

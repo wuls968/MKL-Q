@@ -4,16 +4,18 @@ This file is generated from bounded `.cpu-counter.json` reports under `benchmark
 
 Caveat: this is sampling phase counter evidence and probability-fill counter evidence from selected build-tree ctest cases. It is not release sign-off, not a benchmark result, and not cross-machine performance proof.
 
+Aggregate counts are summed across tracked reports; repeated daily probes intentionally count the same selected tests once per report.
+
 ## Aggregate
 
 | Field | Value |
 | --- | --- |
 | `status` | passed |
-| `report_count` | 1 |
-| `expected` | 7 |
-| `selected` | 7 |
+| `report_count` | 2 |
+| `expected` | 14 |
+| `selected` | 14 |
 | `missing` | 0 |
-| `passed` | 7 |
+| `passed` | 14 |
 | `failed` | 0 |
 
 ## Evidence Boundary
@@ -32,12 +34,12 @@ Caveat: this is sampling phase counter evidence and probability-fill counter evi
 
 | Category | Passed | Failed | Other | Description |
 | --- | ---: | ---: | ---: | --- |
-| counts_only_full_register | 1 | 0 | 0 | Counts-only full-register sampling phase counter tests |
-| counts_only_partial_register | 1 | 0 | 0 | Counts-only partial-register sampling phase counter tests |
-| probability_fill | 2 | 0 | 0 | Full-register and marginal probability-fill counter tests |
-| sequential_full_register | 1 | 0 | 0 | Sequential full-register sampling phase counter tests |
-| sparse_full_register_scan_hit | 1 | 0 | 0 | Sparse full-register scan hit phase counter tests |
-| sparse_full_register_scan_miss | 1 | 0 | 0 | Sparse full-register scan miss and fallback phase counter tests |
+| counts_only_full_register | 2 | 0 | 0 | Counts-only full-register sampling phase counter tests |
+| counts_only_partial_register | 2 | 0 | 0 | Counts-only partial-register sampling phase counter tests |
+| probability_fill | 4 | 0 | 0 | Full-register and marginal probability-fill counter tests |
+| sequential_full_register | 2 | 0 | 0 | Sequential full-register sampling phase counter tests |
+| sparse_full_register_scan_hit | 2 | 0 | 0 | Sparse full-register scan hit phase counter tests |
+| sparse_full_register_scan_miss | 2 | 0 | 0 | Sparse full-register scan miss and fallback phase counter tests |
 
 ## Counter Tests
 
@@ -56,6 +58,7 @@ Caveat: this is sampling phase counter evidence and probability-fill counter evi
 | Report | Created | Status | Expected | Selected | Missing | Passed | Failed |
 | --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
 | benchmarks/mklq/reports/local-cpu-sampling-counter-probe-2026-06-23.cpu-counter.json | 2026-06-23T07:38:00.016818+00:00 | passed | 7 | 7 | 0 | 7 | 0 |
+| benchmarks/mklq/reports/local-cpu-sampling-counter-probe-2026-06-24.cpu-counter.json | 2026-06-24T04:48:29.028396+00:00 | passed | 7 | 7 | 0 | 7 | 0 |
 
 Regenerate with:
 

@@ -19,6 +19,9 @@ from typing import Any
 
 DEFAULT_REPORTS_DIR = Path("benchmarks/mklq/reports")
 DEFAULT_DOC = Path("docs/mklq/metal-runtime-counters.md")
+REQUIRED_AGGREGATE_NOTE = (
+    "Aggregate counts are summed across tracked reports; repeated daily "
+    "probes intentionally count the same selected tests once per report.")
 
 
 def _load_summary_module():
@@ -62,6 +65,11 @@ def check_docs(report_inputs: list[Path] | None = None,
         return _failed("Metal runtime counter docs are missing", details)
     if summary_status != "passed":
         return _failed("Metal runtime counter summary is not passing", details)
+    if REQUIRED_AGGREGATE_NOTE not in generated:
+        details["required_note"] = REQUIRED_AGGREGATE_NOTE
+        return _failed(
+            "Metal runtime counter docs generator is missing the aggregate-count note",
+            details)
     if current != generated:
         diff = difflib.unified_diff(current.splitlines(),
                                     generated.splitlines(),
