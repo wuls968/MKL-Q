@@ -6,7 +6,7 @@
     "runtime_counter_evidence": true,
     "runtime_counter_source": "build-tree ctest cases that assert MetalStateVectorExecutor and MKL-Q simulator test-accessor runtime counters"
   },
-  "created_at_utc": "2026-06-22T08:03:57.120763+00:00",
+  "created_at_utc": "2026-06-23T07:53:35.315481+00:00",
   "evidence_kind": "local_runtime_counter_probe",
   "execution": {
     "returncode": 0,
@@ -227,7 +227,7 @@
     {
       "counter_source": "MetalStateVectorExecutor and MKL-Q simulator test-accessor runtime counters",
       "ctest_regex": "^mklq_metal_MKLQMetalTester\\.MetalRuntimeKeepsResidentStateAcrossGateSequence$",
-      "elapsed_seconds": 1.9983275000122376,
+      "elapsed_seconds": 2.4797755829640664,
       "name": "mklq_metal_MKLQMetalTester.MetalRuntimeKeepsResidentStateAcrossGateSequence",
       "returncode": 0,
       "status": "passed"
@@ -235,7 +235,7 @@
     {
       "counter_source": "MetalStateVectorExecutor and MKL-Q simulator test-accessor runtime counters",
       "ctest_regex": "^mklq_metal_MKLQMetalTester\\.MetalRuntimeAppliesResidentThreeQubitGate$",
-      "elapsed_seconds": 1.9458841249870602,
+      "elapsed_seconds": 2.49230375001207,
       "name": "mklq_metal_MKLQMetalTester.MetalRuntimeAppliesResidentThreeQubitGate",
       "returncode": 0,
       "status": "passed"
@@ -243,7 +243,7 @@
     {
       "counter_source": "MetalStateVectorExecutor and MKL-Q simulator test-accessor runtime counters",
       "ctest_regex": "^mklq_metal_MKLQMetalTester\\.MetalRuntimeFillsResidentProbabilitiesWithoutStateReadback$",
-      "elapsed_seconds": 1.9393712500168476,
+      "elapsed_seconds": 2.47209458402358,
       "name": "mklq_metal_MKLQMetalTester.MetalRuntimeFillsResidentProbabilitiesWithoutStateReadback",
       "returncode": 0,
       "status": "passed"
@@ -251,7 +251,7 @@
     {
       "counter_source": "MetalStateVectorExecutor and MKL-Q simulator test-accessor runtime counters",
       "ctest_regex": "^mklq_metal_MKLQMetalTester\\.MetalRuntimeComputesAndCollapsesResidentQubitProbability$",
-      "elapsed_seconds": 1.9449621250096243,
+      "elapsed_seconds": 2.493430915987119,
       "name": "mklq_metal_MKLQMetalTester.MetalRuntimeComputesAndCollapsesResidentQubitProbability",
       "returncode": 0,
       "status": "passed"
@@ -259,7 +259,7 @@
     {
       "counter_source": "MetalStateVectorExecutor and MKL-Q simulator test-accessor runtime counters",
       "ctest_regex": "^mklq_metal_MKLQMetalTester\\.SimulatorKeepsSupportedGateSequenceResidentUntilReadback$",
-      "elapsed_seconds": 2.0698045839963015,
+      "elapsed_seconds": 2.58273929200368,
       "name": "mklq_metal_MKLQMetalTester.SimulatorKeepsSupportedGateSequenceResidentUntilReadback",
       "returncode": 0,
       "status": "passed"
@@ -267,7 +267,7 @@
     {
       "counter_source": "MetalStateVectorExecutor and MKL-Q simulator test-accessor runtime counters",
       "ctest_regex": "^mklq_metal_MKLQMetalTester\\.SimulatorKeepsThreeQubitGateResidentUntilReadback$",
-      "elapsed_seconds": 1.9468987090222072,
+      "elapsed_seconds": 2.662355792010203,
       "name": "mklq_metal_MKLQMetalTester.SimulatorKeepsThreeQubitGateResidentUntilReadback",
       "returncode": 0,
       "status": "passed"
@@ -275,7 +275,7 @@
     {
       "counter_source": "MetalStateVectorExecutor and MKL-Q simulator test-accessor runtime counters",
       "ctest_regex": "^mklq_metal_MKLQMetalTester\\.SimulatorKeepsYAndControlledYResidentUntilReadback$",
-      "elapsed_seconds": 1.9410903340030927,
+      "elapsed_seconds": 2.3893935829983093,
       "name": "mklq_metal_MKLQMetalTester.SimulatorKeepsYAndControlledYResidentUntilReadback",
       "returncode": 0,
       "status": "passed"
@@ -283,7 +283,7 @@
     {
       "counter_source": "MetalStateVectorExecutor and MKL-Q simulator test-accessor runtime counters",
       "ctest_regex": "^mklq_metal_MKLQMetalTester\\.SimulatorKeepsBuiltInYAndControlledYResidentUntilReadback$",
-      "elapsed_seconds": 1.9759944590041414,
+      "elapsed_seconds": 2.3865377500187606,
       "name": "mklq_metal_MKLQMetalTester.SimulatorKeepsBuiltInYAndControlledYResidentUntilReadback",
       "returncode": 0,
       "status": "passed"
@@ -291,7 +291,7 @@
     {
       "counter_source": "MetalStateVectorExecutor and MKL-Q simulator test-accessor runtime counters",
       "ctest_regex": "^mklq_metal_MKLQMetalTester\\.SimulatorKeepsBuiltInRxAndControlledRxResidentUntilReadback$",
-      "elapsed_seconds": 1.9485245829855558,
+      "elapsed_seconds": 2.5988716250285506,
       "name": "mklq_metal_MKLQMetalTester.SimulatorKeepsBuiltInRxAndControlledRxResidentUntilReadback",
       "returncode": 0,
       "status": "passed"
@@ -299,7 +299,7 @@
     {
       "counter_source": "MetalStateVectorExecutor and MKL-Q simulator test-accessor runtime counters",
       "ctest_regex": "^mklq_metal_MKLQMetalTester\\.SimulatorKeepsBuiltInRyAndControlledRyResidentUntilReadback$",
-      "elapsed_seconds": 1.9396875829843339,
+      "elapsed_seconds": 2.5700008340063505,
       "name": "mklq_metal_MKLQMetalTester.SimulatorKeepsBuiltInRyAndControlledRyResidentUntilReadback",
       "returncode": 0,
       "status": "passed"
@@ -307,7 +307,7 @@
     {
       "counter_source": "MetalStateVectorExecutor and MKL-Q simulator test-accessor runtime counters",
       "ctest_regex": "^mklq_metal_MKLQMetalTester\\.SimulatorKeepsBuiltInRzAndControlledRzResidentUntilReadback$",
-      "elapsed_seconds": 1.9456047090061475,
+      "elapsed_seconds": 2.5913760420517065,
       "name": "mklq_metal_MKLQMetalTester.SimulatorKeepsBuiltInRzAndControlledRzResidentUntilReadback",
       "returncode": 0,
       "status": "passed"
@@ -315,7 +315,7 @@
     {
       "counter_source": "MetalStateVectorExecutor and MKL-Q simulator test-accessor runtime counters",
       "ctest_regex": "^mklq_metal_MKLQMetalTester\\.SimulatorKeepsBuiltInPhaseFamilyResidentUntilReadback$",
-      "elapsed_seconds": 1.982154792000074,
+      "elapsed_seconds": 2.507232624979224,
       "name": "mklq_metal_MKLQMetalTester.SimulatorKeepsBuiltInPhaseFamilyResidentUntilReadback",
       "returncode": 0,
       "status": "passed"
@@ -323,7 +323,7 @@
     {
       "counter_source": "MetalStateVectorExecutor and MKL-Q simulator test-accessor runtime counters",
       "ctest_regex": "^mklq_metal_MKLQMetalTester\\.SimulatorKeepsMultiControlSingleQubitResidentUntilReadback$",
-      "elapsed_seconds": 1.953887500014389,
+      "elapsed_seconds": 2.710454457963351,
       "name": "mklq_metal_MKLQMetalTester.SimulatorKeepsMultiControlSingleQubitResidentUntilReadback",
       "returncode": 0,
       "status": "passed"
@@ -331,7 +331,7 @@
     {
       "counter_source": "MetalStateVectorExecutor and MKL-Q simulator test-accessor runtime counters",
       "ctest_regex": "^mklq_metal_MKLQMetalTester\\.SimulatorReuploadsResidentStateAfterUnsupportedGateFallback$",
-      "elapsed_seconds": 1.9359137499995995,
+      "elapsed_seconds": 2.6393560839933343,
       "name": "mklq_metal_MKLQMetalTester.SimulatorReuploadsResidentStateAfterUnsupportedGateFallback",
       "returncode": 0,
       "status": "passed"
@@ -339,7 +339,7 @@
     {
       "counter_source": "MetalStateVectorExecutor and MKL-Q simulator test-accessor runtime counters",
       "ctest_regex": "^mklq_metal_MKLQMetalTester\\.SimulatorSamplesResidentDenseStateWithoutReadback$",
-      "elapsed_seconds": 2.051097541989293,
+      "elapsed_seconds": 2.533518499985803,
       "name": "mklq_metal_MKLQMetalTester.SimulatorSamplesResidentDenseStateWithoutReadback",
       "returncode": 0,
       "status": "passed"
@@ -347,7 +347,7 @@
     {
       "counter_source": "MetalStateVectorExecutor and MKL-Q simulator test-accessor runtime counters",
       "ctest_regex": "^mklq_metal_MKLQMetalTester\\.SimulatorSamplesLargeResidentPartialRegisterThroughFullProbability$",
-      "elapsed_seconds": 1.9994654580077622,
+      "elapsed_seconds": 2.112979917030316,
       "name": "mklq_metal_MKLQMetalTester.SimulatorSamplesLargeResidentPartialRegisterThroughFullProbability",
       "returncode": 0,
       "status": "passed"
@@ -355,7 +355,7 @@
     {
       "counter_source": "MetalStateVectorExecutor and MKL-Q simulator test-accessor runtime counters",
       "ctest_regex": "^mklq_metal_MKLQMetalTester\\.SimulatorSamplesSmallResidentPartialRegisterThroughMarginalProbability$",
-      "elapsed_seconds": 1.9402033750084229,
+      "elapsed_seconds": 2.1446295409696177,
       "name": "mklq_metal_MKLQMetalTester.SimulatorSamplesSmallResidentPartialRegisterThroughMarginalProbability",
       "returncode": 0,
       "status": "passed"
@@ -363,7 +363,7 @@
     {
       "counter_source": "MetalStateVectorExecutor and MKL-Q simulator test-accessor runtime counters",
       "ctest_regex": "^mklq_metal_MKLQMetalTester\\.SimulatorMeasuresAndResetsResidentStateWithoutReadback$",
-      "elapsed_seconds": 2.018224416009616,
+      "elapsed_seconds": 2.401565083011519,
       "name": "mklq_metal_MKLQMetalTester.SimulatorMeasuresAndResetsResidentStateWithoutReadback",
       "returncode": 0,
       "status": "passed"
@@ -371,7 +371,7 @@
     {
       "counter_source": "MetalStateVectorExecutor and MKL-Q simulator test-accessor runtime counters",
       "ctest_regex": "^mklq_metal_MKLQMetalTester\\.SimulatorResetsResidentNonzeroTargetWithoutReadback$",
-      "elapsed_seconds": 1.9987740829819813,
+      "elapsed_seconds": 2.6495993330026977,
       "name": "mklq_metal_MKLQMetalTester.SimulatorResetsResidentNonzeroTargetWithoutReadback",
       "returncode": 0,
       "status": "passed"
@@ -379,7 +379,7 @@
     {
       "counter_source": "MetalStateVectorExecutor and MKL-Q simulator test-accessor runtime counters",
       "ctest_regex": "^mklq_metal_MKLQMetalTester\\.SimulatorSamplesDenseFullRegisterThroughMetalProbabilityFill$",
-      "elapsed_seconds": 2.097560667025391,
+      "elapsed_seconds": 2.5507402080111206,
       "name": "mklq_metal_MKLQMetalTester.SimulatorSamplesDenseFullRegisterThroughMetalProbabilityFill",
       "returncode": 0,
       "status": "passed"
