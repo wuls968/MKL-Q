@@ -4,7 +4,7 @@ This page records the public repository readiness snapshot for MKL-Q. It is a
 source-only repository audit, not a release certification, package
 certification, Apple Silicon CI replacement, or performance certification.
 
-Snapshot date: 2026-06-23.
+Snapshot date: 2026-06-24.
 
 ## Scope
 
@@ -116,6 +116,10 @@ taxonomy, live `main` branch protection matches
 `.github/branch-protection-main.json`, and the public claim-boundary guard
 passes.
 
+The latest pushed readiness audit accepted `main` commit
+`7d2e541e8928d4399a3653eb93a894f079a28e2e` after the `MKL-Q public hygiene`
+workflow succeeded on run `28081257714`.
+
 ## Branch Protection
 
 The public `main` branch is intended to be protected with:
@@ -138,31 +142,31 @@ compares the live core protection fields against that JSON reference.
 
 The latest public local validation evidence is recorded in
 [`validation.md`](validation.md), with a public metadata refresh on
-2026-06-23:
+2026-06-24:
 
-- latest validation refresh date: 2026-06-23;
+- latest validation refresh date: 2026-06-24;
 - source state: the ignored raw healthcheck JSON records the exact local Git
   state for the latest runtime validation gate;
 - install-prefix build: passed;
-- default public healthcheck: passed with 21/21 steps passed;
+- default public healthcheck: passed with 23/23 steps passed;
 - full public healthcheck: passed with 24/24 steps passed;
 - one-command correctness gate: passed with 4/4 steps passed, including
   `metal_runtime_counter_probe`;
 - public example smoke gate: passed with 30/30 steps passed;
-- current benchmark harness tests: `118 passed`;
-- current `cpu_sampling_counter_probe_parse`: 7 expected, 7 selected, 0
-  missing, and 7 passed, including full-register and marginal probability-fill
-  counter ctests;
+- current benchmark harness tests: `139 passed`;
+- current `cpu_sampling_counter_probe_parse`: 2 bounded reports, 14 expected,
+  14 selected, 0 missing, and 0 failures, including full-register and marginal
+  probability-fill counter ctests;
 - standalone install-prefix Python subset: `35 passed`;
 - `python_target_smoke`: `57 passed`;
 - `nvqpp_smoke`: `2 passed`;
 - current full `target_config_ctest`: `88/88 passed`;
-- current focused `metal_runtime_counter_probe`: 20 expected, 20 selected, 0
-  missing, and 20 passed, including the direct resident three-target runtime
-  fixture, resident built-in Rx/Ry/Rz, controlled-Rx/Ry/Rz, phase-family
-  S/T/Sdg/Tdg, and multi-control single-qubit fixtures, plus the simulator
-  resident three-target gate fixture and unsupported gate fallback/reupload
-  boundary fixture.
+- current tracked `metal_runtime_counter_probe`: 2 bounded reports, 40
+  expected, 40 selected, 0 missing, and 0 failures, including the direct
+  resident three-target runtime fixture, resident built-in Rx/Ry/Rz,
+  controlled-Rx/Ry/Rz, phase-family S/T/Sdg/Tdg, and multi-control
+  single-qubit fixtures, plus the simulator resident three-target gate fixture
+  and unsupported gate fallback/reupload boundary fixture.
 - clean CPU benchmark gate: passed with 18 q20 `qpp-cpu`/`mklq-cpu` rows,
   including `cz-state`, `qft-like-state`, and `seeded-clifford-state`, with
   18 rows reporting `status == "ok"` against
@@ -178,7 +182,9 @@ checks local tuning provenance, ignored raw payload paths, successful Metal
 rows, and wording that keeps the experimental mixed-path/host boundary clear.
 It also includes `check_metal_runtime_counter_docs.py`, which fails if the
 public Metal runtime counter summary drifts from the tracked bounded counter
-reports. The public readiness audit additionally runs the static
+reports. The preflight audit checks concrete `benchmarks/mklq/reports/*.json`
+references in public docs and workflows, including the lightweight GitHub
+workflow. The public readiness audit additionally runs the static
 `check_public_claims.py` guard before accepting the pushed repository state.
 
 ## No Tags Or Releases
