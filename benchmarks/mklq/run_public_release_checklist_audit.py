@@ -19,6 +19,7 @@ from typing import Any
 
 SCHEMA_VERSION = "mklq-public-release-checklist-audit-v1"
 CHECKLIST_PATH = Path("docs/mklq/public-release-checklist.md")
+DEVELOPER_WORKFLOW_PATH = Path("docs/mklq/developer-workflow.md")
 
 REQUIRED_SECTIONS = (
     "Scope",
@@ -69,6 +70,7 @@ REQUIRED_REFERENCED_FILES = (
     "docs/mklq/validation.md",
     "docs/mklq/known-limitations.md",
     "docs/mklq/testing-matrix.md",
+    "docs/mklq/developer-workflow.md",
     "docs/mklq/maintainer-runbook.md",
     "docs/mklq/branch-protection.md",
     "docs/mklq/issue-labels.md",
@@ -101,9 +103,40 @@ SOURCE_ONLY_REQUIRED_TOKENS = (
     "default-ready",
 )
 
+PREFLIGHT_REFERENCE_REQUIRED_TOKENS = (
+    "public_report_references",
+    "workflows",
+    "untracked report files",
+    "benchmarks/mklq/reports/*.json",
+)
+
 HEALTHCHECK_INTEGRATION_FILES = (
     "benchmarks/mklq/run_public_healthcheck.py",
     ".github/workflows/mklq-public-hygiene.yml",
+)
+
+DEVELOPER_WORKFLOW_REQUIRED_TOKENS = (
+    "python3 benchmarks/mklq/run_preflight_audit.py",
+    "python3 benchmarks/mklq/run_public_release_checklist_audit.py",
+    "python3 benchmarks/mklq/run_public_healthcheck.py",
+    "git diff --check",
+    "git ls-files .github/workflows | sort",
+    "python3 benchmarks/mklq/check_public_claims.py",
+    "python3 benchmarks/mklq/check_performance_evidence.py",
+    "python3 benchmarks/mklq/check_metal_evidence.py",
+    "python3 benchmarks/mklq/check_sampling_profile_evidence.py",
+    "python3 benchmarks/mklq/check_cpu_sampling_counter_docs.py",
+    "python3 benchmarks/mklq/check_metal_runtime_counter_docs.py",
+    "benchmarks/mklq/run_cpu_scaling_benchmark.py",
+    "benchmarks/mklq/run_sampling_scaling_benchmark.py",
+    "benchmarks/mklq/run_upstream_sync_audit.py",
+    "benchmarks/mklq/summarize_cpu_sampling_counters.py",
+    "benchmarks/mklq/summarize_metal_runtime_counters.py",
+    "multiple bounded reports are tracked",
+    "selected counter tests once per report",
+    "public_report_references",
+    "workflows",
+    "untracked report files",
 )
 
 
@@ -223,6 +256,20 @@ def check_source_only_boundaries(config: AuditConfig,
                                                  details)
 
 
+def check_preflight_reference_boundaries(config: AuditConfig,
+                                         text: str) -> dict[str, Any]:
+    missing = missing_tokens(text, PREFLIGHT_REFERENCE_REQUIRED_TOKENS)
+    details = {
+        "required": list(PREFLIGHT_REFERENCE_REQUIRED_TOKENS),
+        "missing": missing,
+    }
+    return failed(
+        "preflight_reference_boundaries",
+        "preflight public report-reference boundary text missing",
+        details) if missing else passed("preflight_reference_boundaries",
+                                        details)
+
+
 def check_healthcheck_integration(config: AuditConfig,
                                   text: str) -> dict[str, Any]:
     missing_files = [
@@ -249,6 +296,25 @@ def check_healthcheck_integration(config: AuditConfig,
                                                    details)
 
 
+def check_developer_workflow_commands(config: AuditConfig) -> dict[str, Any]:
+    path = config.repo_root / DEVELOPER_WORKFLOW_PATH
+    details: dict[str, Any] = {
+        "path": DEVELOPER_WORKFLOW_PATH.as_posix(),
+        "required": list(DEVELOPER_WORKFLOW_REQUIRED_TOKENS),
+    }
+    if not path.exists():
+        details["missing"] = list(DEVELOPER_WORKFLOW_REQUIRED_TOKENS)
+        return failed("developer_workflow_commands",
+                      "developer workflow document is missing", details)
+    text = path.read_text(encoding="utf-8")
+    missing = missing_tokens(text, DEVELOPER_WORKFLOW_REQUIRED_TOKENS)
+    details["missing"] = missing
+    return failed("developer_workflow_commands",
+                  "developer workflow public hygiene commands are missing",
+                  details) if missing else passed("developer_workflow_commands",
+                                                 details)
+
+
 def build_report(config: AuditConfig) -> dict[str, Any]:
     root = config.repo_root.resolve()
     checklist = checklist_path(root)
@@ -259,7 +325,10 @@ def build_report(config: AuditConfig) -> dict[str, Any]:
             failed("checklist_commands", "public release checklist is missing"),
             failed("referenced_files", "public release checklist is missing"),
             failed("source_only_boundaries", "public release checklist is missing"),
+            failed("preflight_reference_boundaries",
+                   "public release checklist is missing"),
             failed("healthcheck_integration", "public release checklist is missing"),
+            check_developer_workflow_commands(config),
         ]
     else:
         text = read_checklist(root)
@@ -269,7 +338,9 @@ def build_report(config: AuditConfig) -> dict[str, Any]:
             check_checklist_commands(resolved_config, text),
             check_referenced_files(resolved_config, text),
             check_source_only_boundaries(resolved_config, text),
+            check_preflight_reference_boundaries(resolved_config, text),
             check_healthcheck_integration(resolved_config, text),
+            check_developer_workflow_commands(resolved_config),
         ]
 
     return {

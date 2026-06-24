@@ -56,6 +56,8 @@ Check:
   current local validation evidence and its non-certification boundary.
 - [ ] `docs/mklq/testing-matrix.md` is linked from the README and explains
   which local gates prove which target/backend behavior.
+- [ ] `docs/mklq/developer-workflow.md` is linked from the README and records
+  the current local development, public hygiene, and PR workflow.
 - [ ] `docs/mklq/release-policy.md` is linked from the README and explains
   current source-only release boundaries.
 - [ ] `docs/mklq/maintainer-runbook.md` is linked from the README and explains
@@ -91,6 +93,11 @@ Expected:
 - [ ] No `docs/superpowers/` or agent-internal paths are tracked.
 - [ ] `.github/workflows/` contains only the lightweight MKL-Q public hygiene
   workflow unless a new workflow has been intentionally reviewed.
+- [ ] The `public_report_references` preflight check passes: every concrete
+  `benchmarks/mklq/reports/*.json` path referenced by public docs or workflows
+  exists and is tracked, and no public docs or workflows reference untracked
+  report files. Template paths such as `YYYY-MM-DD` or glob examples do not
+  count as concrete evidence.
 - [ ] `git diff --check` has no whitespace errors.
 
 ## Local Build Gate
@@ -218,6 +225,13 @@ Expected:
 - [ ] `check_performance_evidence.py` passes for tracked clean CPU summaries.
 - [ ] `check_metal_evidence.py` passes for tracked experimental Metal
       summaries.
+- [ ] CPU sampling/probability and Metal runtime counter docs guards pass for
+  the tracked bounded reports.
+- [ ] Counter docs explain that aggregate counts are summed across tracked
+  reports, so repeated daily probes count the same selected counter tests once
+  per report.
+- [ ] The `public_report_references` preflight check confirms public docs and
+  workflows do not reference untracked report files.
 - [ ] `run_preflight_audit.py --require-clean` passes before final publication
   or before describing the branch as public-ready.
 - [ ] Public benchmark helper and Python example scripts compile.

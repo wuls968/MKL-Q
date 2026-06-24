@@ -203,6 +203,10 @@ python3 benchmarks/mklq/summarize_cpu_sampling_counters.py \
   --output docs/mklq/cpu-sampling-counters.md
 ```
 
+When multiple bounded reports are tracked, aggregate counts in the generated
+summary are summed across reports. Repeated daily probes intentionally count
+the same selected counter tests once per report.
+
 ## CPU Sampling Counter Docs Guard
 
 Check that the tracked public Markdown matches the tracked bounded reports:
@@ -248,11 +252,21 @@ python3 benchmarks/mklq/run_preflight_audit.py
 
 The audit checks the local Git worktree state, stale Git lock files, expected
 `origin` and `upstream` remotes, shallow-clone state, tracked generated or raw
-local artifacts, ignored local artifact summaries, and the public `main` branch
-protection settings. Add `--require-clean` when the branch should have no
-uncommitted changes, or `--skip-github` for offline local-only checks. A
-short-lived Git lock is rechecked once before the audit reports it as a stale
-lock failure.
+local artifacts, public report references, ignored local artifact summaries,
+and the public `main` branch protection settings. The
+`public_report_references` check fails when public docs or workflows reference
+missing or untracked report files under `benchmarks/mklq/reports/*.json`.
+Template paths such as `YYYY-MM-DD` or glob examples do not count as concrete
+evidence. Add
+`--require-clean` when the branch should have no uncommitted changes, or
+`--skip-github` for offline local-only checks. A short-lived Git lock is
+rechecked once before the audit reports it as a stale lock failure.
+
+For pre-commit planning only, add `--preview-report-reference-adds` to treat
+existing untracked report files referenced by public docs or workflows as
+planned Git additions for the `public_report_references` check. This does not
+modify the Git index and is not a replacement for the normal clean preflight
+before publishing.
 
 ## Public Release Checklist Audit
 
@@ -265,9 +279,12 @@ python3 benchmarks/mklq/run_public_release_checklist_audit.py
 
 The audit checks that `docs/mklq/public-release-checklist.md` still contains
 the required source-only sections, the public hygiene and full local gate
-commands, referenced docs/scripts, and stop conditions. It writes ignored JSON
-under `benchmarks/mklq/results/`. It does not run builds, benchmarks, GitHub
-Actions, or backend correctness tests.
+commands, referenced docs/scripts, preflight public report-reference boundary,
+and stop conditions. It also checks that `docs/mklq/developer-workflow.md`
+keeps the current public hygiene command set, counter aggregate-count boundary,
+and `public_report_references` warning. It writes ignored JSON under
+`benchmarks/mklq/results/`. It does not run builds, benchmarks, GitHub Actions,
+or backend correctness tests.
 
 ## Upstream Sync Audit
 
@@ -419,6 +436,9 @@ probability/sampling, measurement/reset, and unsupported-gate fallback
 categories. It preserves the same boundary as the raw probe report: runtime
 counter evidence only, not release sign-off, not timing evidence, and not proof
 that every operation stayed on Metal.
+When multiple bounded reports are tracked, aggregate counts are summed across
+reports. Repeated daily probes intentionally count the same selected counter
+tests once per report.
 
 ## Metal Runtime Counter Docs Guard
 

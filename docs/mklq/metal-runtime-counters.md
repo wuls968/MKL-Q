@@ -4,16 +4,18 @@ This file is generated from bounded `.counter.json` reports under `benchmarks/mk
 
 Caveat: this is runtime counter evidence from selected build-tree ctest cases. It is not release sign-off, not a benchmark result, and not proof that every operation stayed on Metal.
 
+Aggregate counts are summed across tracked reports; repeated daily probes intentionally count the same selected tests once per report.
+
 ## Aggregate
 
 | Field | Value |
 | --- | --- |
 | `status` | passed |
-| `report_count` | 1 |
-| `expected` | 20 |
-| `selected` | 20 |
+| `report_count` | 2 |
+| `expected` | 40 |
+| `selected` | 40 |
 | `missing` | 0 |
-| `passed` | 20 |
+| `passed` | 40 |
 | `failed` | 0 |
 
 ## Evidence Boundary
@@ -29,10 +31,10 @@ Caveat: this is runtime counter evidence from selected build-tree ctest cases. I
 
 | Category | Passed | Failed | Other | Description |
 | --- | ---: | ---: | ---: | --- |
-| fallback_boundary | 1 | 0 | 0 | Unsupported-gate fallback and reupload boundary tests |
-| measurement_reset | 3 | 0 | 0 | Measurement, collapse, and reset counter tests |
-| probability_sampling | 5 | 0 | 0 | Resident probability fill and sampling counter tests |
-| resident_gate | 11 | 0 | 0 | Resident Metal gate/update counter tests |
+| fallback_boundary | 2 | 0 | 0 | Unsupported-gate fallback and reupload boundary tests |
+| measurement_reset | 6 | 0 | 0 | Measurement, collapse, and reset counter tests |
+| probability_sampling | 10 | 0 | 0 | Resident probability fill and sampling counter tests |
+| resident_gate | 22 | 0 | 0 | Resident Metal gate/update counter tests |
 
 ## Counter Tests
 
@@ -64,6 +66,7 @@ Caveat: this is runtime counter evidence from selected build-tree ctest cases. I
 | Report | Created | Status | Expected | Selected | Missing | Passed | Failed |
 | --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
 | benchmarks/mklq/reports/local-metal-runtime-counter-probe-2026-06-23.counter.json | 2026-06-23T07:53:35.315481+00:00 | passed | 20 | 20 | 0 | 20 | 0 |
+| benchmarks/mklq/reports/local-metal-runtime-counter-probe-2026-06-24.counter.json | 2026-06-24T04:49:20.683974+00:00 | passed | 20 | 20 | 0 | 20 | 0 |
 
 Regenerate with:
 
