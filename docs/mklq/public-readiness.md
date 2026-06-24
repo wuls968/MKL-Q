@@ -151,7 +151,7 @@ The latest public local validation evidence is recorded in
   state for the latest runtime validation gate;
 - install-prefix build: passed;
 - default public healthcheck: passed with 23/23 steps passed;
-- full public healthcheck: passed with 24/24 steps passed;
+- full public healthcheck: passed with 26/26 steps passed;
 - one-command correctness gate: passed with 4/4 steps passed, including
   `metal_runtime_counter_probe`;
 - public example smoke gate: passed with 30/30 steps passed;

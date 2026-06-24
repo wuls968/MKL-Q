@@ -46,6 +46,7 @@ Raw wrapper output was written to ignored local paths
 `benchmarks/mklq/results/public-healthcheck-2026-06-24.json`,
 `benchmarks/mklq/results/public-healthcheck-full-2026-06-22.json`,
 `benchmarks/mklq/results/public-healthcheck-full-2026-06-23.json`,
+`benchmarks/mklq/results/public-healthcheck-full-2026-06-24.json`,
 `benchmarks/mklq/results/local-correctness-gate-2026-06-22.json`,
 `benchmarks/mklq/results/local-correctness-gate-2026-06-23.json`,
 `benchmarks/mklq/results/local-correctness-gate-2026-06-24.json`,
@@ -59,7 +60,7 @@ are not tracked as public evidence.
 - Install-prefix build: passed.
 - Default public healthcheck: passed on 2026-06-24, with 23 steps passed and
   0 failed.
-- Latest full public healthcheck: passed on 2026-06-23, with 24 steps passed
+- Latest full public healthcheck: passed on 2026-06-24, with 26 steps passed
   and 0 failed.
 - One-command correctness gate: passed with 4 steps passed, 0 failed, and 0
   skipped, including the Metal runtime counter probe.
@@ -214,20 +215,21 @@ python3 benchmarks/mklq/run_public_healthcheck.py --full --require-clean
 ```
 
 Latest default 2026-06-24 result: `23/23` steps passed. The latest full
-2026-06-23 result remains `24/24` steps passed. The full gate includes Git
-repository hygiene, tracked-artifact checks, public metadata checks, sanitized
-benchmark summary parsing, the clean CPU performance evidence guards, the Metal
-evidence boundary guard, bounded CPU sampling/probability counter evidence
-parsing, bounded Metal runtime counter evidence parsing, CPU and Metal counter
-docs drift detection, concrete public docs/workflows report-reference checks,
-helper `py_compile`, markdown links, benchmark evidence regeneration,
-benchmark harness tests, install-prefix build, the one-command correctness
-gate, and the public example smoke gate.
+2026-06-24 result is `26/26` steps passed. The full gate includes Git
+repository hygiene, tracked-artifact checks, public metadata checks, the public
+release checklist audit, the upstream sync audit, sanitized benchmark summary
+parsing, the clean CPU performance evidence guards, the Metal evidence boundary
+guard, bounded CPU sampling/probability counter evidence parsing, bounded Metal
+runtime counter evidence parsing, CPU and Metal counter docs drift detection,
+concrete public docs/workflows report-reference checks, helper `py_compile`,
+markdown links, benchmark evidence regeneration, benchmark harness tests,
+install-prefix build, the one-command correctness gate, and the public example
+smoke gate.
 
 The ignored raw healthcheck JSON records the exact Git state for these local
 runs. The latest default healthcheck benchmark harness step reported
 `139 passed`; the latest full healthcheck benchmark harness step reported
-`118 passed`, the correctness gate reported 4 passed and 0 failed, and the
+`139 passed`, the correctness gate reported 4 passed and 0 failed, and the
 public example smoke step reported 30 passed and 0 failed.
 
 ## Benchmark Evidence
