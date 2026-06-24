@@ -116,9 +116,11 @@ taxonomy, live `main` branch protection matches
 `.github/branch-protection-main.json`, and the public claim-boundary guard
 passes.
 
-The latest pushed readiness audit accepted `main` commit
-`7d2e541e8928d4399a3653eb93a894f079a28e2e` after the `MKL-Q public hygiene`
-workflow succeeded on run `28081257714`.
+The pushed readiness audit was validated on 2026-06-24 after the protected
+`main` branch completed the `MKL-Q public hygiene` workflow successfully. Use
+the readiness commands below for the exact latest commit and workflow run IDs;
+this tracked page records the stable source-only readiness boundary, not a
+moving run log.
 
 ## Branch Protection
 
