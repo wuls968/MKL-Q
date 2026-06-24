@@ -303,6 +303,23 @@ does not fetch or merge. Use `--check-remote` when you want to confirm that the
 local `upstream/main` ref matches the live upstream remote before making a sync
 decision.
 
+## Self-hosted Apple Silicon CI Audit
+
+Use the self-hosted Apple Silicon CI audit when changing
+`docs/mklq/apple-silicon-ci.md`, GitHub workflow boundaries, or source-only
+public release wording:
+
+```bash
+python3 benchmarks/mklq/run_self_hosted_ci_audit.py
+```
+
+The audit checks that the Apple Silicon CI readiness plan names the expected
+self-hosted macOS ARM64 runner labels, validation commands, security boundary,
+activation checklist, and source-only no-release behavior. It also confirms the
+tracked workflow set still contains only the lightweight hygiene workflow and
+that this workflow does not directly run the heavy build/correctness gate. It
+writes ignored JSON under `benchmarks/mklq/results/`.
+
 ## Public Health Check
 
 Use the public health check as the default local pre-push maintenance command:
@@ -314,13 +331,14 @@ python3 benchmarks/mklq/run_public_healthcheck.py
 
 The default mode checks Git remotes and shallow state, tracked artifact hygiene,
 public metadata and banned tokens, the public release checklist audit, the
-upstream sync audit, sanitized benchmark summary JSON, the static clean CPU
-performance evidence guards, including focused CRZ distance, multi-control,
-q18-q22 CPU scaling, and q18-q22 sampling scaling evidence, the static
-experimental Metal evidence boundary guard, bounded CPU sampling phase counter
-evidence, bounded Metal runtime counter probe JSON, helper syntax, local
-markdown links, regenerated benchmark-evidence plus CPU and Metal counter docs
-consistency, and the benchmark harness tests. It writes an ignored JSON report under
+upstream sync audit, the self-hosted Apple Silicon CI audit, sanitized
+benchmark summary JSON, the static clean CPU performance evidence guards,
+including focused CRZ distance, multi-control, q18-q22 CPU scaling, and
+q18-q22 sampling scaling evidence, the static experimental Metal evidence
+boundary guard, bounded CPU sampling phase counter evidence, bounded Metal
+runtime counter probe JSON, helper syntax, local markdown links, regenerated
+benchmark-evidence plus CPU and Metal counter docs consistency, and the
+benchmark harness tests. It writes an ignored JSON report under
 `benchmarks/mklq/results/`.
 
 Before describing a commit as public-ready, run the heavier local gate:

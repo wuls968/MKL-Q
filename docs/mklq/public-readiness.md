@@ -150,12 +150,12 @@ The latest public local validation evidence is recorded in
 - source state: the ignored raw healthcheck JSON records the exact local Git
   state for the latest runtime validation gate;
 - install-prefix build: passed;
-- default public healthcheck: passed with 24/24 steps passed;
-- full public healthcheck: passed with 27/27 steps passed;
+- default public healthcheck: passed with 25/25 steps passed;
+- full public healthcheck: passed with 28/28 steps passed;
 - one-command correctness gate: passed with 4/4 steps passed, including
   `metal_runtime_counter_probe`;
 - public example smoke gate: passed with 30/30 steps passed;
-- current benchmark harness tests: `141 passed`;
+- current benchmark harness tests: `149 passed`;
 - current `cpu_sampling_counter_probe_parse`: 2 bounded reports, 14 expected,
   14 selected, 0 missing, and 0 failures, including full-register and marginal
   probability-fill counter ctests;
