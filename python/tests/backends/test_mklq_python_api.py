@@ -83,6 +83,12 @@ def _set_mklq_target(target):
     assert cudaq.get_target().name == target
 
 
+def _mklq_python_cx_noise_model():
+    noise = cudaq.NoiseModel()
+    noise.add_all_qubit_channel("cx", cudaq.Depolarization2(0.2))
+    return noise
+
+
 def _observe_expectation(target, kernel, observable, *args, shots_count=-1):
     cudaq.set_target(target)
     try:
@@ -114,6 +120,25 @@ def test_mklq_python_decorator_sample_uses_requested_target(target):
     counts = cudaq.sample(_mklq_python_deterministic_sample, shots_count=64)
 
     assert dict(counts.items()) == {"111": 64}
+
+
+@pytest.mark.parametrize("target", ["mklq-cpu", "mklq-metal"])
+def test_mklq_python_noise_model_fails_fast_for_unsupported_targets(target):
+    _set_mklq_target(target)
+
+    with pytest.raises(RuntimeError,
+                       match="noise_model is not supported yet"):
+        cudaq.sample(_mklq_python_bell_state,
+                     shots_count=16,
+                     noise_model=_mklq_python_cx_noise_model())
+
+    cudaq.reset_target()
+    cudaq.__clearKernelRegistries()
+    _set_mklq_target(target)
+    state = np.array(cudaq.get_state(_mklq_python_bell_state),
+                     dtype=np.complex128)
+
+    assert state.shape == (4,)
 
 
 @pytest.mark.parametrize("target", ["mklq-cpu", "mklq-metal"])

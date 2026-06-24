@@ -159,8 +159,8 @@ The latest public local validation evidence is recorded in
 - current `cpu_sampling_counter_probe_parse`: 2 bounded reports, 14 expected,
   14 selected, 0 missing, and 0 failures, including full-register and marginal
   probability-fill counter ctests;
-- standalone install-prefix Python subset: `35 passed`;
-- `python_target_smoke`: `57 passed`;
+- standalone install-prefix Python subset: `37 passed`;
+- `python_target_smoke`: `59 passed`;
 - `nvqpp_smoke`: `2 passed`;
 - current full `target_config_ctest`: `88/88 passed`;
 - current tracked `metal_runtime_counter_probe`: 2 bounded reports, 40

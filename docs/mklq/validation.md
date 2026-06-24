@@ -69,8 +69,8 @@ are not tracked as public evidence.
 - Current `cpu_sampling_counter_probe_parse`: 2 bounded reports, 14 expected,
   14 selected, 0 missing, and 0 failures; each report includes full-register
   and marginal probability-fill counter ctests.
-- Standalone install-prefix Python subset: `35 passed`.
-- `python_target_smoke`: `57 passed`.
+- Standalone install-prefix Python subset: `37 passed`.
+- `python_target_smoke`: `59 passed`.
 - `nvqpp_smoke`: `2 passed`.
 - Current `target_config_ctest`: `88/88 passed`.
 - Current tracked `metal_runtime_counter_probe`: 2 bounded reports, 40
@@ -107,7 +107,7 @@ python3 -m pytest \
   -q
 ```
 
-Result: `35 passed in 3.24s` in the latest local refresh.
+Result: `37 passed in 4.46s` in the latest local refresh.
 
 ```bash
 CUDAQ_NVQPP=/Users/a0000/.cudaq-mklq/bin/nvq++ \
@@ -166,10 +166,11 @@ python3 benchmarks/mklq/run_correctness_gate.py \
   --build-dir build-python
 ```
 
-Latest local result: passed on 2026-06-24 after the upstream sync. It reported
-4 wrapper steps passed, 0 failed, and 0 skipped. The step-level results were:
+Latest local result: passed on 2026-06-24 after adding the unsupported
+noise-model fail-fast boundary. It reported 4 wrapper steps passed, 0 failed,
+and 0 skipped. The step-level results were:
 
-- `python_target_smoke`: `57 passed`.
+- `python_target_smoke`: `59 passed`.
 - `nvqpp_smoke`: `2 passed`.
 - `target_config_ctest`: `88/88 passed`.
 - `metal_runtime_counter_probe`: 20 expected, 20 selected, 0 missing, and 20
