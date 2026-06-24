@@ -50,6 +50,7 @@ BENCHMARK_HELPERS = (
     "benchmarks/mklq/run_public_release_checklist_audit.py",
     "benchmarks/mklq/run_public_readiness_audit.py",
     "benchmarks/mklq/run_public_healthcheck.py",
+    "benchmarks/mklq/run_upstream_sync_audit.py",
     "benchmarks/mklq/summarize_cpu_sampling_counters.py",
     "benchmarks/mklq/summarize_metal_runtime_counters.py",
     "benchmarks/mklq/summarize_reports.py",
@@ -289,12 +290,14 @@ def public_metadata_requirements() -> list[tuple[str, str]]:
         ("docs/mklq/testing-matrix.md", "Capability Coverage"),
         ("docs/mklq/testing-matrix.md", "every operation stays on Metal"),
         ("docs/mklq/upstream-sync.md", "Post-merge Gates"),
+        ("docs/mklq/upstream-sync.md", "run_upstream_sync_audit.py"),
         ("docs/mklq/release-policy.md", "source-only"),
         ("docs/mklq/public-release-checklist.md", "GitHub Verification"),
         ("docs/mklq/public-release-checklist.md", "run_public_release_checklist_audit.py"),
         ("docs/mklq/public-release-checklist.md", "check_performance_evidence.py"),
         ("docs/mklq/public-release-checklist.md", "check_metal_evidence.py"),
         ("docs/mklq/public-release-checklist.md", "run_preflight_audit.py"),
+        ("docs/mklq/public-release-checklist.md", "run_upstream_sync_audit.py"),
         ("docs/mklq/developer-workflow.md", "Public Hygiene"),
         ("docs/mklq/developer-workflow.md", "check_performance_evidence.py"),
         ("docs/mklq/developer-workflow.md", "check_metal_evidence.py"),
@@ -324,6 +327,7 @@ def public_metadata_requirements() -> list[tuple[str, str]]:
         ("benchmarks/mklq/README.md", "CPU Sampling Counter Docs Guard"),
         ("benchmarks/mklq/README.md", "Preflight Audit"),
         ("benchmarks/mklq/README.md", "Public Release Checklist Audit"),
+        ("benchmarks/mklq/README.md", "Upstream Sync Audit"),
         ("benchmarks/mklq/README.md", "Metal Runtime Counter Probe"),
         ("benchmarks/mklq/README.md", "Metal Runtime Counter Summary"),
         ("benchmarks/mklq/README.md", "Metal Runtime Counter Docs Guard"),
@@ -338,6 +342,7 @@ def public_metadata_requirements() -> list[tuple[str, str]]:
         ("docs/mklq/testing-matrix.md", "check_metal_runtime_counter_docs.py"),
         ("docs/mklq/testing-matrix.md", "run_preflight_audit.py"),
         ("docs/mklq/testing-matrix.md", "run_public_release_checklist_audit.py"),
+        ("docs/mklq/testing-matrix.md", "run_upstream_sync_audit.py"),
         ("docs/mklq/testing-matrix.md", "summarize_metal_runtime_counters.py"),
         (".github/pull_request_template.md", "Compatibility Boundary"),
         (".github/pull_request_template.md", "Benchmark Evidence"),
@@ -433,6 +438,26 @@ def run_public_release_checklist_audit(
     result = run_command(config, command)
     if result["returncode"] != 0:
         return failed("public release checklist audit failed", result)
+    return passed(result)
+
+
+def run_upstream_sync_audit(config: HealthcheckConfig) -> dict[str, Any]:
+    script = config.repo_root / "benchmarks" / "mklq" / (
+        "run_upstream_sync_audit.py")
+    command = [
+        config.python_executable,
+        str(script),
+        "--repo-root",
+        str(config.repo_root),
+        "--output",
+        str(config.repo_root / "benchmarks" / "mklq" / "results" /
+            f"upstream-sync-audit-{config.stamp}.json"),
+    ]
+    if config.require_clean:
+        command.append("--require-clean")
+    result = run_command(config, command)
+    if result["returncode"] != 0:
+        return failed("upstream sync audit failed", result)
     return passed(result)
 
 
@@ -1016,6 +1041,9 @@ def build_steps(config: HealthcheckConfig) -> list[Step]:
         Step("public_release_checklist_audit",
              "Audit public release checklist coverage.",
              run_public_release_checklist_audit),
+        Step("upstream_sync_audit",
+             "Dry-run audit upstream sync topology and risk classification.",
+             run_upstream_sync_audit),
         Step("public_claim_boundary",
              "Check public release, Metal, and performance claim boundaries.",
              run_public_claim_boundary_check),

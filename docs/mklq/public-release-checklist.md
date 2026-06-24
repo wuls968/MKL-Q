@@ -25,6 +25,7 @@ Run:
 git status --short --branch
 git remote -v
 git rev-parse --is-shallow-repository
+python3 benchmarks/mklq/run_upstream_sync_audit.py
 git log --oneline -5
 ```
 
@@ -37,6 +38,9 @@ Expected:
 - [ ] The latest commits are MKL-Q commits on top of upstream CUDA-Q history.
 - [ ] If upstream CUDA-Q was synced, `docs/mklq/upstream-sync.md` was followed
   and the sync gates are recorded in the change summary.
+- [ ] If the release depends on latest upstream state, also run
+  `python3 benchmarks/mklq/run_upstream_sync_audit.py --check-remote` after
+  `git fetch upstream main`.
 
 ## Public Metadata
 
@@ -62,6 +66,8 @@ Check:
   `.github/branch-protection-main.json`.
 - [ ] `docs/mklq/public-readiness.md` is linked from the README and records the
   current public repository readiness snapshot.
+- [ ] `docs/mklq/upstream-sync.md` is linked from the README and records the
+  current upstream sync procedure and dry-run audit command.
 - [ ] GitHub About metadata describes MKL-Q, uses Apache-2.0, and avoids stale
   NVIDIA workflow or badge links.
 

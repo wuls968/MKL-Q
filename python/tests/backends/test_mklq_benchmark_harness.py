@@ -162,6 +162,18 @@ def _load_public_release_checklist_audit_module():
     return module
 
 
+def _load_upstream_sync_audit_module():
+    repo_root = Path(__file__).resolve().parents[3]
+    script = repo_root / "benchmarks" / "mklq" / (
+        "run_upstream_sync_audit.py")
+    spec = importlib.util.spec_from_file_location("run_upstream_sync_audit",
+                                                  script)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    return module
+
+
 def _load_preflight_audit_module():
     repo_root = Path(__file__).resolve().parents[3]
     script = repo_root / "benchmarks" / "mklq" / "run_preflight_audit.py"
@@ -961,6 +973,7 @@ def _public_healthcheck_config(module,
                                full=False,
                                include_harness_tests=True,
                                refresh_clean_cpu_benchmark=False,
+                               require_clean=False,
                                plan_only=False):
     return module.HealthcheckConfig(
         repo_root=tmp_path,
@@ -974,7 +987,7 @@ def _public_healthcheck_config(module,
         jobs=3,
         timeout_seconds=123,
         tail_chars=80,
-        require_clean=False,
+        require_clean=require_clean,
         full=full,
         include_harness_tests=include_harness_tests,
         refresh_clean_cpu_benchmark=refresh_clean_cpu_benchmark,
@@ -1016,6 +1029,7 @@ def test_mklq_public_healthcheck_plan_lists_escalating_gates(tmp_path):
         "tracked_artifacts",
         "public_metadata",
         "public_release_checklist_audit",
+        "upstream_sync_audit",
         "public_claim_boundary",
         "benchmark_summary_parse",
         "performance_evidence_guard",
@@ -1052,6 +1066,8 @@ def test_mklq_public_healthcheck_plans_crz_distance_guard(tmp_path):
     assert steps.index("public_metadata") < steps.index(
         "public_release_checklist_audit")
     assert steps.index("public_release_checklist_audit") < steps.index(
+        "upstream_sync_audit")
+    assert steps.index("upstream_sync_audit") < steps.index(
         "public_claim_boundary")
     assert steps.index("public_claim_boundary") < steps.index(
         "benchmark_summary_parse")
@@ -1108,6 +1124,44 @@ def test_mklq_public_healthcheck_runs_release_checklist_audit(monkeypatch,
     assert result["status"] == "passed"
     assert seen["command"][1].endswith(
         "run_public_release_checklist_audit.py")
+
+
+def test_mklq_public_healthcheck_runs_upstream_sync_audit(monkeypatch,
+                                                          tmp_path):
+    module = _load_public_healthcheck_module()
+    config = _public_healthcheck_config(module, tmp_path)
+    seen = {}
+
+    def fake_run_command(config, command, env_overlay=None):
+        seen["command"] = command
+        return {"returncode": 0, "command": command}
+
+    monkeypatch.setattr(module, "run_command", fake_run_command)
+
+    result = module.run_upstream_sync_audit(config)
+
+    assert result["status"] == "passed"
+    assert seen["command"][1].endswith("run_upstream_sync_audit.py")
+
+
+def test_mklq_public_healthcheck_passes_require_clean_to_upstream_sync_audit(
+        monkeypatch, tmp_path):
+    module = _load_public_healthcheck_module()
+    config = _public_healthcheck_config(module,
+                                        tmp_path,
+                                        require_clean=True)
+    seen = {}
+
+    def fake_run_command(config, command, env_overlay=None):
+        seen["command"] = command
+        return {"returncode": 0, "command": command}
+
+    monkeypatch.setattr(module, "run_command", fake_run_command)
+
+    result = module.run_upstream_sync_audit(config)
+
+    assert result["status"] == "passed"
+    assert "--require-clean" in seen["command"]
 
 
 def test_mklq_public_healthcheck_runs_crz_distance_guard(monkeypatch,
@@ -2683,6 +2737,13 @@ def test_mklq_public_healthcheck_compiles_release_checklist_audit():
         module.PY_COMPILE_FILES)
 
 
+def test_mklq_public_healthcheck_compiles_upstream_sync_audit():
+    module = _load_public_healthcheck_module()
+
+    assert "benchmarks/mklq/run_upstream_sync_audit.py" in (
+        module.PY_COMPILE_FILES)
+
+
 def test_mklq_public_healthcheck_requires_cpu_sampling_counter_metadata():
     module = _load_public_healthcheck_module()
 
@@ -2720,6 +2781,19 @@ def test_mklq_public_healthcheck_requires_release_checklist_audit_metadata():
             "Public Release Checklist Audit") in requirements
     assert ("docs/mklq/testing-matrix.md",
             "run_public_release_checklist_audit.py") in requirements
+
+
+def test_mklq_public_healthcheck_requires_upstream_sync_audit_metadata():
+    module = _load_public_healthcheck_module()
+
+    requirements = set(module.public_metadata_requirements())
+
+    assert ("docs/mklq/upstream-sync.md",
+            "run_upstream_sync_audit.py") in requirements
+    assert ("benchmarks/mklq/README.md",
+            "Upstream Sync Audit") in requirements
+    assert ("docs/mklq/testing-matrix.md",
+            "run_upstream_sync_audit.py") in requirements
 
 
 def test_mklq_public_healthcheck_writes_json_report(monkeypatch, tmp_path):
@@ -3137,6 +3211,212 @@ def test_mklq_public_readiness_audit_rejects_release_tags_and_unprotected_main(
     assert "branch protection differs from .github/branch-protection-main.json" in failures
 
 
+def _write_upstream_sync_audit_fixture(root: Path, text: str):
+    docs = root / "docs" / "mklq"
+    docs.mkdir(parents=True)
+    (docs / "upstream-sync.md").write_text(text, encoding="utf-8")
+
+
+def _upstream_sync_text() -> str:
+    return """
+# MKL-Q Upstream Sync
+
+## Preflight
+
+```bash
+git status --short --branch
+git remote -v
+git rev-parse --is-shallow-repository
+git sparse-checkout list
+python3 benchmarks/mklq/run_upstream_sync_audit.py
+python3 benchmarks/mklq/run_upstream_sync_audit.py --check-remote
+```
+
+## Inspect Upstream Delta
+
+```bash
+git fetch origin main
+git fetch upstream main
+git log --oneline --decorate --left-right main...upstream/main
+git diff --name-status main...upstream/main
+```
+
+## Sync Branch
+
+```bash
+git switch -c codex/upstream-sync-YYYYMMDD
+git merge --no-ff upstream/main
+git merge --abort
+```
+
+## Conflict Rules
+
+- Preserve `.github/workflows/mklq-public-hygiene.yml`.
+- Preserve `runtime/nvqir/mklq/`.
+- Preserve `benchmarks/mklq/`.
+- Preserve `docs/mklq/`.
+- Keep `mklq-metal` experimental and do not describe it as full Metal-native.
+
+## Post-merge Gates
+
+```bash
+python3 benchmarks/mklq/run_public_healthcheck.py
+python3 benchmarks/mklq/run_correctness_gate.py
+python3 benchmarks/mklq/run_public_release_checklist_audit.py
+```
+
+## Stop Conditions
+
+- Do not publish if heavy upstream `.github` automation is restored.
+- Do not publish if `mklq-metal` becomes default-ready.
+"""
+
+
+def test_mklq_upstream_sync_audit_builds_passing_report(monkeypatch, tmp_path):
+    module = _load_upstream_sync_audit_module()
+    _write_upstream_sync_audit_fixture(tmp_path, _upstream_sync_text())
+
+    outputs = {
+        ("git", "status", "--short", "--branch"): "## main...origin/main",
+        ("git", "remote", "-v"): "\n".join([
+            "origin\thttps://github.com/wuls968/MKL-Q.git (fetch)",
+            "origin\thttps://github.com/wuls968/MKL-Q.git (push)",
+            "upstream\thttps://github.com/NVIDIA/cuda-quantum.git (fetch)",
+            "upstream\thttps://github.com/NVIDIA/cuda-quantum.git (push)",
+        ]),
+        ("git", "rev-parse", "--is-shallow-repository"): "false",
+        ("git", "rev-parse", "main"): "main-sha",
+        ("git", "rev-parse", "origin/main"): "origin-sha",
+        ("git", "rev-parse", "upstream/main"): "upstream-sha",
+        ("git", "merge-base", "main", "upstream/main"): "base-sha",
+        ("git", "rev-list", "--left-right", "--count",
+         "main...upstream/main"): "3\t2",
+        ("git", "diff", "--name-status", "main...upstream/main"): "\n".join([
+            "M\t.github/workflows/release.yml",
+            "M\truntime/nvqir/mklq/MKLQCpuSimulator.cpp",
+            "A\tbenchmarks/mklq/new_probe.py",
+            "M\tREADME.md",
+        ]),
+        ("git", "log", "--oneline", "--left-right",
+         "main...upstream/main"): "\n".join([
+             "< local-only",
+             "> upstream-only",
+         ]),
+    }
+
+    def fake_command_output(cwd, command):
+        return outputs[tuple(command)]
+
+    monkeypatch.setattr(module, "command_output", fake_command_output)
+    config = module.AuditConfig(
+        repo_root=tmp_path,
+        output=tmp_path / "results" / "upstream-sync-audit.json",
+        require_clean=False,
+        check_remote=False,
+    )
+
+    report = module.build_report(config)
+
+    assert report["schema_version"] == "mklq-upstream-sync-audit-v1"
+    assert report["summary"] == {"status": "passed", "passed": 5, "failed": 0}
+    checks = {check["name"]: check for check in report["checks"]}
+    assert checks["git_topology"]["status"] == "passed"
+    assert checks["local_refs"]["status"] == "passed"
+    assert checks["sync_delta"]["details"]["upstream_only_commits"] == 2
+    risks = checks["risk_classification"]["details"]["categories"]
+    assert risks["github_automation"]["count"] == 1
+    assert risks["runtime_and_targets"]["count"] == 1
+    assert risks["mklq_docs_and_evidence"]["count"] == 1
+    assert risks["public_metadata"]["count"] == 1
+    assert checks["sync_docs"]["status"] == "passed"
+
+
+def test_mklq_upstream_sync_audit_rejects_missing_abort_guard(monkeypatch,
+                                                              tmp_path):
+    module = _load_upstream_sync_audit_module()
+    _write_upstream_sync_audit_fixture(
+        tmp_path, _upstream_sync_text().replace("git merge --abort", ""))
+
+    def fake_command_output(cwd, command):
+        if command[:2] == ["git", "diff"]:
+            return ""
+        if command[:2] == ["git", "log"]:
+            return ""
+        if command == ["git", "rev-list", "--left-right", "--count",
+                       "main...upstream/main"]:
+            return "0\t0"
+        if command[:2] == ["git", "remote"]:
+            return "\n".join([
+                "origin\thttps://github.com/wuls968/MKL-Q.git (fetch)",
+                "upstream\thttps://github.com/NVIDIA/cuda-quantum.git (fetch)",
+            ])
+        if command == ["git", "status", "--short", "--branch"]:
+            return "## main...origin/main"
+        if command == ["git", "rev-parse", "--is-shallow-repository"]:
+            return "false"
+        return "sha"
+
+    monkeypatch.setattr(module, "command_output", fake_command_output)
+    config = module.AuditConfig(
+        repo_root=tmp_path,
+        output=tmp_path / "results" / "upstream-sync-audit.json",
+        require_clean=False,
+        check_remote=False,
+    )
+
+    report = module.build_report(config)
+
+    assert report["summary"]["status"] == "failed"
+    checks = {check["name"]: check for check in report["checks"]}
+    assert checks["sync_docs"]["status"] == "failed"
+    assert "git merge --abort" in checks["sync_docs"]["details"]["missing"]
+
+
+def test_mklq_upstream_sync_audit_rejects_stale_remote_when_requested(
+        monkeypatch, tmp_path):
+    module = _load_upstream_sync_audit_module()
+    _write_upstream_sync_audit_fixture(tmp_path, _upstream_sync_text())
+
+    def fake_command_output(cwd, command):
+        if command == ["git", "ls-remote", "upstream", "refs/heads/main"]:
+            return "remote-sha\trefs/heads/main"
+        if command == ["git", "rev-parse", "upstream/main"]:
+            return "local-upstream-sha"
+        if command[:2] == ["git", "diff"] or command[:2] == ["git", "log"]:
+            return ""
+        if command == ["git", "rev-list", "--left-right", "--count",
+                       "main...upstream/main"]:
+            return "0\t0"
+        if command[:2] == ["git", "remote"]:
+            return "\n".join([
+                "origin\thttps://github.com/wuls968/MKL-Q.git (fetch)",
+                "upstream\thttps://github.com/NVIDIA/cuda-quantum.git (fetch)",
+            ])
+        if command == ["git", "status", "--short", "--branch"]:
+            return "## main...origin/main"
+        if command == ["git", "rev-parse", "--is-shallow-repository"]:
+            return "false"
+        return "sha"
+
+    monkeypatch.setattr(module, "command_output", fake_command_output)
+    config = module.AuditConfig(
+        repo_root=tmp_path,
+        output=tmp_path / "results" / "upstream-sync-audit.json",
+        require_clean=False,
+        check_remote=True,
+    )
+
+    report = module.build_report(config)
+
+    assert report["summary"]["status"] == "failed"
+    checks = {check["name"]: check for check in report["checks"]}
+    assert checks["remote_freshness"]["status"] == "failed"
+    assert checks["remote_freshness"]["details"]["remote_upstream_main"] == (
+        "remote-sha")
+    assert checks["remote_freshness"]["details"]["local_upstream_main"] == (
+        "local-upstream-sha")
+
+
 def _write_release_checklist_audit_fixture(root: Path, checklist_text: str):
     docs = root / "docs" / "mklq"
     benchmarks = root / "benchmarks" / "mklq"
@@ -3150,6 +3430,7 @@ def _write_release_checklist_audit_fixture(root: Path, checklist_text: str):
             "README.md",
             "docs/mklq/release-policy.md",
             "docs/mklq/public-readiness.md",
+            "docs/mklq/upstream-sync.md",
             "docs/mklq/validation.md",
             "docs/mklq/known-limitations.md",
             "docs/mklq/testing-matrix.md",
@@ -3158,6 +3439,7 @@ def _write_release_checklist_audit_fixture(root: Path, checklist_text: str):
             "docs/mklq/issue-labels.md",
             ".github/workflows/mklq-public-hygiene.yml",
             "benchmarks/mklq/run_preflight_audit.py",
+            "benchmarks/mklq/run_upstream_sync_audit.py",
             "benchmarks/mklq/run_public_release_checklist_audit.py",
             "benchmarks/mklq/run_public_healthcheck.py",
             "benchmarks/mklq/run_public_readiness_audit.py",
@@ -3196,6 +3478,7 @@ binary, GitHub Release, release certification, or performance certification.
 git status --short --branch
 git remote -v
 git rev-parse --is-shallow-repository
+python3 benchmarks/mklq/run_upstream_sync_audit.py
 git log --oneline -5
 ```
 
@@ -3204,6 +3487,7 @@ git log --oneline -5
 - README.md
 - docs/mklq/release-policy.md
 - docs/mklq/public-readiness.md
+- docs/mklq/upstream-sync.md
 - docs/mklq/validation.md
 - docs/mklq/known-limitations.md
 - docs/mklq/testing-matrix.md
