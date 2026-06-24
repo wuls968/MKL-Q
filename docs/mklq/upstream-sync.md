@@ -15,6 +15,7 @@ git remote -v
 git rev-parse --is-shallow-repository
 git sparse-checkout list
 gh repo view wuls968/MKL-Q --json nameWithOwner,isFork,parent,defaultBranchRef,url
+python3 benchmarks/mklq/run_upstream_sync_audit.py
 ```
 
 Expected:
@@ -28,6 +29,29 @@ Expected:
 - `wuls968/MKL-Q` remains a fork of `NVIDIA/cuda-quantum`.
 
 Do not push to `upstream`. All MKL-Q publication goes through `origin`.
+
+## Dry-run Audit
+
+Before merging, run the upstream sync audit:
+
+```bash
+python3 benchmarks/mklq/run_upstream_sync_audit.py
+```
+
+The default mode is read-only and does not fetch, merge, or change the
+worktree. It checks local `main`, `origin/main`, and `upstream/main` refs,
+classifies changed upstream paths into manual-review categories, and verifies
+that this procedure still records the required conflict and post-merge gates.
+
+When you need to confirm that the local `upstream/main` ref is current, use the
+networked freshness check:
+
+```bash
+python3 benchmarks/mklq/run_upstream_sync_audit.py --check-remote
+```
+
+If `--check-remote` reports a stale local upstream ref, run
+`git fetch upstream main` and repeat the audit before interpreting the delta.
 
 ## Inspect Upstream Delta
 
@@ -130,14 +154,22 @@ python3 -m py_compile \
   benchmarks/mklq/bench_mklq_targets.py \
   benchmarks/mklq/bench_probability_kernels.py \
   benchmarks/mklq/check_metal_evidence.py \
+  benchmarks/mklq/check_public_claims.py \
+  benchmarks/mklq/check_sampling_profile_evidence.py \
   benchmarks/mklq/check_performance_evidence.py \
   benchmarks/mklq/make_summary.py \
   benchmarks/mklq/run_clean_cpu_benchmark.py \
+  benchmarks/mklq/run_cpu_sampling_counter_probe.py \
+  benchmarks/mklq/run_cpu_scaling_benchmark.py \
   benchmarks/mklq/run_correctness_gate.py \
   benchmarks/mklq/run_metal_runtime_counter_probe.py \
   benchmarks/mklq/run_preflight_audit.py \
+  benchmarks/mklq/run_public_release_checklist_audit.py \
   benchmarks/mklq/run_public_readiness_audit.py \
   benchmarks/mklq/run_public_healthcheck.py \
+  benchmarks/mklq/run_sampling_scaling_benchmark.py \
+  benchmarks/mklq/run_upstream_sync_audit.py \
+  benchmarks/mklq/summarize_cpu_sampling_counters.py \
   benchmarks/mklq/summarize_metal_runtime_counters.py \
   benchmarks/mklq/summarize_reports.py
 ```

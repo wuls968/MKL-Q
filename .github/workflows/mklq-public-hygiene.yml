@@ -75,6 +75,7 @@ jobs:
           test -f benchmarks/mklq/run_public_release_checklist_audit.py
           test -f benchmarks/mklq/run_public_readiness_audit.py
           test -f benchmarks/mklq/run_public_healthcheck.py
+          test -f benchmarks/mklq/run_upstream_sync_audit.py
           test -f benchmarks/mklq/summarize_cpu_sampling_counters.py
           test -f benchmarks/mklq/summarize_metal_runtime_counters.py
           test -f benchmarks/mklq/reports/local-cpu-sampling-counter-probe-2026-06-23.cpu-counter.json
@@ -105,9 +106,11 @@ jobs:
           grep -q 'check_metal_runtime_counter_docs.py' docs/mklq/testing-matrix.md
           grep -q 'run_preflight_audit.py' docs/mklq/testing-matrix.md
           grep -q 'run_public_release_checklist_audit.py' docs/mklq/testing-matrix.md
+          grep -q 'run_upstream_sync_audit.py' docs/mklq/testing-matrix.md
           grep -q 'summarize_metal_runtime_counters.py' docs/mklq/testing-matrix.md
           grep -q 'run_public_healthcheck.py' docs/mklq/testing-matrix.md
           grep -q 'Preflight' docs/mklq/upstream-sync.md
+          grep -q 'run_upstream_sync_audit.py' docs/mklq/upstream-sync.md
           grep -q 'Conflict Rules' docs/mklq/upstream-sync.md
           grep -q 'Post-merge Gates' docs/mklq/upstream-sync.md
           grep -q 'Stop Conditions' docs/mklq/upstream-sync.md
@@ -121,6 +124,7 @@ jobs:
           grep -q 'check_metal_evidence.py' docs/mklq/public-release-checklist.md
           grep -q 'check_performance_evidence.py' docs/mklq/public-release-checklist.md
           grep -q 'run_preflight_audit.py' docs/mklq/public-release-checklist.md
+          grep -q 'run_upstream_sync_audit.py' docs/mklq/public-release-checklist.md
           grep -q 'run_public_release_checklist_audit.py' docs/mklq/public-release-checklist.md
           grep -q 'run_public_healthcheck.py' docs/mklq/public-release-checklist.md
           grep -q 'Upstream Sync' docs/mklq/developer-workflow.md
@@ -180,6 +184,7 @@ jobs:
           grep -q 'Public Claim Boundary Guard' benchmarks/mklq/README.md
           grep -q 'check_public_claims.py' benchmarks/mklq/README.md
           grep -q 'Public Release Checklist Audit' benchmarks/mklq/README.md
+          grep -q 'Upstream Sync Audit' benchmarks/mklq/README.md
           grep -q 'Preflight Audit' benchmarks/mklq/README.md
           grep -q 'CPU Sampling Counter Probe' benchmarks/mklq/README.md
           grep -q 'CPU Sampling Counter Summary' benchmarks/mklq/README.md
@@ -461,6 +466,7 @@ jobs:
             benchmarks/mklq/run_public_release_checklist_audit.py \
             benchmarks/mklq/run_public_readiness_audit.py \
             benchmarks/mklq/run_public_healthcheck.py \
+            benchmarks/mklq/run_upstream_sync_audit.py \
             benchmarks/mklq/summarize_cpu_sampling_counters.py \
             benchmarks/mklq/summarize_metal_runtime_counters.py \
             benchmarks/mklq/summarize_reports.py \
