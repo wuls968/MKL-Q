@@ -1178,6 +1178,27 @@ def test_mklq_public_healthcheck_runs_public_claim_guard(monkeypatch,
     assert seen["command"][1].endswith("check_public_claims.py")
 
 
+def test_mklq_public_healthcheck_runs_latest_performance_guard(monkeypatch,
+                                                               tmp_path):
+    module = _load_public_healthcheck_module()
+    config = _public_healthcheck_config(module, tmp_path)
+    seen = {}
+
+    def fake_run_command(config, command, env_overlay=None):
+        seen["command"] = command
+        return {"returncode": 0, "command": command}
+
+    monkeypatch.setattr(module, "run_command", fake_run_command)
+
+    result = module.run_performance_evidence_check(config)
+
+    assert result["status"] == "passed"
+    command = seen["command"]
+    assert command[1].endswith("check_performance_evidence.py")
+    assert command[command.index("--summary-id") + 1] == (
+        module.CLEAN_CPU_SUMMARY_ID)
+
+
 def test_mklq_public_healthcheck_runs_release_checklist_audit(monkeypatch,
                                                               tmp_path):
     module = _load_public_healthcheck_module()
@@ -1797,8 +1818,11 @@ def _performance_summary(module,
 
 def test_mklq_performance_evidence_guard_accepts_clean_cpu_summary():
     module = _load_performance_evidence_module()
+    assert module.DEFAULT_SUMMARY_ID == "local-clean-cpu-q20-2026-06-28"
     assert "qft_like_state_q20" in module.DEFAULT_REQUIRED_RATIOS
     assert "seeded_clifford_state_q20" in module.DEFAULT_REQUIRED_RATIOS
+    assert "hardware_efficient_ansatz_state_q20" in (
+        module.DEFAULT_REQUIRED_RATIOS)
 
     result = module.check_summary(
         _performance_summary(module),
@@ -6530,6 +6554,80 @@ def test_mklq_benchmark_summary_records_clean_cpu_evidence():
     assert ratios[
         "qpp_cpu_over_mklq_cpu_sample_partial_register_q20_65536_shots"
     ] == pytest.approx(120.60214077899167)
+
+
+def test_mklq_benchmark_summary_records_latest_clean_cpu_evidence():
+    repo_root = Path(__file__).resolve().parents[3]
+    summary_path = (
+        repo_root / "benchmarks" / "mklq" / "reports" /
+        "local-clean-cpu-q20-2026-06-28.summary.json")
+
+    summary = json.loads(summary_path.read_text(encoding="utf-8"))
+
+    assert summary["schema_version"] == "mklq-benchmark-summary-v1"
+    assert summary["evidence_kind"] == "clean_local_benchmark_evidence"
+    assert summary["summary_id"] == "local-clean-cpu-q20-2026-06-28"
+    assert summary["git"]["commit"] == (
+        "23d34ab226c3e4d7a47f15af3292bf81ce25987b")
+    assert summary["git"]["dirty"] is False
+    assert summary["interpretation"]["clean_worktree"] is True
+    assert summary["raw_results"][0]["sha256"] == (
+        "fd46266986bd026c5db724194e5d66cdc092fae84fa74a4206de59f5038b355f")
+    assert summary["raw_results"][0]["status_rows"] == {"ok": 6}
+    assert summary["raw_results"][1]["sha256"] == (
+        "3fa15408e1495cce37efaef455b0420674352ae30ba07df302a1eb8cdc754982")
+    assert summary["raw_results"][1]["status_rows"] == {"ok": 6}
+    assert summary["raw_results"][2]["sha256"] == (
+        "c17703381afc2ad21152836e591ba4c6362aee7cddebcc8d9d6f414d5799cdb0")
+    assert summary["raw_results"][2]["status_rows"] == {"ok": 8}
+    assert summary["machine"]["cpu_brand"] == "Apple M5"
+    assert summary["config"]["targets"] == ["qpp-cpu", "mklq-cpu"]
+    assert summary["config"]["cases"] == [
+        "y-state", "cy-state", "cz-state", "qft-like-state",
+        "seeded-clifford-state", "hardware-efficient-ansatz-state",
+        "sample-full-register", "sample-partial-register",
+    ]
+    assert summary["config"]["qubits"] == [20]
+    assert summary["config"]["shot_counts"] == [1024, 65536]
+    assert summary["config"]["repeats"] == 2
+    assert summary["config"]["warmups"] == 1
+    assert summary["config"]["layers"] == 8
+
+    rows = {
+        (row["target"], row["case"], row["shots"]): row
+        for row in summary["rows"]
+    }
+    assert len(rows) == 20
+    ansatz = rows[("mklq-cpu", "hardware-efficient-ansatz-state", 1024)]
+    assert ansatz["elapsed_seconds_median"] == pytest.approx(
+        0.2678726250305772)
+    assert ansatz["gate_count"] == 792
+    assert ansatz["ansatz_rotation_gate_count"] == 480
+    assert ansatz["ansatz_cx_gate_count"] == 80
+    assert ansatz["ansatz_crz_gate_count"] == 80
+    assert ansatz["ansatz_cz_gate_count"] == 72
+    assert ansatz["ansatz_crx_gate_count"] == 72
+    assert ansatz["ansatz_swap_gate_count"] == 8
+    assert ansatz["ansatz_entangler_gate_count"] == 304
+    assert ansatz[
+        "hardware_efficient_ansatz_state_throughput_per_second"
+    ] == pytest.approx(2956.629106500131)
+    assert rows[("mklq-cpu", "qft-like-state", 1024)][
+        "elapsed_seconds_median"] == pytest.approx(0.9888316044816747)
+    assert rows[("mklq-cpu", "sample-partial-register", 65536)][
+        "elapsed_seconds_median"] == pytest.approx(0.01740229199640453)
+
+    ratios = summary["comparison"]["clean_worktree_cross_target_ratio"]
+    assert ratios[
+        "qpp_cpu_over_mklq_cpu_hardware_efficient_ansatz_state_q20"
+    ] == pytest.approx(87.95303301831422)
+    assert ratios["qpp_cpu_over_mklq_cpu_y_state_q20"] == pytest.approx(
+        86.23792069552117)
+    assert ratios["qpp_cpu_over_mklq_cpu_qft_like_state_q20"] == pytest.approx(
+        55.74368034476666)
+    assert ratios[
+        "qpp_cpu_over_mklq_cpu_seeded_clifford_state_q20"] == pytest.approx(
+            107.637729814562)
 
 
 def test_mklq_benchmark_summary_records_sanitized_sampling_evidence():
