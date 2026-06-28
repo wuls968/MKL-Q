@@ -15,7 +15,8 @@ boundary and evidence limits.
 
 ## Current Evidence Snapshot
 
-Latest local validation refresh: 2026-06-24.
+Latest local correctness refresh: 2026-06-28. Latest public healthcheck
+refresh: 2026-06-24.
 
 The install-prefix build, one-command correctness gate, public example smoke
 gate, full public healthcheck, and standalone install-prefix Python subset were
@@ -25,6 +26,8 @@ healthcheck was refreshed after adding CPU probability-fill counter evidence.
 The default public healthcheck and one-command correctness gate were refreshed
 again on 2026-06-24 after syncing CUDA-Q upstream and before refreshing the
 tracked bounded CPU/Metal counter reports.
+The one-command correctness gate was refreshed again on 2026-06-28 after adding
+the CPU hardware-efficient ansatz state and observable oracle fixture.
 The clean CPU benchmark summary was refreshed separately against
 `34f4b260d1c657ad626c526eed4e6b9d3a441be4` after adding QFT-like and seeded
 Clifford composite rows to the clean evidence gate.
@@ -50,9 +53,11 @@ Raw wrapper output was written to ignored local paths
 `benchmarks/mklq/results/local-correctness-gate-2026-06-22.json`,
 `benchmarks/mklq/results/local-correctness-gate-2026-06-23.json`,
 `benchmarks/mklq/results/local-correctness-gate-2026-06-24.json`,
+`benchmarks/mklq/results/local-correctness-gate-2026-06-28.json`,
 `benchmarks/mklq/results/local-metal-runtime-counter-probe-2026-06-22.counter.json`,
 `benchmarks/mklq/results/local-metal-runtime-counter-probe-2026-06-23.counter.json`,
 `benchmarks/mklq/results/local-metal-runtime-counter-probe-2026-06-24.counter.json`,
+`benchmarks/mklq/results/local-metal-runtime-counter-probe-2026-06-28.counter.json`,
 `benchmarks/mklq/results/local-sampling-scaling-cpu-q18-q22-2026-06-23.json`,
 and `benchmarks/mklq/results/example-smoke-2026-06-23.json`; these raw payloads
 are not tracked as public evidence.
@@ -70,7 +75,7 @@ are not tracked as public evidence.
   14 selected, 0 missing, and 0 failures; each report includes full-register
   and marginal probability-fill counter ctests.
 - Standalone install-prefix Python subset: `37 passed`.
-- `python_target_smoke`: `59 passed`.
+- `python_target_smoke`: `61 passed`.
 - `nvqpp_smoke`: `2 passed`.
 - Current `target_config_ctest`: `88/88 passed`.
 - Current tracked `metal_runtime_counter_probe`: 2 bounded reports, 40
@@ -166,11 +171,11 @@ python3 benchmarks/mklq/run_correctness_gate.py \
   --build-dir build-python
 ```
 
-Latest local result: passed on 2026-06-24 after adding the unsupported
-noise-model fail-fast boundary. It reported 4 wrapper steps passed, 0 failed,
-and 0 skipped. The step-level results were:
+Latest local result: passed on 2026-06-28 after adding the CPU
+hardware-efficient ansatz state and observable oracle fixture. It reported 4
+wrapper steps passed, 0 failed, and 0 skipped. The step-level results were:
 
-- `python_target_smoke`: `59 passed`.
+- `python_target_smoke`: `61 passed`.
 - `nvqpp_smoke`: `2 passed`.
 - `target_config_ctest`: `88/88 passed`.
 - `metal_runtime_counter_probe`: 20 expected, 20 selected, 0 missing, and 20

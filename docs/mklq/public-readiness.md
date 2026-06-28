@@ -143,12 +143,13 @@ compares the live core protection fields against that JSON reference.
 ## Validation Snapshot
 
 The latest public local validation evidence is recorded in
-[`validation.md`](validation.md), with a public metadata refresh on
-2026-06-24:
+[`validation.md`](validation.md), with a correctness refresh on 2026-06-28 and
+a public metadata refresh on 2026-06-24:
 
-- latest validation refresh date: 2026-06-24;
+- latest correctness refresh date: 2026-06-28;
 - source state: the ignored raw healthcheck JSON records the exact local Git
-  state for the latest runtime validation gate;
+  state for the latest public healthcheck gate, and the ignored correctness
+  gate JSON records the latest correctness-gate state;
 - install-prefix build: passed;
 - default public healthcheck: passed with 25/25 steps passed;
 - full public healthcheck: passed with 28/28 steps passed;
@@ -160,7 +161,7 @@ The latest public local validation evidence is recorded in
   14 selected, 0 missing, and 0 failures, including full-register and marginal
   probability-fill counter ctests;
 - standalone install-prefix Python subset: `37 passed`;
-- `python_target_smoke`: `59 passed`;
+- `python_target_smoke`: `61 passed`;
 - `nvqpp_smoke`: `2 passed`;
 - current full `target_config_ctest`: `88/88 passed`;
 - current tracked `metal_runtime_counter_probe`: 2 bounded reports, 40

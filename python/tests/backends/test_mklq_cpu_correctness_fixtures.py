@@ -170,6 +170,36 @@ def _parameterized_fixture_kernel():
     return kernel
 
 
+def _hardware_efficient_ansatz_kernel(qubit_count, layers):
+    kernel = cudaq.make_kernel()
+    qubits = kernel.qalloc(qubit_count)
+
+    for layer in range(layers):
+        for index in range(qubit_count):
+            theta = 0.037 * (layer + 1) + 0.011 * (index + 1)
+            phi = -0.021 * (layer + 2) + 0.007 * index
+            lam = 0.019 * (index + 2) - 0.005 * layer
+            kernel.ry(theta, qubits[index])
+            kernel.rz(phi, qubits[index])
+            kernel.rx(lam, qubits[index])
+
+        for index in range(0, qubit_count - 1, 2):
+            kernel.cx(qubits[index], qubits[index + 1])
+            kernel.crz(0.043 * (layer + 1) + 0.003 * index, qubits[index],
+                       qubits[index + 1])
+
+        for index in range(1, qubit_count - 1, 2):
+            kernel.cz(qubits[index], qubits[index + 1])
+            kernel.crx(-0.029 * (layer + 1) + 0.002 * index, qubits[index],
+                       qubits[index + 1])
+
+        if qubit_count > 3:
+            kernel.swap(qubits[layer % qubit_count],
+                        qubits[(layer + 3) % qubit_count])
+
+    return kernel
+
+
 def test_mklq_cpu_bell_state_matches_analytic_fixture():
     state = _state_for_target("mklq-cpu", _bell_kernel())
     expected = np.array([1.0 / np.sqrt(2.0), 0.0, 0.0,
@@ -226,5 +256,22 @@ def test_mklq_cpu_parameterized_fixture_matches_qpp_observable():
                                         0.19)
     actual = _expectation_for_target("mklq-cpu", kernel, observable, -0.43,
                                      0.19)
+
+    assert np.isclose(actual, reference, rtol=1.0e-12, atol=1.0e-12)
+
+
+def test_mklq_cpu_hardware_efficient_ansatz_matches_qpp_state():
+    _assert_matches_qpp(_hardware_efficient_ansatz_kernel(7, 3))
+
+
+def test_mklq_cpu_hardware_efficient_ansatz_matches_qpp_observable():
+    kernel = _hardware_efficient_ansatz_kernel(7, 3)
+    observable = (0.125 * spin.z(0) * spin.z(6) -
+                  0.375 * spin.x(1) * spin.x(4) +
+                  0.5 * spin.y(2) * spin.z(5) +
+                  0.25 * spin.z(3))
+
+    reference = _expectation_for_target("qpp-cpu", kernel, observable)
+    actual = _expectation_for_target("mklq-cpu", kernel, observable)
 
     assert np.isclose(actual, reference, rtol=1.0e-12, atol=1.0e-12)
