@@ -19,6 +19,8 @@ CHECK_SCHEMA_VERSION = "mklq-performance-evidence-check-v1"
 SUMMARY_SCHEMA_VERSION = "mklq-benchmark-summary-v1"
 DEFAULT_EVIDENCE_KIND = "clean_local_benchmark_evidence"
 DEFAULT_REPORT_PATTERN = "local-clean-cpu-*.summary.json"
+DEFAULT_SUMMARY_ID = "local-clean-cpu-q20-2026-06-28"
+DEFAULT_SUMMARY_IDS = (DEFAULT_SUMMARY_ID,)
 DEFAULT_RATIO_GROUP = "clean_worktree_cross_target_ratio"
 DEFAULT_CANDIDATE_ELAPSED_GROUP = "mklq_cpu_elapsed_seconds_median"
 DEFAULT_REFERENCE_TARGET = "qpp-cpu"
@@ -29,6 +31,7 @@ DEFAULT_REQUIRED_RATIOS = (
     "cz_state_q20",
     "qft_like_state_q20",
     "seeded_clifford_state_q20",
+    "hardware_efficient_ansatz_state_q20",
     "sample_full_register_q20_1024_shots",
     "sample_full_register_q20_65536_shots",
     "sample_partial_register_q20_1024_shots",
@@ -306,7 +309,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--summary-id",
                         action="append",
                         default=[],
-                        help="Specific summary_id to check. May be repeated.")
+                        help=("Specific summary_id to check. May be repeated. "
+                              f"Defaults to {DEFAULT_SUMMARY_ID}."))
     parser.add_argument("--required-ratios",
                         default=",".join(DEFAULT_REQUIRED_RATIOS),
                         help="Comma-separated required ratio labels.")
@@ -333,10 +337,11 @@ def main() -> int:
     args = parse_args()
     root = repo_root()
     reports = args.reports if args.reports.is_absolute() else root / args.reports
+    summary_ids = set(args.summary_id or DEFAULT_SUMMARY_IDS)
     report = build_report(root=root,
                           reports=reports,
                           pattern=args.pattern,
-                          summary_ids=set(args.summary_id),
+                          summary_ids=summary_ids,
                           required_ratios=parse_csv(args.required_ratios),
                           min_speedup=args.min_speedup,
                           ratio_group=args.ratio_group,

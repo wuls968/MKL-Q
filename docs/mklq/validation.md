@@ -29,8 +29,10 @@ tracked bounded CPU/Metal counter reports.
 The one-command correctness gate was refreshed again on 2026-06-28 after adding
 the CPU hardware-efficient ansatz state and observable oracle fixture.
 The clean CPU benchmark summary was refreshed separately against
-`34f4b260d1c657ad626c526eed4e6b9d3a441be4` after adding QFT-like and seeded
-Clifford composite rows to the clean evidence gate.
+`23d34ab226c3e4d7a47f15af3292bf81ce25987b` after adding the
+hardware-efficient ansatz composite row to the clean evidence gate. The older
+2026-06-21 clean summary remains tracked as historical evidence for the earlier
+QFT-like and seeded Clifford composite gate.
 
 The current refresh includes the earlier Metal counter-evidence work:
 resident built-in Rx/Ry/Rz, controlled-Rx/Ry/Rz, phase-family S/T/Sdg/Tdg,
@@ -81,8 +83,9 @@ are not tracked as public evidence.
 - Current tracked `metal_runtime_counter_probe`: 2 bounded reports, 40
   expected, 40 selected, 0 missing, and 0 failures; each report runs 20
   counter ctests independently.
-- Clean CPU benchmark gate: passed, with 18 q20 `qpp-cpu`/`mklq-cpu` rows and
-  18 rows reporting `status == "ok"`.
+- Clean CPU benchmark gate: passed, with 20 q20 `qpp-cpu`/`mklq-cpu` rows and
+  20 rows reporting `status == "ok"`, including
+  `hardware-efficient-ansatz-state`.
 - Focused multi-control CPU benchmark evidence: passed, with 2 q20
   `multi-control-state` rows reporting `status == "ok"` and a tracked
   `qpp-cpu` over `mklq-cpu` median elapsed ratio of `45.09x`.
@@ -308,6 +311,7 @@ python3 benchmarks/mklq/run_sampling_scaling_benchmark.py \
 
 Current tracked summaries include:
 
+- `local-clean-cpu-q20-2026-06-28.summary.json`
 - `local-clean-cpu-q20-2026-06-21.summary.json`
 - `local-current-sampling-fullprob-gated-q20-2026-06-19.summary.json`
 - `local-y-cy-fastpath-isolated-q20-2026-06-19.summary.json`
@@ -319,11 +323,14 @@ Current tracked summaries include:
 - `local-scaling-cpu-multi-control-q18-q22-2026-06-22.summary.json`
 - `local-sampling-scaling-cpu-q18-q22-2026-06-23.summary.json`
 
-The clean-worktree local benchmark summary was refreshed against
-`34f4b260d1c657ad626c526eed4e6b9d3a441be4` on 2026-06-21. The clean summary now
+The latest clean-worktree local benchmark summary was refreshed against
+`23d34ab226c3e4d7a47f15af3292bf81ce25987b` on 2026-06-28. The clean summary
 includes `y-state`, `cy-state`, `cz-state`, `qft-like-state`,
-`seeded-clifford-state`, full-register sampling, and partial-register sampling
-rows. These files include one clean-worktree local benchmark summary plus older
+`seeded-clifford-state`, `hardware-efficient-ansatz-state`, full-register
+sampling, and partial-register sampling rows. All 20 q20 rows completed with
+`status == "ok"`, and the local `qpp-cpu` over `mklq-cpu` median elapsed ratio
+for `hardware-efficient-ansatz-state` was `87.95x`.
+These files include clean-worktree local benchmark summaries plus older
 dirty-worktree tuning summaries. Interpret each file through its
 `evidence_kind` and `interpretation` fields. Do not treat any local summary as
 cross-machine performance certification.

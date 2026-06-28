@@ -170,10 +170,10 @@ a public metadata refresh on 2026-06-24:
   controlled-Rx/Ry/Rz, phase-family S/T/Sdg/Tdg, and multi-control
   single-qubit fixtures, plus the simulator resident three-target gate fixture
   and unsupported gate fallback/reupload boundary fixture.
-- clean CPU benchmark gate: passed with 18 q20 `qpp-cpu`/`mklq-cpu` rows,
-  including `cz-state`, `qft-like-state`, and `seeded-clifford-state`, with
-  18 rows reporting `status == "ok"` against
-  `34f4b260d1c657ad626c526eed4e6b9d3a441be4`.
+- clean CPU benchmark gate: passed with 20 q20 `qpp-cpu`/`mklq-cpu` rows,
+  including `cz-state`, `qft-like-state`, `seeded-clifford-state`, and
+  `hardware-efficient-ansatz-state`, with 20 rows reporting `status == "ok"`
+  against `23d34ab226c3e4d7a47f15af3292bf81ce25987b`.
 
 This evidence is local Apple Silicon evidence. It is useful for source bootstrap
 confidence, but it is not hosted CI, release certification, or cross-machine

@@ -479,7 +479,7 @@ refresh the public evidence index, run:
 ```bash
 python3 benchmarks/mklq/run_clean_cpu_benchmark.py \
   --pythonpath "${HOME}/.cudaq-mklq" \
-  --stamp 2026-06-21
+  --stamp YYYY-MM-DD
 ```
 
 Current default clean CPU runs include the `y-state`, `cy-state`, `cz-state`,
@@ -515,6 +515,31 @@ python3 benchmarks/mklq/summarize_reports.py \
 The generated public index is tracked at
 `docs/mklq/benchmark-evidence.md`.
 
+- `reports/local-clean-cpu-q20-2026-06-28.summary.json`: tracked sanitized
+  summary for ignored raw results
+  `results/local-clean-cpu-gate-y-cy-cz-q20-2026-06-28.json`
+  (`sha256: fd46266986bd026c5db724194e5d66cdc092fae84fa74a4206de59f5038b355f`),
+  `results/local-clean-cpu-composite-qft-like-seeded-clifford-hardware-efficient-ansatz-q20-2026-06-28.json`
+  (`sha256: 3fa15408e1495cce37efaef455b0420674352ae30ba07df302a1eb8cdc754982`),
+  and `results/local-clean-cpu-sampling-q20-2026-06-28.json`
+  (`sha256: c17703381afc2ad21152836e591ba4c6362aee7cddebcc8d9d6f414d5799cdb0`).
+  This run was collected from a clean worktree at
+  `23d34ab226c3e4d7a47f15af3292bf81ce25987b` with `qpp-cpu` and
+  `mklq-cpu` rows for `y-state`, `cy-state`, `cz-state`, `qft-like-state`,
+  `seeded-clifford-state`, `hardware-efficient-ansatz-state`,
+  `sample-full-register`, and `sample-partial-register` at q20 with
+  `OMP_NUM_THREADS=10`, `OMP_PROC_BIND=close`, `OMP_DYNAMIC=false`,
+  `VECLIB_MAXIMUM_THREADS=1`, `repeats=2`, `warmups=1`, and `layers=8` on
+  Apple M5, 10 logical cores, 16 GB RAM, macOS 26.5.1. All 20 rows completed
+  with `status == "ok"`. In this local run, q20 median elapsed ratios for
+  `qpp-cpu` over `mklq-cpu` were 86.24x for `y-state`, 110.99x for
+  `cy-state`, 96.82x for `cz-state`, 55.74x for `qft-like-state`, 107.64x for
+  `seeded-clifford-state`, 87.95x for `hardware-efficient-ansatz-state`,
+  81.41x for `sample-full-register` at 1024 shots, 84.25x for
+  `sample-full-register` at 65536 shots, 102.36x for `sample-partial-register`
+  at 1024 shots, and 90.39x for `sample-partial-register` at 65536 shots.
+  Treat this as local clean-worktree CPU evidence, not as cross-machine
+  performance certification.
 - `reports/local-clean-cpu-q20-2026-06-21.summary.json`: tracked sanitized
   summary for ignored raw results
   `results/local-clean-cpu-gate-y-cy-cz-q20-2026-06-21.json`

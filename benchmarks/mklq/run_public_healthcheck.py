@@ -103,6 +103,7 @@ SAMPLING_SCALING_SUMMARY_ID = (
     "local-sampling-scaling-cpu-q18-q22-2026-06-23")
 SAMPLING_PROFILE_SUMMARY_ID = (
     "local-sampling-profile-breakdown-cpu-q20-q22-2026-06-23")
+CLEAN_CPU_SUMMARY_ID = "local-clean-cpu-q20-2026-06-28"
 SAMPLING_SCALING_REQUIRED_RATIOS = (
     "sample_full_register_q18_1024_shots",
     "sample_full_register_q18_65536_shots",
@@ -530,6 +531,8 @@ def run_performance_evidence_check(config: HealthcheckConfig) -> dict[str, Any]:
         str(script),
         "--reports",
         "benchmarks/mklq/reports",
+        "--summary-id",
+        CLEAN_CPU_SUMMARY_ID,
     ]
     result = run_command(config, command)
     if result["returncode"] != 0:
