@@ -642,7 +642,8 @@ def test_mklq_clean_cpu_gate_plan_uses_fixed_environment(tmp_path):
         evidence_output=tmp_path / "benchmark-evidence.md",
         targets="qpp-cpu,mklq-cpu",
         gate_cases="y-state,cy-state,cz-state",
-        composite_cases="qft-like-state,seeded-clifford-state",
+        composite_cases=
+        "qft-like-state,seeded-clifford-state,hardware-efficient-ansatz-state",
         sampling_cases="sample-full-register,sample-partial-register",
         summary_id="local-clean-cpu-q20-2026-06-21",
         evidence_kind="clean_local_benchmark_evidence",
@@ -667,7 +668,7 @@ def test_mklq_clean_cpu_gate_plan_uses_fixed_environment(tmp_path):
     assert plan["paths"]["gate_raw"].endswith(
         "local-clean-cpu-gate-y-cy-cz-q20-2026-06-21.json")
     assert plan["paths"]["composite_raw"].endswith(
-        "local-clean-cpu-composite-qft-like-seeded-clifford-q20-2026-06-21.json"
+        "local-clean-cpu-composite-qft-like-seeded-clifford-hardware-efficient-ansatz-q20-2026-06-21.json"
     )
     assert plan["paths"]["sampling_raw"].endswith(
         "local-clean-cpu-sampling-q20-2026-06-21.json")
@@ -681,7 +682,7 @@ def test_mklq_clean_cpu_gate_plan_uses_fixed_environment(tmp_path):
         "qpp-cpu,mklq-cpu")
     composite_command = plan["commands"]["composite_raw"]
     assert composite_command[composite_command.index("--cases") + 1] == (
-        "qft-like-state,seeded-clifford-state")
+        "qft-like-state,seeded-clifford-state,hardware-efficient-ansatz-state")
     assert composite_command[composite_command.index("--layers") + 1] == "8"
     sampling_command = plan["commands"]["sampling_raw"]
     assert sampling_command[sampling_command.index("--shot-counts") +
@@ -712,7 +713,8 @@ def test_mklq_clean_cpu_gate_skip_benchmark_runs_summary_only(monkeypatch,
         evidence_output=tmp_path / "benchmark-evidence.md",
         targets="qpp-cpu,mklq-cpu",
         gate_cases="y-state,cy-state",
-        composite_cases="qft-like-state,seeded-clifford-state",
+        composite_cases=
+        "qft-like-state,seeded-clifford-state,hardware-efficient-ansatz-state",
         sampling_cases="sample-full-register,sample-partial-register",
         summary_id="local-clean-cpu-q20-2026-06-21",
         evidence_kind="clean_local_benchmark_evidence",
@@ -4796,7 +4798,7 @@ def test_mklq_benchmark_dry_run_records_metal_path_metadata(tmp_path):
         "--targets",
         "mklq-metal",
         "--cases",
-        "y-state,cy-state,three-qubit-state,qft-like-state,crz-distance-state,sample-full-register",
+        "y-state,cy-state,three-qubit-state,qft-like-state,hardware-efficient-ansatz-state,crz-distance-state,sample-full-register",
         "--qubits",
         "4",
         "--output",
@@ -4821,6 +4823,9 @@ def test_mklq_benchmark_dry_run_records_metal_path_metadata(tmp_path):
         "mklq_metal_resident_three_gate_state_host_readback")
     assert rows["qft-like-state"]["metrics"]["metal_path_label"] == (
         "mklq_metal_mixed_composite_state_host_readback")
+    assert rows["hardware-efficient-ansatz-state"]["metrics"][
+        "metal_path_label"] == (
+            "mklq_metal_mixed_composite_state_host_readback")
     assert rows["crz-distance-state"]["metrics"]["metal_path_label"] == (
         "mklq_metal_resident_controlled_gate_state_host_readback")
     assert rows["sample-full-register"]["metrics"]["metal_path_label"] == (
@@ -4832,6 +4837,100 @@ def test_mklq_benchmark_dry_run_records_metal_path_metadata(tmp_path):
         assert metrics["metal_full_native"] is False
         assert metrics["metal_runtime_counter"] is False
         assert "not a runtime counter" in metrics["metal_evidence_boundary"]
+
+
+def test_mklq_benchmark_hardware_efficient_ansatz_records_metrics(
+        monkeypatch):
+    module = _load_benchmark_module()
+
+    class FakeKernel:
+
+        def __init__(self):
+            self.operations = []
+
+        def qalloc(self, qubits):
+            return list(range(qubits))
+
+        def ry(self, theta, target):
+            self.operations.append(("ry", theta, target))
+
+        def rz(self, theta, target):
+            self.operations.append(("rz", theta, target))
+
+        def rx(self, theta, target):
+            self.operations.append(("rx", theta, target))
+
+        def cx(self, control, target):
+            self.operations.append(("cx", control, target))
+
+        def crz(self, theta, control, target):
+            self.operations.append(("crz", theta, control, target))
+
+        def cz(self, control, target):
+            self.operations.append(("cz", control, target))
+
+        def crx(self, theta, control, target):
+            self.operations.append(("crx", theta, control, target))
+
+        def swap(self, target0, target1):
+            self.operations.append(("swap", target0, target1))
+
+    class FakeCudaq:
+
+        def __init__(self):
+            self.kernels = []
+
+        def reset_target(self):
+            pass
+
+        def set_target(self, target):
+            assert target == "mklq-cpu"
+
+        def set_random_seed(self, seed):
+            assert seed == 13
+
+        def make_kernel(self):
+            kernel = FakeKernel()
+            self.kernels.append(kernel)
+            return kernel
+
+        def get_state(self, kernel):
+            return object()
+
+    def fake_timed_repeats(action, repeats):
+        assert repeats == 1
+        action()
+        return [0.5]
+
+    monkeypatch.setattr(module, "timed_repeats", fake_timed_repeats)
+    monkeypatch.setattr(module, "process_max_rss_bytes", lambda: 8192)
+
+    fake_cudaq = FakeCudaq()
+    row = module.run_case(fake_cudaq,
+                          "mklq-cpu",
+                          "hardware-efficient-ansatz-state",
+                          qubits=5,
+                          shots=16,
+                          repeats=1,
+                          warmups=0,
+                          layers=2)
+
+    assert row["status"] == "ok"
+    metrics = row["metrics"]
+    assert metrics["ansatz_rotation_gate_count"] == 30
+    assert metrics["ansatz_cx_gate_count"] == 4
+    assert metrics["ansatz_crz_gate_count"] == 4
+    assert metrics["ansatz_cz_gate_count"] == 4
+    assert metrics["ansatz_crx_gate_count"] == 4
+    assert metrics["ansatz_swap_gate_count"] == 2
+    assert metrics["ansatz_entangler_gate_count"] == 16
+    assert metrics["gate_count"] == 48
+    assert metrics["layers"] == 2
+    assert metrics[
+        "hardware_efficient_ansatz_state_throughput_per_second"] == 96
+    assert metrics["process_max_rss_bytes_cumulative"] == 8192
+    operations = fake_cudaq.kernels[0].operations
+    assert sum(1 for operation in operations if operation[0] == "swap") == 2
 
 
 def test_mklq_benchmark_dry_run_accepts_single_gate_cases(tmp_path):

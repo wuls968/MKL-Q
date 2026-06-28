@@ -156,7 +156,7 @@ a public metadata refresh on 2026-06-24:
 - one-command correctness gate: passed with 4/4 steps passed, including
   `metal_runtime_counter_probe`;
 - public example smoke gate: passed with 30/30 steps passed;
-- current benchmark harness tests: `149 passed`;
+- current benchmark harness tests: `150 passed`;
 - current `cpu_sampling_counter_probe_parse`: 2 bounded reports, 14 expected,
   14 selected, 0 missing, and 0 failures, including full-register and marginal
   probability-fill counter ctests;
