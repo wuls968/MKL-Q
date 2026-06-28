@@ -109,6 +109,9 @@ METAL_PATH_CASES = {
                           METAL_THREE_QUBIT_SCOPE),
     "qft-like-state": ("mklq_metal_mixed_composite_state_host_readback",
                        METAL_COMPOSITE_SCOPE),
+    "hardware-efficient-ansatz-state":
+        ("mklq_metal_mixed_composite_state_host_readback",
+         METAL_COMPOSITE_SCOPE),
     "crz-distance-state":
         ("mklq_metal_resident_controlled_gate_state_host_readback",
          METAL_CONTROLLED_GATE_SCOPE),
@@ -193,6 +196,7 @@ DEFAULT_CASES = (
     "two-qubit-state",
     "three-qubit-state",
     "qft-like-state",
+    "hardware-efficient-ansatz-state",
     "crz-distance-state",
     "crz-distance-sweep-state",
     "seeded-clifford-state",
@@ -602,6 +606,55 @@ def build_qft_like_state_kernel(
   qft_like_gate_count = h_gate_count + crz_gate_count + swap_gate_count
   return (kernel, state_prep_gate_count + qft_like_gate_count,
           state_prep_gate_count, h_gate_count, crz_gate_count, swap_gate_count)
+
+
+def build_hardware_efficient_ansatz_state_kernel(
+    cudaq: Any, qubits: int,
+    layers: int) -> tuple[Any, int, int, int, int, int, int, int]:
+  if qubits < 4:
+    raise ValueError(
+        "hardware-efficient ansatz benchmarks require at least 4 qubits")
+
+  kernel = cudaq.make_kernel()
+  q = kernel.qalloc(qubits)
+  rotation_gate_count = 0
+  cx_gate_count = 0
+  crz_gate_count = 0
+  cz_gate_count = 0
+  crx_gate_count = 0
+  swap_gate_count = 0
+
+  for layer in range(layers):
+    for index in range(qubits):
+      theta = 0.037 * (layer + 1) + 0.011 * (index + 1)
+      phi = -0.021 * (layer + 2) + 0.007 * index
+      lam = 0.019 * (index + 2) - 0.005 * layer
+      kernel.ry(theta, q[index])
+      kernel.rz(phi, q[index])
+      kernel.rx(lam, q[index])
+      rotation_gate_count += 3
+
+    for index in range(0, qubits - 1, 2):
+      kernel.cx(q[index], q[index + 1])
+      kernel.crz(0.043 * (layer + 1) + 0.003 * index, q[index],
+                 q[index + 1])
+      cx_gate_count += 1
+      crz_gate_count += 1
+
+    for index in range(1, qubits - 1, 2):
+      kernel.cz(q[index], q[index + 1])
+      kernel.crx(-0.029 * (layer + 1) + 0.002 * index, q[index],
+                 q[index + 1])
+      cz_gate_count += 1
+      crx_gate_count += 1
+
+    kernel.swap(q[layer % qubits], q[(layer + 3) % qubits])
+    swap_gate_count += 1
+
+  gate_count = (rotation_gate_count + cx_gate_count + crz_gate_count +
+                cz_gate_count + crx_gate_count + swap_gate_count)
+  return (kernel, gate_count, rotation_gate_count, cx_gate_count,
+          crz_gate_count, cz_gate_count, crx_gate_count, swap_gate_count)
 
 
 def build_crz_distance_state_kernel(
@@ -1059,6 +1112,31 @@ def run_case(cudaq: Any, target: str, case: str, qubits: int, shots: int,
           "qft_like_state_throughput_per_second": qft_like_gate_count / median
           if median > 0 else None,
       })
+    elif case == "hardware-efficient-ansatz-state":
+      (kernel, gate_count, rotation_gate_count, cx_gate_count, crz_gate_count,
+       cz_gate_count, crx_gate_count,
+       swap_gate_count) = build_hardware_efficient_ansatz_state_kernel(
+           cudaq, qubits, layers)
+      action = lambda: cudaq.get_state(kernel)
+      for _ in range(warmups):
+        action()
+      timings = timed_repeats(action, repeats)
+      metrics = summarize_timings(timings)
+      median = metrics["elapsed_seconds_median"]
+      metrics.update({
+          "gate_count": gate_count,
+          "ansatz_rotation_gate_count": rotation_gate_count,
+          "ansatz_cx_gate_count": cx_gate_count,
+          "ansatz_crz_gate_count": crz_gate_count,
+          "ansatz_cz_gate_count": cz_gate_count,
+          "ansatz_crx_gate_count": crx_gate_count,
+          "ansatz_swap_gate_count": swap_gate_count,
+          "ansatz_entangler_gate_count":
+              cx_gate_count + crz_gate_count + cz_gate_count + crx_gate_count,
+          "layers": layers,
+          "hardware_efficient_ansatz_state_throughput_per_second":
+              gate_count / median if median > 0 else None,
+      })
     elif case == "crz-distance-state":
       (kernel, gate_count, state_prep_gate_count, crz_gate_count,
        distance_histogram, max_distance, average_distance) = (
@@ -1413,8 +1491,8 @@ def make_parser() -> argparse.ArgumentParser:
                             "controlled-state,multi-control-state,"
                             "ch-state,cy-state,crx-state,cry-state,crz-state,"
                             "cz-state,two-qubit-state,three-qubit-state,"
-                            "qft-like-state,crz-distance-state,"
-                            "crz-distance-sweep-state,"
+                            "qft-like-state,hardware-efficient-ansatz-state,"
+                            "crz-distance-state,crz-distance-sweep-state,"
                             "seeded-clifford-state."))
   parser.add_argument("--qubits",
                       type=parse_qubits,

@@ -70,7 +70,7 @@ are not tracked as public evidence.
 - One-command correctness gate: passed with 4 steps passed, 0 failed, and 0
   skipped, including the Metal runtime counter probe.
 - Public example smoke gate: passed, with 30 steps passed and 0 failed.
-- Current `benchmark_harness_tests`: `149 passed`.
+- Current `benchmark_harness_tests`: `150 passed`.
 - Current `cpu_sampling_counter_probe_parse`: 2 bounded reports, 14 expected,
   14 selected, 0 missing, and 0 failures; each report includes full-register
   and marginal probability-fill counter ctests.
@@ -235,7 +235,7 @@ gate, and the public example smoke gate.
 
 The ignored raw healthcheck JSON records the exact Git state for these local
 runs. The latest default healthcheck benchmark harness step reported
-`149 passed`; the latest full healthcheck benchmark harness step reported
+`150 passed`; the latest full healthcheck benchmark harness step reported
 `149 passed`, the correctness gate reported 4 passed and 0 failed, and the
 public example smoke step reported 30 passed and 0 failed.
 
@@ -252,16 +252,19 @@ gate, regenerate the sanitized summary, and refresh the public index with:
 ```bash
 python3 benchmarks/mklq/run_clean_cpu_benchmark.py \
   --pythonpath "${HOME}/.cudaq-mklq" \
-  --stamp 2026-06-21
+  --stamp YYYY-MM-DD
 ```
 
-If the ignored raw JSON already exists, regenerate only the sanitized summary
-and public index with:
+Current default clean CPU runs include `hardware-efficient-ansatz-state` for
+new evidence refreshes. To regenerate the historical 2026-06-21 sanitized
+summary from the already ignored raw JSON, keep the old composite case set
+explicit:
 
 ```bash
 python3 benchmarks/mklq/run_clean_cpu_benchmark.py \
   --pythonpath "${HOME}/.cudaq-mklq" \
   --stamp 2026-06-21 \
+  --composite-cases qft-like-state,seeded-clifford-state \
   --skip-benchmark
 ```
 

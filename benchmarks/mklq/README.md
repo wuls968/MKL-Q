@@ -482,6 +482,11 @@ python3 benchmarks/mklq/run_clean_cpu_benchmark.py \
   --stamp 2026-06-21
 ```
 
+Current default clean CPU runs include the `y-state`, `cy-state`, `cz-state`,
+`qft-like-state`, `seeded-clifford-state`,
+`hardware-efficient-ansatz-state`, full-register sampling, and
+partial-register sampling cases.
+
 The gate writes ignored raw JSON under `benchmarks/mklq/results/`, writes the
 sanitized summary under `benchmarks/mklq/reports/`, and refreshes
 `docs/mklq/benchmark-evidence.md`. It refuses to collect clean evidence from a
@@ -494,6 +499,7 @@ summary and public evidence index, run:
 python3 benchmarks/mklq/run_clean_cpu_benchmark.py \
   --pythonpath "${HOME}/.cudaq-mklq" \
   --stamp 2026-06-21 \
+  --composite-cases qft-like-state,seeded-clifford-state \
   --skip-benchmark
 ```
 
