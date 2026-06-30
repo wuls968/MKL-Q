@@ -553,6 +553,31 @@ The generated public index is tracked at
   at 1024 shots, and 90.39x for `sample-partial-register` at 65536 shots.
   Treat this as local clean-worktree CPU evidence, not as cross-machine
   performance certification.
+- `reports/local-clean-cpu-q20-2026-06-30.summary.json`: tracked sanitized
+  summary for ignored raw results
+  `results/local-clean-cpu-gate-y-cy-cz-q20-2026-06-30.json`
+  (`sha256: 2cacb592d4e37d1c32877fc6303a0d347cfce48768cd2d4cdfce0d1531d83b2b`),
+  `results/local-clean-cpu-composite-qft-like-seeded-clifford-hardware-efficient-ansatz-q20-2026-06-30.json`
+  (`sha256: b79f9b2ef836f5b715595efda231e5560cc5f408e60a07391eba54493ff47653`),
+  and `results/local-clean-cpu-sampling-q20-2026-06-30.json`
+  (`sha256: 219bb960f0e079501f97fd26f564a4590d54a70d260202d62e639f4cb42b9a83`).
+  This run was collected from a clean worktree at
+  `61e5f099f2d3b87feb6c3e7cf27d37f1e1d77c04` with `qpp-cpu` and
+  `mklq-cpu` rows for `y-state`, `cy-state`, `cz-state`, `qft-like-state`,
+  `seeded-clifford-state`, `hardware-efficient-ansatz-state`,
+  `sample-full-register`, and `sample-partial-register` at q20 with
+  `OMP_NUM_THREADS=10`, `OMP_PROC_BIND=close`, `OMP_DYNAMIC=false`,
+  `VECLIB_MAXIMUM_THREADS=1`, `repeats=2`, `warmups=1`, and `layers=8` on
+  Apple M5, 10 logical cores, 16 GB RAM, macOS 26.5.1. All 20 rows completed
+  with `status == "ok"`. In this local run, q20 median elapsed ratios for
+  `qpp-cpu` over `mklq-cpu` were 123.52x for `y-state`, 116.93x for
+  `cy-state`, 136.95x for `cz-state`, 80.09x for `qft-like-state`, 155.55x for
+  `seeded-clifford-state`, 100.99x for `hardware-efficient-ansatz-state`,
+  93.85x for `sample-full-register` at 1024 shots, 122.15x for
+  `sample-full-register` at 65536 shots, 138.15x for `sample-partial-register`
+  at 1024 shots, and 126.38x for `sample-partial-register` at 65536 shots.
+  Treat this as local clean-worktree CPU evidence, not as cross-machine
+  performance certification.
 - `reports/local-scaling-cpu-hardware-efficient-ansatz-q18-q22-2026-06-30.summary.json`:
   tracked sanitized summary for the ignored raw result
   `results/local-scaling-cpu-hardware-efficient-ansatz-q18-q22-2026-06-30.json`

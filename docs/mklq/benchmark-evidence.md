@@ -10,6 +10,7 @@ Caveat: these entries are local benchmark evidence from development or release-p
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | local-clean-cpu-q20-2026-06-21 | clean_local_benchmark_evidence | Apple M5, 10 logical cores, 16 GiB RAM, macOS 26.5.1 | qpp-cpu, mklq-cpu | y-state, cy-state, cz-state, qft-like-state, seeded-clifford-state, sample-full-register, sample-partial-register | 20 | shot_counts=1024, 65536; repeats=2; warmups=1; layers=8; isolate_rows=true | ok=18 | benchmarks/mklq/results/local-clean-cpu-gate-y-cy-cz-q20-2026-06-21.json sha256=2b438094b63b; benchmarks/mklq/results/local-clean-cpu-composite-qft-like-seeded-clifford-q20-2026-06-21.json sha256=b07b3ba92b83; benchmarks/mklq/results/local-clean-cpu-sampling-q20-2026-06-21.json sha256=167b5c4adef8 |
 | local-clean-cpu-q20-2026-06-28 | clean_local_benchmark_evidence | Apple M5, 10 logical cores, 16 GiB RAM, macOS 26.5.1 | qpp-cpu, mklq-cpu | y-state, cy-state, cz-state, qft-like-state, seeded-clifford-state, hardware-efficient-ansatz-state, sample-full-register, sample-partial-register | 20 | shot_counts=1024, 65536; repeats=2; warmups=1; layers=8; isolate_rows=true | ok=20 | benchmarks/mklq/results/local-clean-cpu-gate-y-cy-cz-q20-2026-06-28.json sha256=fd46266986bd; benchmarks/mklq/results/local-clean-cpu-composite-qft-like-seeded-clifford-hardware-efficient-ansatz-q20-2026-06-28.json sha256=3fa15408e149; benchmarks/mklq/results/local-clean-cpu-sampling-q20-2026-06-28.json sha256=c17703381afc |
+| local-clean-cpu-q20-2026-06-30 | clean_local_benchmark_evidence | Apple M5, 10 logical cores, 16 GiB RAM, macOS 26.5.1 | qpp-cpu, mklq-cpu | y-state, cy-state, cz-state, qft-like-state, seeded-clifford-state, hardware-efficient-ansatz-state, sample-full-register, sample-partial-register | 20 | shot_counts=1024, 65536; repeats=2; warmups=1; layers=8; isolate_rows=true | ok=20 | benchmarks/mklq/results/local-clean-cpu-gate-y-cy-cz-q20-2026-06-30.json sha256=2cacb592d4e3; benchmarks/mklq/results/local-clean-cpu-composite-qft-like-seeded-clifford-hardware-efficient-ansatz-q20-2026-06-30.json sha256=b79f9b2ef836; benchmarks/mklq/results/local-clean-cpu-sampling-q20-2026-06-30.json sha256=219bb960f0e0 |
 | local-counts-only-sampling-shot-scaling-q20-2026-06-19 | local_tuning_evidence | Apple M5, 10 logical cores, 16 GiB RAM, macOS 26.5.1 | qpp-cpu, mklq-cpu, mklq-metal | sample-full-register, sample-partial-register | 20 | shot_counts=256, 1024, 8192, 65536; repeats=2; warmups=1; layers=8; isolate_rows=true | ok=24 | benchmarks/mklq/results/local-counts-only-sampling-shot-scaling-q20-2026-06-19.json sha256=ef9846673b46 |
 | local-crz-distance-sweep-cpu-q20-2026-06-22 | clean_local_benchmark_evidence | Apple M5, 10 logical cores, 16 GiB RAM, macOS 26.5.1 | qpp-cpu, mklq-cpu | crz-distance-sweep-state | 20 | shot_counts=1024; repeats=2; warmups=1; layers=8; isolate_rows=true | ok=38 | benchmarks/mklq/results/local-clean-cpu-crz-distance-sweep-q20-2026-06-22.json sha256=64f9d0b4f709 |
 | local-current-sampling-fullprob-gated-q20-2026-06-19 | local_tuning_evidence | Apple M5, 10 logical cores, 16 GiB RAM, macOS 26.5.1 | qpp-cpu, mklq-cpu, mklq-metal | sample-full-register, sample-partial-register | 20 | shots=1024; repeats=2; warmups=1; layers=4; isolate_rows=true | ok=6 | benchmarks/mklq/results/local-current-sampling-fullprob-gated-q20-2026-06-19.json sha256=8ca6a4f7a7ae; benchmarks/mklq/results/local-current-sampling-shot-scaling-q20-2026-06-19.json sha256=9c15c0c1d566 |
@@ -68,6 +69,26 @@ The values below are copied from each summary's bounded `comparison` object. Kee
 | local-clean-cpu-q20-2026-06-28 | `mklq_cpu_elapsed_seconds_median.sample_partial_register_q20_65536_shots` | 0.0174023 s |
 | local-clean-cpu-q20-2026-06-28 | `mklq_cpu_elapsed_seconds_median.seeded_clifford_state_q20` | 0.0957006 s |
 | local-clean-cpu-q20-2026-06-28 | `mklq_cpu_elapsed_seconds_median.y_state_q20` | 0.0661458 s |
+| local-clean-cpu-q20-2026-06-30 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_cy_state_q20` | 116.93x |
+| local-clean-cpu-q20-2026-06-30 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_cz_state_q20` | 136.95x |
+| local-clean-cpu-q20-2026-06-30 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_hardware_efficient_ansatz_state_q20` | 100.99x |
+| local-clean-cpu-q20-2026-06-30 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_qft_like_state_q20` | 80.09x |
+| local-clean-cpu-q20-2026-06-30 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_sample_full_register_q20_1024_shots` | 93.85x |
+| local-clean-cpu-q20-2026-06-30 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_sample_full_register_q20_65536_shots` | 122.15x |
+| local-clean-cpu-q20-2026-06-30 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_sample_partial_register_q20_1024_shots` | 138.15x |
+| local-clean-cpu-q20-2026-06-30 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_sample_partial_register_q20_65536_shots` | 126.38x |
+| local-clean-cpu-q20-2026-06-30 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_seeded_clifford_state_q20` | 155.55x |
+| local-clean-cpu-q20-2026-06-30 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_y_state_q20` | 123.52x |
+| local-clean-cpu-q20-2026-06-30 | `mklq_cpu_elapsed_seconds_median.cy_state_q20` | 0.0454563 s |
+| local-clean-cpu-q20-2026-06-30 | `mklq_cpu_elapsed_seconds_median.cz_state_q20` | 0.0361126 s |
+| local-clean-cpu-q20-2026-06-30 | `mklq_cpu_elapsed_seconds_median.hardware_efficient_ansatz_state_q20` | 0.34967 s |
+| local-clean-cpu-q20-2026-06-30 | `mklq_cpu_elapsed_seconds_median.qft_like_state_q20` | 1.06543 s |
+| local-clean-cpu-q20-2026-06-30 | `mklq_cpu_elapsed_seconds_median.sample_full_register_q20_1024_shots` | 0.0156096 s |
+| local-clean-cpu-q20-2026-06-30 | `mklq_cpu_elapsed_seconds_median.sample_full_register_q20_65536_shots` | 0.0122021 s |
+| local-clean-cpu-q20-2026-06-30 | `mklq_cpu_elapsed_seconds_median.sample_partial_register_q20_1024_shots` | 0.0102048 s |
+| local-clean-cpu-q20-2026-06-30 | `mklq_cpu_elapsed_seconds_median.sample_partial_register_q20_65536_shots` | 0.0110367 s |
+| local-clean-cpu-q20-2026-06-30 | `mklq_cpu_elapsed_seconds_median.seeded_clifford_state_q20` | 0.119174 s |
+| local-clean-cpu-q20-2026-06-30 | `mklq_cpu_elapsed_seconds_median.y_state_q20` | 0.0425469 s |
 | local-counts-only-sampling-shot-scaling-q20-2026-06-19 | `q20_65536_shot_elapsed_ratio_qpp_cpu_over_mklq_cpu.sample_full_register` | 58.54x |
 | local-counts-only-sampling-shot-scaling-q20-2026-06-19 | `q20_65536_shot_elapsed_ratio_qpp_cpu_over_mklq_cpu.sample_partial_register` | 83.64x |
 | local-counts-only-sampling-shot-scaling-q20-2026-06-19 | `q20_65536_shot_elapsed_ratio_qpp_cpu_over_mklq_metal.sample_full_register` | 27.94x |
