@@ -1300,18 +1300,32 @@ CUDAQ_TEST(MKLQCpuTester, SingleControlRzUsesDedicatedPhaseFastPath) {
   };
   constexpr double angle = 0.375;
 
-  MklqCpuCircuitSimulatorTester sim;
-  sim.setStateForTest(initial);
+  struct Case {
+    std::string_view name;
+    std::size_t control;
+    std::size_t target;
+  };
 
-  sim.rz(angle, {0}, 2);
-  sim.flushGateQueue();
+  for (const auto &testCase : std::vector<Case>{
+           {"control below target", 0, 2},
+           {"control above target", 2, 0},
+       }) {
+    SCOPED_TRACE(testCase.name);
+    MklqCpuCircuitSimulatorTester sim;
+    sim.setStateForTest(initial);
 
-  expectStateNear(sim.stateVectorForTest(),
-                  applySingleQubitMatrixForTest(initial, 2,
-                                                rzMatrixForTest(angle), {0}));
-  EXPECT_EQ(sim.specializedSingleQubitApplicationsForTest(), 1);
-  EXPECT_EQ(sim.specializedSingleControlQubitApplicationsForTest(), 1);
-  EXPECT_EQ(sim.phaseApplicationsForTest(), 1);
+    sim.rz(angle, {testCase.control}, testCase.target);
+    sim.flushGateQueue();
+
+    expectStateNear(
+        sim.stateVectorForTest(),
+        applySingleQubitMatrixForTest(initial, testCase.target,
+                                      rzMatrixForTest(angle),
+                                      {testCase.control}));
+    EXPECT_EQ(sim.specializedSingleQubitApplicationsForTest(), 1);
+    EXPECT_EQ(sim.specializedSingleControlQubitApplicationsForTest(), 1);
+    EXPECT_EQ(sim.phaseApplicationsForTest(), 1);
+  }
 }
 
 CUDAQ_TEST(MKLQCpuTester,
