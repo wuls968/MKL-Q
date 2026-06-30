@@ -519,24 +519,13 @@ protected:
   void applySingleControlRzPhaseGate(complexd zeroPhase, complexd onePhase,
                                      std::size_t control,
                                      std::size_t target) {
-    const auto controlMask = qubitMask(control);
-    const auto targetMask = qubitMask(target);
-
-#if defined(_OPENMP)
-    const auto threadCount = parallelThreadCount();
-#pragma omp parallel for num_threads(                                          \
-        threadCount) if (threadCount > 1 &&                                    \
-                             stateDimension >= parallelStateThreshold)
-#endif
-    for (std::size_t basis = 0; basis < stateDimension; ++basis) {
-      if ((basis & controlMask) == 0)
-        continue;
-      state[basis] *= (basis & targetMask) ? onePhase : zeroPhase;
-    }
+    applySingleControlSingleQubitPairs(
+        control, target, [&](std::size_t zeroIndex, std::size_t oneIndex) {
+          state[zeroIndex] *= zeroPhase;
+          state[oneIndex] *= onePhase;
+        });
 
 #if defined(MKLQ_ENABLE_TEST_ACCESSORS)
-    ++specializedSingleQubitApplications;
-    ++specializedSingleControlQubitApplications;
     ++phaseApplications;
 #endif
   }
