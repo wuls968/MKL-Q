@@ -798,6 +798,55 @@ def test_mklq_cpu_scaling_gate_plan_uses_multi_qubit_clean_evidence(tmp_path):
     assert "--allow-dirty" not in summary_command
 
 
+def test_mklq_cpu_scaling_gate_plan_accepts_ansatz_case(tmp_path):
+    module = _load_cpu_scaling_benchmark_gate_module()
+    config = module.ScalingConfig(
+        repo_root=tmp_path,
+        pythonpath="/tmp/cudaq-runtime",
+        stamp="2026-06-30",
+        qubits=[18, 20, 22],
+        threads=10,
+        repeats=3,
+        warmups=1,
+        layers=8,
+        shots=1024,
+        results_dir=tmp_path / "results",
+        reports_dir=tmp_path / "reports",
+        evidence_output=tmp_path / "benchmark-evidence.md",
+        targets="qpp-cpu,mklq-cpu",
+        cases="hardware-efficient-ansatz-state",
+        summary_id=
+        "local-scaling-cpu-hardware-efficient-ansatz-q18-q22-2026-06-30",
+        evidence_kind="clean_local_benchmark_evidence",
+        ratio_group="clean_worktree_cross_target_ratio",
+        performance_scope="local test only",
+        summary_text="Synthetic ansatz scaling benchmark gate.",
+        runtime_note="synthetic runtime note",
+        allow_dirty=False,
+        skip_benchmark=False,
+        refresh_evidence=True,
+    )
+
+    plan = module.build_plan(config)
+
+    assert plan["paths"]["raw"].endswith(
+        "local-scaling-cpu-hardware-efficient-ansatz-q18-q22-2026-06-30.json")
+    assert plan["paths"]["summary"].endswith(
+        "local-scaling-cpu-hardware-efficient-ansatz-q18-q22-2026-06-30.summary.json"
+    )
+    benchmark_command = plan["commands"]["raw"]
+    assert benchmark_command[benchmark_command.index("--cases") + 1] == (
+        "hardware-efficient-ansatz-state")
+    assert benchmark_command[benchmark_command.index("--qubits") + 1] == (
+        "18,20,22")
+    summary_command = plan["commands"]["summary"]
+    assert summary_command.count("--raw") == 1
+    assert summary_command[summary_command.index("--ratio-group") + 1] == (
+        "clean_worktree_cross_target_ratio")
+    assert summary_command[summary_command.index("--summary-id") + 1] == (
+        "local-scaling-cpu-hardware-efficient-ansatz-q18-q22-2026-06-30")
+
+
 def test_mklq_sampling_scaling_gate_plan_uses_multi_qubit_shot_evidence(
         tmp_path):
     module = _load_sampling_scaling_benchmark_gate_module()
@@ -1051,6 +1100,7 @@ def test_mklq_public_healthcheck_plan_lists_escalating_gates(tmp_path):
         "crz_distance_evidence_guard",
         "multi_control_evidence_guard",
         "cpu_scaling_evidence_guard",
+        "ansatz_scaling_evidence_guard",
         "sampling_scaling_evidence_guard",
         "sampling_profile_evidence_guard",
         "metal_evidence_guard",
@@ -1092,6 +1142,7 @@ def test_mklq_public_healthcheck_plans_crz_distance_guard(tmp_path):
     assert "crz_distance_evidence_guard" in steps
     assert "multi_control_evidence_guard" in steps
     assert "cpu_scaling_evidence_guard" in steps
+    assert "ansatz_scaling_evidence_guard" in steps
     assert "sampling_scaling_evidence_guard" in steps
     assert steps.index("performance_evidence_guard") < steps.index(
         "crz_distance_evidence_guard")
@@ -1100,6 +1151,8 @@ def test_mklq_public_healthcheck_plans_crz_distance_guard(tmp_path):
     assert steps.index("multi_control_evidence_guard") < steps.index(
         "cpu_scaling_evidence_guard")
     assert steps.index("cpu_scaling_evidence_guard") < steps.index(
+        "ansatz_scaling_evidence_guard")
+    assert steps.index("ansatz_scaling_evidence_guard") < steps.index(
         "sampling_scaling_evidence_guard")
     assert steps.index("sampling_scaling_evidence_guard") < steps.index(
         "sampling_profile_evidence_guard")
@@ -1347,6 +1400,33 @@ def test_mklq_public_healthcheck_runs_cpu_scaling_guard(monkeypatch,
         "multi_control_state_q18",
         "multi_control_state_q20",
         "multi_control_state_q22",
+    ]
+
+
+def test_mklq_public_healthcheck_runs_ansatz_scaling_guard(monkeypatch,
+                                                           tmp_path):
+    module = _load_public_healthcheck_module()
+    config = _public_healthcheck_config(module, tmp_path)
+    seen = {}
+
+    def fake_run_command(config, command, env_overlay=None):
+        seen["command"] = command
+        return {"returncode": 0, "command": command}
+
+    monkeypatch.setattr(module, "run_command", fake_run_command)
+
+    result = module.run_ansatz_scaling_evidence_check(config)
+
+    assert result["status"] == "passed"
+    command = seen["command"]
+    assert command[1].endswith("check_performance_evidence.py")
+    assert command[command.index("--summary-id") + 1] == (
+        module.ANSATZ_SCALING_SUMMARY_ID)
+    required = command[command.index("--required-ratios") + 1].split(",")
+    assert required == [
+        "hardware_efficient_ansatz_state_q18",
+        "hardware_efficient_ansatz_state_q20",
+        "hardware_efficient_ansatz_state_q22",
     ]
 
 
@@ -6628,6 +6708,69 @@ def test_mklq_benchmark_summary_records_latest_clean_cpu_evidence():
     assert ratios[
         "qpp_cpu_over_mklq_cpu_seeded_clifford_state_q20"] == pytest.approx(
             107.637729814562)
+
+
+def test_mklq_benchmark_summary_records_ansatz_scaling_evidence():
+    repo_root = Path(__file__).resolve().parents[3]
+    summary_path = (
+        repo_root / "benchmarks" / "mklq" / "reports" /
+        "local-scaling-cpu-hardware-efficient-ansatz-q18-q22-2026-06-30.summary.json"
+    )
+
+    summary = json.loads(summary_path.read_text(encoding="utf-8"))
+
+    assert summary["schema_version"] == "mklq-benchmark-summary-v1"
+    assert summary["evidence_kind"] == "clean_local_benchmark_evidence"
+    assert summary["summary_id"] == (
+        "local-scaling-cpu-hardware-efficient-ansatz-q18-q22-2026-06-30")
+    assert summary["git"]["commit"] == (
+        "f2d87a4bf1e0d0163481a560df868292715a660a")
+    assert summary["git"]["dirty"] is False
+    assert summary["interpretation"]["clean_worktree"] is True
+    assert summary["interpretation"]["scaling_axis"] == "qubits"
+    assert summary["interpretation"]["scaling_qubits"] == [18, 20, 22]
+    assert summary["raw_results"][0]["sha256"] == (
+        "26721c3b56f9c08234b4fcbe5e96b72a781edc77addea1702e8aa4047c45b859")
+    assert summary["raw_results"][0]["status_rows"] == {"ok": 6}
+    assert summary["raw_results"][0]["tracked"] is False
+    assert summary["config"]["targets"] == ["qpp-cpu", "mklq-cpu"]
+    assert summary["config"]["cases"] == ["hardware-efficient-ansatz-state"]
+    assert summary["config"]["qubits"] == [18, 20, 22]
+    assert summary["config"]["repeats"] == 3
+    assert summary["config"]["warmups"] == 1
+    assert summary["config"]["layers"] == 8
+
+    rows = {
+        (row["target"], row["case"], row["qubits"]): row
+        for row in summary["rows"]
+    }
+    assert len(rows) == 6
+    expected_mklq = {
+        18: (0.1882193330093287, 712, 432, 272, 3782.8207581880615),
+        20: (0.4238145000417717, 792, 480, 304, 1868.7421027877515),
+        22: (1.6011491660028696, 872, 528, 336, 544.6088462681291),
+    }
+    for qubits, (elapsed, gate_count, rotations, entanglers,
+                 throughput) in expected_mklq.items():
+        row = rows[("mklq-cpu", "hardware-efficient-ansatz-state", qubits)]
+        assert row["elapsed_seconds_median"] == pytest.approx(elapsed)
+        assert row["gate_count"] == gate_count
+        assert row["ansatz_rotation_gate_count"] == rotations
+        assert row["ansatz_entangler_gate_count"] == entanglers
+        assert row[
+            "hardware_efficient_ansatz_state_throughput_per_second"
+        ] == pytest.approx(throughput)
+
+    ratios = summary["comparison"]["clean_worktree_cross_target_ratio"]
+    assert ratios[
+        "qpp_cpu_over_mklq_cpu_hardware_efficient_ansatz_state_q18"
+    ] == pytest.approx(26.839706778577256)
+    assert ratios[
+        "qpp_cpu_over_mklq_cpu_hardware_efficient_ansatz_state_q20"
+    ] == pytest.approx(52.93785655220704)
+    assert ratios[
+        "qpp_cpu_over_mklq_cpu_hardware_efficient_ansatz_state_q22"
+    ] == pytest.approx(81.37462044979031)
 
 
 def test_mklq_benchmark_summary_records_sanitized_sampling_evidence():

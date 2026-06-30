@@ -4,7 +4,7 @@ This page records the public repository readiness snapshot for MKL-Q. It is a
 source-only repository audit, not a release certification, package
 certification, Apple Silicon CI replacement, or performance certification.
 
-Snapshot date: 2026-06-24.
+Snapshot date: 2026-06-30.
 
 ## Scope
 
@@ -116,7 +116,7 @@ taxonomy, live `main` branch protection matches
 `.github/branch-protection-main.json`, and the public claim-boundary guard
 passes.
 
-The pushed readiness audit was validated on 2026-06-24 after the protected
+The pushed readiness audit was validated on 2026-06-30 after the protected
 `main` branch completed the `MKL-Q public hygiene` workflow successfully. Use
 the readiness commands below for the exact latest commit and workflow run IDs;
 this tracked page records the stable source-only readiness boundary, not a
@@ -144,19 +144,19 @@ compares the live core protection fields against that JSON reference.
 
 The latest public local validation evidence is recorded in
 [`validation.md`](validation.md), with a correctness refresh on 2026-06-28 and
-a public metadata refresh on 2026-06-24:
+a public metadata refresh on 2026-06-30:
 
 - latest correctness refresh date: 2026-06-28;
 - source state: the ignored raw healthcheck JSON records the exact local Git
   state for the latest public healthcheck gate, and the ignored correctness
   gate JSON records the latest correctness-gate state;
 - install-prefix build: passed;
-- default public healthcheck: passed with 25/25 steps passed;
-- full public healthcheck: passed with 28/28 steps passed;
+- default public healthcheck: passed with 26/26 steps passed;
+- full public healthcheck: passed with 29/29 steps passed;
 - one-command correctness gate: passed with 4/4 steps passed, including
   `metal_runtime_counter_probe`;
 - public example smoke gate: passed with 30/30 steps passed;
-- current benchmark harness tests: `150 passed`;
+- current benchmark harness tests: `155 passed`;
 - current `cpu_sampling_counter_probe_parse`: 2 bounded reports, 14 expected,
   14 selected, 0 missing, and 0 failures, including full-register and marginal
   probability-fill counter ctests;
@@ -174,6 +174,10 @@ a public metadata refresh on 2026-06-24:
   including `cz-state`, `qft-like-state`, `seeded-clifford-state`, and
   `hardware-efficient-ansatz-state`, with 20 rows reporting `status == "ok"`
   against `23d34ab226c3e4d7a47f15af3292bf81ce25987b`.
+- hardware-efficient ansatz CPU scaling evidence: passed with 6 q18/q20/q22
+  `qpp-cpu`/`mklq-cpu` rows, with 6 rows reporting `status == "ok"` and local
+  median elapsed ratios of `26.84x`, `52.94x`, and `81.37x` against
+  `f2d87a4bf1e0d0163481a560df868292715a660a`.
 
 This evidence is local Apple Silicon evidence. It is useful for source bootstrap
 confidence, but it is not hosted CI, release certification, or cross-machine

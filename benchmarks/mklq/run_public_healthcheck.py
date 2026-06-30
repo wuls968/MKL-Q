@@ -99,6 +99,13 @@ CPU_SCALING_REQUIRED_RATIOS = (
     "multi_control_state_q20",
     "multi_control_state_q22",
 )
+ANSATZ_SCALING_SUMMARY_ID = (
+    "local-scaling-cpu-hardware-efficient-ansatz-q18-q22-2026-06-30")
+ANSATZ_SCALING_REQUIRED_RATIOS = (
+    "hardware_efficient_ansatz_state_q18",
+    "hardware_efficient_ansatz_state_q20",
+    "hardware_efficient_ansatz_state_q22",
+)
 SAMPLING_SCALING_SUMMARY_ID = (
     "local-sampling-scaling-cpu-q18-q22-2026-06-23")
 SAMPLING_PROFILE_SUMMARY_ID = (
@@ -602,6 +609,28 @@ def run_cpu_scaling_evidence_check(
     result = run_command(config, command)
     if result["returncode"] != 0:
         return failed("CPU scaling evidence guard failed", result)
+    return passed(result)
+
+
+def run_ansatz_scaling_evidence_check(
+        config: HealthcheckConfig) -> dict[str, Any]:
+    script = config.repo_root / "benchmarks" / "mklq" / (
+        "check_performance_evidence.py")
+    command = [
+        config.python_executable,
+        str(script),
+        "--reports",
+        "benchmarks/mklq/reports",
+        "--pattern",
+        "*.summary.json",
+        "--summary-id",
+        ANSATZ_SCALING_SUMMARY_ID,
+        "--required-ratios",
+        ",".join(ANSATZ_SCALING_REQUIRED_RATIOS),
+    ]
+    result = run_command(config, command)
+    if result["returncode"] != 0:
+        return failed("ansatz scaling evidence guard failed", result)
     return passed(result)
 
 
@@ -1192,6 +1221,9 @@ def build_steps(config: HealthcheckConfig) -> list[Step]:
         Step("cpu_scaling_evidence_guard",
              "Check accepted CPU qubit-scaling benchmark evidence ratios.",
              run_cpu_scaling_evidence_check),
+        Step("ansatz_scaling_evidence_guard",
+             "Check accepted hardware-efficient ansatz CPU scaling evidence.",
+             run_ansatz_scaling_evidence_check),
         Step("sampling_scaling_evidence_guard",
              "Check accepted CPU sampling-scaling benchmark evidence ratios.",
              run_sampling_scaling_evidence_check),
