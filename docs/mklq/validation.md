@@ -79,7 +79,10 @@ are not tracked as public evidence.
 - Standalone install-prefix Python subset: `37 passed`.
 - `python_target_smoke`: `61 passed`.
 - `nvqpp_smoke`: `2 passed`.
-- Current `target_config_ctest`: `88/88 passed`.
+- Current `target_config_ctest`: `89/89 passed`, including the
+  `HardwareEfficientAnsatzCompositeUsesDedicatedFastPaths` CPU counter fixture
+  that checks the hardware-efficient ansatz gate mix uses the expected
+  rotation, CNOT, CRZ, CZ, CRX, and SWAP fast paths.
 - Current tracked `metal_runtime_counter_probe`: 2 bounded reports, 40
   expected, 40 selected, 0 missing, and 0 failures; each report runs 20
   counter ctests independently.
@@ -136,7 +139,7 @@ ctest --test-dir build-python \
   --output-on-failure
 ```
 
-Result in the latest full public healthcheck refresh: `88/88 passed`.
+Result in the latest full public healthcheck refresh: `89/89 passed`.
 
 ```bash
 PYTHONPATH=/Users/a0000/Documents/MKL-Q/build-python/python \
@@ -183,7 +186,8 @@ wrapper steps passed, 0 failed, and 0 skipped. The step-level results were:
 
 - `python_target_smoke`: `61 passed`.
 - `nvqpp_smoke`: `2 passed`.
-- `target_config_ctest`: `88/88 passed`.
+- `target_config_ctest`: `89/89 passed`, including the hardware-efficient
+  ansatz composite CPU fast-path counter fixture.
 - `metal_runtime_counter_probe`: 20 expected, 20 selected, 0 missing, and 20
   independently executed passing counter ctests, including the resident
   direct three-target runtime fixture, built-in Rx/Ry/Rz,

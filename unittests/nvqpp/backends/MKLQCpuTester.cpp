@@ -267,6 +267,14 @@ static void expectStateNear(const std::vector<std::complex<double>> &actual,
     expectNear(actual[index], expected[index]);
 }
 
+static double
+stateNormForTest(const std::vector<std::complex<double>> &state) {
+  double norm = 0.0;
+  for (const auto &amplitude : state)
+    norm += std::norm(amplitude);
+  return norm;
+}
+
 static std::array<std::complex<double>, 4> hMatrixForTest() {
   const auto invSqrt2 = 1.0 / std::sqrt(2.0);
   return {
@@ -1304,6 +1312,89 @@ CUDAQ_TEST(MKLQCpuTester, SingleControlRzUsesDedicatedPhaseFastPath) {
   EXPECT_EQ(sim.specializedSingleQubitApplicationsForTest(), 1);
   EXPECT_EQ(sim.specializedSingleControlQubitApplicationsForTest(), 1);
   EXPECT_EQ(sim.phaseApplicationsForTest(), 1);
+}
+
+CUDAQ_TEST(MKLQCpuTester,
+           HardwareEfficientAnsatzCompositeUsesDedicatedFastPaths) {
+  constexpr std::size_t qubitCount = 6;
+  constexpr std::size_t layers = 3;
+  constexpr std::size_t dimension = 1ULL << qubitCount;
+
+  std::vector<std::complex<double>> initial(dimension);
+  for (std::size_t index = 0; index < dimension; ++index) {
+    const auto real = 0.031 * static_cast<double>(
+                                  static_cast<int>(index % 7) - 3);
+    const auto imag = 0.027 * static_cast<double>(
+                                  static_cast<int>(index % 5) - 2);
+    initial[index] = {real, imag};
+  }
+  const auto norm = std::sqrt(stateNormForTest(initial));
+  ASSERT_GT(norm, 0.0);
+  for (auto &amplitude : initial)
+    amplitude /= norm;
+
+  MklqCpuCircuitSimulatorTester sim;
+  sim.setStateForTest(initial);
+
+  std::size_t rotationGateCount = 0;
+  std::size_t cxGateCount = 0;
+  std::size_t crzGateCount = 0;
+  std::size_t czGateCount = 0;
+  std::size_t crxGateCount = 0;
+  std::size_t swapGateCount = 0;
+
+  for (std::size_t layer = 0; layer < layers; ++layer) {
+    for (std::size_t index = 0; index < qubitCount; ++index) {
+      const auto theta = 0.037 * static_cast<double>(layer + 1) +
+                         0.011 * static_cast<double>(index + 1);
+      const auto phi = -0.021 * static_cast<double>(layer + 2) +
+                       0.007 * static_cast<double>(index);
+      const auto lambda = 0.019 * static_cast<double>(index + 2) -
+                          0.005 * static_cast<double>(layer);
+      sim.ry(theta, index);
+      sim.rz(phi, index);
+      sim.rx(lambda, index);
+      rotationGateCount += 3;
+    }
+
+    for (std::size_t index = 0; index + 1 < qubitCount; index += 2) {
+      sim.x({index}, index + 1);
+      sim.rz(0.043 * static_cast<double>(layer + 1) +
+                 0.003 * static_cast<double>(index),
+             {index}, index + 1);
+      ++cxGateCount;
+      ++crzGateCount;
+    }
+
+    for (std::size_t index = 1; index + 1 < qubitCount; index += 2) {
+      sim.z({index}, index + 1);
+      sim.rx(-0.029 * static_cast<double>(layer + 1) +
+                 0.002 * static_cast<double>(index),
+             {index}, index + 1);
+      ++czGateCount;
+      ++crxGateCount;
+    }
+
+    sim.swap(layer % qubitCount, (layer + 3) % qubitCount);
+    ++swapGateCount;
+  }
+
+  sim.flushGateQueue();
+
+  EXPECT_NEAR(stateNormForTest(sim.stateVectorForTest()), 1.0, 1.0e-12);
+  EXPECT_EQ(rotationGateCount, 54);
+  EXPECT_EQ(cxGateCount, 9);
+  EXPECT_EQ(crzGateCount, 9);
+  EXPECT_EQ(czGateCount, 6);
+  EXPECT_EQ(crxGateCount, 6);
+  EXPECT_EQ(swapGateCount, 3);
+  EXPECT_EQ(sim.bitFlipApplicationsForTest(), cxGateCount);
+  EXPECT_EQ(sim.swapApplicationsForTest(), swapGateCount);
+  EXPECT_EQ(sim.phaseApplicationsForTest(), crzGateCount + czGateCount);
+  EXPECT_EQ(sim.specializedSingleControlQubitApplicationsForTest(),
+            crzGateCount + crxGateCount);
+  EXPECT_EQ(sim.specializedSingleQubitApplicationsForTest(),
+            rotationGateCount + crzGateCount + crxGateCount);
 }
 
 CUDAQ_TEST(MKLQCpuTester, TwoZeroBitIndexMappingClearsRequestedBits) {

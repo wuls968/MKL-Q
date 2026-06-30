@@ -163,7 +163,8 @@ a public metadata refresh on 2026-06-30:
 - standalone install-prefix Python subset: `37 passed`;
 - `python_target_smoke`: `61 passed`;
 - `nvqpp_smoke`: `2 passed`;
-- current full `target_config_ctest`: `88/88 passed`;
+- current full `target_config_ctest`: `89/89 passed`, including the
+  hardware-efficient ansatz composite CPU fast-path counter fixture;
 - current tracked `metal_runtime_counter_probe`: 2 bounded reports, 40
   expected, 40 selected, 0 missing, and 0 failures, including the direct
   resident three-target runtime fixture, resident built-in Rx/Ry/Rz,
