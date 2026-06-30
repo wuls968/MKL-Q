@@ -331,6 +331,7 @@ python3 benchmarks/mklq/run_sampling_scaling_benchmark.py \
 
 Current tracked summaries include:
 
+- `local-clean-cpu-q20-2026-06-30.summary.json`
 - `local-clean-cpu-q20-2026-06-28.summary.json`
 - `local-clean-cpu-q20-2026-06-21.summary.json`
 - `local-current-sampling-fullprob-gated-q20-2026-06-19.summary.json`
@@ -345,12 +346,12 @@ Current tracked summaries include:
 - `local-sampling-scaling-cpu-q18-q22-2026-06-23.summary.json`
 
 The latest clean-worktree local benchmark summary was refreshed against
-`23d34ab226c3e4d7a47f15af3292bf81ce25987b` on 2026-06-28. The clean summary
+`61e5f099f2d3b87feb6c3e7cf27d37f1e1d77c04` on 2026-06-30. The clean summary
 includes `y-state`, `cy-state`, `cz-state`, `qft-like-state`,
 `seeded-clifford-state`, `hardware-efficient-ansatz-state`, full-register
 sampling, and partial-register sampling rows. All 20 q20 rows completed with
 `status == "ok"`, and the local `qpp-cpu` over `mklq-cpu` median elapsed ratio
-for `hardware-efficient-ansatz-state` was `87.95x`.
+for `hardware-efficient-ansatz-state` was `100.99x`.
 These files include clean-worktree local benchmark summaries plus older
 dirty-worktree tuning summaries. Interpret each file through its
 `evidence_kind` and `interpretation` fields. Do not treat any local summary as

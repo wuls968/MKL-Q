@@ -174,7 +174,7 @@ a public metadata refresh on 2026-06-30:
 - clean CPU benchmark gate: passed with 20 q20 `qpp-cpu`/`mklq-cpu` rows,
   including `cz-state`, `qft-like-state`, `seeded-clifford-state`, and
   `hardware-efficient-ansatz-state`, with 20 rows reporting `status == "ok"`
-  against `23d34ab226c3e4d7a47f15af3292bf81ce25987b`.
+  against `61e5f099f2d3b87feb6c3e7cf27d37f1e1d77c04`.
 - hardware-efficient ansatz CPU scaling evidence: passed with 6 q18/q20/q22
   `qpp-cpu`/`mklq-cpu` rows, with 6 rows reporting `status == "ok"` and local
   median elapsed ratios of `26.84x`, `52.94x`, and `81.37x` against

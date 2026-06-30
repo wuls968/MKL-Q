@@ -1898,7 +1898,7 @@ def _performance_summary(module,
 
 def test_mklq_performance_evidence_guard_accepts_clean_cpu_summary():
     module = _load_performance_evidence_module()
-    assert module.DEFAULT_SUMMARY_ID == "local-clean-cpu-q20-2026-06-28"
+    assert module.DEFAULT_SUMMARY_ID == "local-clean-cpu-q20-2026-06-30"
     assert "qft_like_state_q20" in module.DEFAULT_REQUIRED_RATIOS
     assert "seeded_clifford_state_q20" in module.DEFAULT_REQUIRED_RATIOS
     assert "hardware_efficient_ansatz_state_q20" in (
@@ -6640,25 +6640,25 @@ def test_mklq_benchmark_summary_records_latest_clean_cpu_evidence():
     repo_root = Path(__file__).resolve().parents[3]
     summary_path = (
         repo_root / "benchmarks" / "mklq" / "reports" /
-        "local-clean-cpu-q20-2026-06-28.summary.json")
+        "local-clean-cpu-q20-2026-06-30.summary.json")
 
     summary = json.loads(summary_path.read_text(encoding="utf-8"))
 
     assert summary["schema_version"] == "mklq-benchmark-summary-v1"
     assert summary["evidence_kind"] == "clean_local_benchmark_evidence"
-    assert summary["summary_id"] == "local-clean-cpu-q20-2026-06-28"
+    assert summary["summary_id"] == "local-clean-cpu-q20-2026-06-30"
     assert summary["git"]["commit"] == (
-        "23d34ab226c3e4d7a47f15af3292bf81ce25987b")
+        "61e5f099f2d3b87feb6c3e7cf27d37f1e1d77c04")
     assert summary["git"]["dirty"] is False
     assert summary["interpretation"]["clean_worktree"] is True
     assert summary["raw_results"][0]["sha256"] == (
-        "fd46266986bd026c5db724194e5d66cdc092fae84fa74a4206de59f5038b355f")
+        "2cacb592d4e37d1c32877fc6303a0d347cfce48768cd2d4cdfce0d1531d83b2b")
     assert summary["raw_results"][0]["status_rows"] == {"ok": 6}
     assert summary["raw_results"][1]["sha256"] == (
-        "3fa15408e1495cce37efaef455b0420674352ae30ba07df302a1eb8cdc754982")
+        "b79f9b2ef836f5b715595efda231e5560cc5f408e60a07391eba54493ff47653")
     assert summary["raw_results"][1]["status_rows"] == {"ok": 6}
     assert summary["raw_results"][2]["sha256"] == (
-        "c17703381afc2ad21152836e591ba4c6362aee7cddebcc8d9d6f414d5799cdb0")
+        "219bb960f0e079501f97fd26f564a4590d54a70d260202d62e639f4cb42b9a83")
     assert summary["raw_results"][2]["status_rows"] == {"ok": 8}
     assert summary["machine"]["cpu_brand"] == "Apple M5"
     assert summary["config"]["targets"] == ["qpp-cpu", "mklq-cpu"]
@@ -6680,7 +6680,7 @@ def test_mklq_benchmark_summary_records_latest_clean_cpu_evidence():
     assert len(rows) == 20
     ansatz = rows[("mklq-cpu", "hardware-efficient-ansatz-state", 1024)]
     assert ansatz["elapsed_seconds_median"] == pytest.approx(
-        0.2678726250305772)
+        0.3496696045040153)
     assert ansatz["gate_count"] == 792
     assert ansatz["ansatz_rotation_gate_count"] == 480
     assert ansatz["ansatz_cx_gate_count"] == 80
@@ -6691,23 +6691,23 @@ def test_mklq_benchmark_summary_records_latest_clean_cpu_evidence():
     assert ansatz["ansatz_entangler_gate_count"] == 304
     assert ansatz[
         "hardware_efficient_ansatz_state_throughput_per_second"
-    ] == pytest.approx(2956.629106500131)
+    ] == pytest.approx(2264.995269243957)
     assert rows[("mklq-cpu", "qft-like-state", 1024)][
-        "elapsed_seconds_median"] == pytest.approx(0.9888316044816747)
+        "elapsed_seconds_median"] == pytest.approx(1.0654307079967111)
     assert rows[("mklq-cpu", "sample-partial-register", 65536)][
-        "elapsed_seconds_median"] == pytest.approx(0.01740229199640453)
+        "elapsed_seconds_median"] == pytest.approx(0.011036729498300701)
 
     ratios = summary["comparison"]["clean_worktree_cross_target_ratio"]
     assert ratios[
         "qpp_cpu_over_mklq_cpu_hardware_efficient_ansatz_state_q20"
-    ] == pytest.approx(87.95303301831422)
+    ] == pytest.approx(100.98763793631305)
     assert ratios["qpp_cpu_over_mklq_cpu_y_state_q20"] == pytest.approx(
-        86.23792069552117)
+        123.51745378785141)
     assert ratios["qpp_cpu_over_mklq_cpu_qft_like_state_q20"] == pytest.approx(
-        55.74368034476666)
+        80.08745430844247)
     assert ratios[
         "qpp_cpu_over_mklq_cpu_seeded_clifford_state_q20"] == pytest.approx(
-            107.637729814562)
+            155.5486046185451)
 
 
 def test_mklq_benchmark_summary_records_ansatz_scaling_evidence():
