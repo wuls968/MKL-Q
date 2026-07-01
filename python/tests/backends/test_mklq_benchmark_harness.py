@@ -6710,6 +6710,73 @@ def test_mklq_benchmark_summary_records_latest_clean_cpu_evidence():
             155.5486046185451)
 
 
+def test_mklq_benchmark_summary_records_latest_crz_distance_evidence():
+    repo_root = Path(__file__).resolve().parents[3]
+    summary_path = (
+        repo_root / "benchmarks" / "mklq" / "reports" /
+        "local-crz-distance-sweep-cpu-q20-2026-07-01.summary.json")
+
+    summary = json.loads(summary_path.read_text(encoding="utf-8"))
+
+    assert summary["schema_version"] == "mklq-benchmark-summary-v1"
+    assert summary["evidence_kind"] == "clean_local_benchmark_evidence"
+    assert summary["summary_id"] == (
+        "local-crz-distance-sweep-cpu-q20-2026-07-01")
+    assert summary["git"]["commit"] == (
+        "a311c8749bbf5edfa553f64eb71a79faeafdd803")
+    assert summary["git"]["dirty"] is False
+    assert summary["interpretation"]["clean_worktree"] is True
+    assert summary["raw_results"][0]["path"] == (
+        "benchmarks/mklq/results/"
+        "local-clean-cpu-crz-distance-sweep-q20-2026-07-01.json")
+    assert summary["raw_results"][0]["sha256"] == (
+        "e502854a8ca2af9b5beef5840ccabc127dd9bf131e78371f2430cd451f57e8ad")
+    assert summary["raw_results"][0]["status_rows"] == {"ok": 38}
+    assert summary["raw_results"][0]["tracked"] is False
+    assert summary["machine"]["cpu_brand"] == "Apple M5"
+    assert summary["config"]["targets"] == ["qpp-cpu", "mklq-cpu"]
+    assert summary["config"]["cases"] == ["crz-distance-sweep-state"]
+    assert summary["config"]["qubits"] == [20]
+    assert summary["config"]["shot_counts"] == [1024]
+    assert summary["config"]["repeats"] == 2
+    assert summary["config"]["warmups"] == 1
+    assert summary["config"]["layers"] == 8
+    assert summary["config"]["isolate_rows"] is True
+
+    rows = {
+        (row["target"], row["crz_distance"]): row
+        for row in summary["rows"]
+    }
+    assert len(rows) == 38
+    assert sorted({
+        row["crz_distance"]
+        for row in summary["rows"]
+    }) == list(range(1, 20))
+    expected_mklq_rows = {
+        1: (0.07483322900952771, 19, 152, 192),
+        9: (0.0495796664908994, 11, 88, 128),
+        19: (0.02162012501503341, 1, 8, 48),
+    }
+    for distance, (elapsed, pair_count, crz_gate_count,
+                   gate_count) in expected_mklq_rows.items():
+        row = rows[("mklq-cpu", distance)]
+        assert row["elapsed_seconds_median"] == pytest.approx(elapsed)
+        assert row["crz_distance_pair_count"] == pair_count
+        assert row["crz_distance_gate_count"] == crz_gate_count
+        assert row["gate_count"] == gate_count
+
+    ratios = summary["comparison"]["clean_worktree_cross_target_ratio"]
+    assert ratios[
+        "qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_1"
+    ] == pytest.approx(76.30687363882605)
+    assert ratios[
+        "qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_9"
+    ] == pytest.approx(168.76399911953217)
+    assert ratios[
+        "qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_19"
+    ] == pytest.approx(68.56089326322225)
+
+
 def test_mklq_benchmark_summary_records_ansatz_scaling_evidence():
     repo_root = Path(__file__).resolve().parents[3]
     summary_path = (

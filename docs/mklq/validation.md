@@ -332,6 +332,7 @@ python3 benchmarks/mklq/run_sampling_scaling_benchmark.py \
 Current tracked summaries include:
 
 - `local-clean-cpu-q20-2026-06-30.summary.json`
+- `local-crz-distance-sweep-cpu-q20-2026-07-01.summary.json`
 - `local-clean-cpu-q20-2026-06-28.summary.json`
 - `local-clean-cpu-q20-2026-06-21.summary.json`
 - `local-current-sampling-fullprob-gated-q20-2026-06-19.summary.json`
@@ -356,6 +357,16 @@ These files include clean-worktree local benchmark summaries plus older
 dirty-worktree tuning summaries. Interpret each file through its
 `evidence_kind` and `interpretation` fields. Do not treat any local summary as
 cross-machine performance certification.
+
+The focused CRZ distance-sweep summary was generated against
+`a311c8749bbf5edfa553f64eb71a79faeafdd803` on 2026-07-01 after installing the
+current local MKL-Q build to `/Users/a0000/.cudaq-mklq`. It compares q20
+`qpp-cpu` and `mklq-cpu` on `crz-distance-sweep-state` for distances 1 through
+19 with `repeats=2`, `warmups=1`, `layers=8`, and isolated rows. All 38 rows
+completed with `status == "ok"`, and the minimum local `qpp-cpu` over
+`mklq-cpu` median elapsed ratio across the distance sweep was `68.56x`. The
+public healthcheck includes a dedicated `crz_distance_evidence_guard` for this
+summary.
 
 The focused multi-control summary was generated against
 `4ece8d2396e8feee1c59a04e58324c529564f487` on 2026-06-22 after installing the

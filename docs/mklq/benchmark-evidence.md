@@ -13,6 +13,7 @@ Caveat: these entries are local benchmark evidence from development or release-p
 | local-clean-cpu-q20-2026-06-30 | clean_local_benchmark_evidence | Apple M5, 10 logical cores, 16 GiB RAM, macOS 26.5.1 | qpp-cpu, mklq-cpu | y-state, cy-state, cz-state, qft-like-state, seeded-clifford-state, hardware-efficient-ansatz-state, sample-full-register, sample-partial-register | 20 | shot_counts=1024, 65536; repeats=2; warmups=1; layers=8; isolate_rows=true | ok=20 | benchmarks/mklq/results/local-clean-cpu-gate-y-cy-cz-q20-2026-06-30.json sha256=2cacb592d4e3; benchmarks/mklq/results/local-clean-cpu-composite-qft-like-seeded-clifford-hardware-efficient-ansatz-q20-2026-06-30.json sha256=b79f9b2ef836; benchmarks/mklq/results/local-clean-cpu-sampling-q20-2026-06-30.json sha256=219bb960f0e0 |
 | local-counts-only-sampling-shot-scaling-q20-2026-06-19 | local_tuning_evidence | Apple M5, 10 logical cores, 16 GiB RAM, macOS 26.5.1 | qpp-cpu, mklq-cpu, mklq-metal | sample-full-register, sample-partial-register | 20 | shot_counts=256, 1024, 8192, 65536; repeats=2; warmups=1; layers=8; isolate_rows=true | ok=24 | benchmarks/mklq/results/local-counts-only-sampling-shot-scaling-q20-2026-06-19.json sha256=ef9846673b46 |
 | local-crz-distance-sweep-cpu-q20-2026-06-22 | clean_local_benchmark_evidence | Apple M5, 10 logical cores, 16 GiB RAM, macOS 26.5.1 | qpp-cpu, mklq-cpu | crz-distance-sweep-state | 20 | shot_counts=1024; repeats=2; warmups=1; layers=8; isolate_rows=true | ok=38 | benchmarks/mklq/results/local-clean-cpu-crz-distance-sweep-q20-2026-06-22.json sha256=64f9d0b4f709 |
+| local-crz-distance-sweep-cpu-q20-2026-07-01 | clean_local_benchmark_evidence | Apple M5, 10 logical cores, 16 GiB RAM, macOS 26.5.1 | qpp-cpu, mklq-cpu | crz-distance-sweep-state | 20 | shot_counts=1024; repeats=2; warmups=1; layers=8; isolate_rows=true | ok=38 | benchmarks/mklq/results/local-clean-cpu-crz-distance-sweep-q20-2026-07-01.json sha256=e502854a8ca2 |
 | local-current-sampling-fullprob-gated-q20-2026-06-19 | local_tuning_evidence | Apple M5, 10 logical cores, 16 GiB RAM, macOS 26.5.1 | qpp-cpu, mklq-cpu, mklq-metal | sample-full-register, sample-partial-register | 20 | shots=1024; repeats=2; warmups=1; layers=4; isolate_rows=true | ok=6 | benchmarks/mklq/results/local-current-sampling-fullprob-gated-q20-2026-06-19.json sha256=8ca6a4f7a7ae; benchmarks/mklq/results/local-current-sampling-shot-scaling-q20-2026-06-19.json sha256=9c15c0c1d566 |
 | local-metal-composite-mixed-path-q20-2026-06-21 | local_tuning_evidence | Apple M5, 10 logical cores, 16 GiB RAM, macOS 26.5.1 | qpp-cpu, mklq-cpu, mklq-metal | qft-like-state, seeded-clifford-state | 20 | shot_counts=1024; repeats=2; warmups=1; layers=8; isolate_rows=true | ok=6 | benchmarks/mklq/results/local-metal-composite-mixed-path-q20-2026-06-21.json sha256=ef58b5922221 |
 | local-metal-path-labels-q20-2026-06-22 | local_tuning_evidence | Apple M5, 10 logical cores, 16 GiB RAM, macOS 26.5.1 | mklq-metal | y-state, cy-state, qft-like-state, seeded-clifford-state, sample-full-register, sample-partial-register | 20 | shot_counts=1024, 65536; repeats=2; warmups=1; layers=8; isolate_rows=true | ok=8 | benchmarks/mklq/results/local-metal-path-labels-state-q20-2026-06-22.json sha256=5c44e7772c48; benchmarks/mklq/results/local-metal-path-labels-sampling-q20-2026-06-22.json sha256=0087e0be2ca9 |
@@ -131,6 +132,44 @@ The values below are copied from each summary's bounded `comparison` object. Kee
 | local-crz-distance-sweep-cpu-q20-2026-06-22 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_17` | 0.0294991 s |
 | local-crz-distance-sweep-cpu-q20-2026-06-22 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_18` | 0.0246605 s |
 | local-crz-distance-sweep-cpu-q20-2026-06-22 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_19` | 0.0223731 s |
+| local-crz-distance-sweep-cpu-q20-2026-07-01 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_1` | 76.31x |
+| local-crz-distance-sweep-cpu-q20-2026-07-01 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_2` | 86.92x |
+| local-crz-distance-sweep-cpu-q20-2026-07-01 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_3` | 78.95x |
+| local-crz-distance-sweep-cpu-q20-2026-07-01 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_4` | 69.82x |
+| local-crz-distance-sweep-cpu-q20-2026-07-01 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_5` | 82.12x |
+| local-crz-distance-sweep-cpu-q20-2026-07-01 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_6` | 82.16x |
+| local-crz-distance-sweep-cpu-q20-2026-07-01 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_7` | 97.41x |
+| local-crz-distance-sweep-cpu-q20-2026-07-01 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_8` | 81.56x |
+| local-crz-distance-sweep-cpu-q20-2026-07-01 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_9` | 168.76x |
+| local-crz-distance-sweep-cpu-q20-2026-07-01 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_10` | 79.23x |
+| local-crz-distance-sweep-cpu-q20-2026-07-01 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_11` | 105.45x |
+| local-crz-distance-sweep-cpu-q20-2026-07-01 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_12` | 110.93x |
+| local-crz-distance-sweep-cpu-q20-2026-07-01 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_13` | 124.85x |
+| local-crz-distance-sweep-cpu-q20-2026-07-01 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_14` | 81.38x |
+| local-crz-distance-sweep-cpu-q20-2026-07-01 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_15` | 83.96x |
+| local-crz-distance-sweep-cpu-q20-2026-07-01 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_16` | 97.90x |
+| local-crz-distance-sweep-cpu-q20-2026-07-01 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_17` | 72.56x |
+| local-crz-distance-sweep-cpu-q20-2026-07-01 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_18` | 70.92x |
+| local-crz-distance-sweep-cpu-q20-2026-07-01 | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_crz_distance_sweep_state_q20_distance_19` | 68.56x |
+| local-crz-distance-sweep-cpu-q20-2026-07-01 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_1` | 0.0748332 s |
+| local-crz-distance-sweep-cpu-q20-2026-07-01 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_2` | 0.0645978 s |
+| local-crz-distance-sweep-cpu-q20-2026-07-01 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_3` | 0.062464 s |
+| local-crz-distance-sweep-cpu-q20-2026-07-01 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_4` | 0.0648671 s |
+| local-crz-distance-sweep-cpu-q20-2026-07-01 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_5` | 0.0616692 s |
+| local-crz-distance-sweep-cpu-q20-2026-07-01 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_6` | 0.0567954 s |
+| local-crz-distance-sweep-cpu-q20-2026-07-01 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_7` | 0.0515437 s |
+| local-crz-distance-sweep-cpu-q20-2026-07-01 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_8` | 0.0518899 s |
+| local-crz-distance-sweep-cpu-q20-2026-07-01 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_9` | 0.0495797 s |
+| local-crz-distance-sweep-cpu-q20-2026-07-01 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_10` | 0.0454354 s |
+| local-crz-distance-sweep-cpu-q20-2026-07-01 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_11` | 0.0455507 s |
+| local-crz-distance-sweep-cpu-q20-2026-07-01 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_12` | 0.0398609 s |
+| local-crz-distance-sweep-cpu-q20-2026-07-01 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_13` | 0.036468 s |
+| local-crz-distance-sweep-cpu-q20-2026-07-01 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_14` | 0.0341299 s |
+| local-crz-distance-sweep-cpu-q20-2026-07-01 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_15` | 0.0315363 s |
+| local-crz-distance-sweep-cpu-q20-2026-07-01 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_16` | 0.0298987 s |
+| local-crz-distance-sweep-cpu-q20-2026-07-01 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_17` | 0.0262286 s |
+| local-crz-distance-sweep-cpu-q20-2026-07-01 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_18` | 0.0233933 s |
+| local-crz-distance-sweep-cpu-q20-2026-07-01 | `mklq_cpu_elapsed_seconds_median.crz_distance_sweep_state_q20_distance_19` | 0.0216201 s |
 | local-current-sampling-fullprob-gated-q20-2026-06-19 | `pre_gate_probe.mklq_metal_sample_full_register_q20_seconds` | 0.0313161 s |
 | local-current-sampling-fullprob-gated-q20-2026-06-19 | `pre_gate_probe.mklq_metal_sample_partial_register_q20_seconds` | 0.255697 s |
 | local-current-sampling-fullprob-gated-q20-2026-06-19 | `pre_gate_probe.repeats` | 1 |
