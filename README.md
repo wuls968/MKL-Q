@@ -34,10 +34,17 @@ cd MKL-Q
 cmake -S . -B build-python -D CUDAQ_ENABLE_MKLQ_BACKEND=ON \
   -D CMAKE_INSTALL_PREFIX="${HOME}/.cudaq-mklq"
 cmake --build build-python --target install -j 6
+python3 benchmarks/mklq/repair_macos_install_signatures.py \
+  --install-prefix "${HOME}/.cudaq-mklq"
 ```
 
 If you use a fork or a different GitHub owner, replace the clone URL with your
 repository URL.
+
+The signature repair command refreshes ad-hoc code signatures for local macOS
+install-prefix dylibs, Python extension loadables, and `bin/` Mach-O
+executables so that Python imports and `nvq++` smoke executables can load the
+installed runtime libraries. It is not release artifact signing.
 
 ## Python Smoke Test
 

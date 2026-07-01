@@ -16,8 +16,21 @@ import pytest
 from mklq_test_utils import mklq_targets_available
 
 
-NVQPP_COMPILE_TIMEOUT_SECONDS = 90
-NVQPP_RUN_TIMEOUT_SECONDS = 90
+def _positive_timeout_from_env(name, default):
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    try:
+        parsed = int(raw)
+    except ValueError:
+        return default
+    return parsed if parsed > 0 else default
+
+
+NVQPP_COMPILE_TIMEOUT_SECONDS = _positive_timeout_from_env(
+    "MKLQ_NVQPP_COMPILE_TIMEOUT_SECONDS", 90)
+NVQPP_RUN_TIMEOUT_SECONDS = _positive_timeout_from_env(
+    "MKLQ_NVQPP_RUN_TIMEOUT_SECONDS", 90)
 
 pytestmark = pytest.mark.skipif(not mklq_targets_available(),
                                 reason="MKL-Q targets are not available")

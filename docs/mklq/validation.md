@@ -15,7 +15,7 @@ boundary and evidence limits.
 
 ## Current Evidence Snapshot
 
-Latest local correctness refresh: 2026-06-28. Latest public healthcheck
+Latest local correctness refresh: 2026-07-01. Latest public healthcheck
 refresh: 2026-07-01.
 
 The install-prefix build, one-command correctness gate, public example smoke
@@ -38,9 +38,10 @@ The current refresh includes the earlier Metal counter-evidence work:
 resident built-in Rx/Ry/Rz, controlled-Rx/Ry/Rz, phase-family S/T/Sdg/Tdg,
 multi-control single-qubit resident, resident three-target gates, and
 four-or-more-target unsupported gate fallback/reupload fixtures. It also reran
-the full install/build/correctness/example gate on `main` after the CPU
-probability-fill evidence PR landed. The current tracked CPU gate counter
-evidence includes a bounded report for selected single-qubit, controlled
+the full install/build/signature-repair/correctness/example gate on the current
+MKL-Q branch after adding the local macOS install-prefix signature repair step.
+The current tracked CPU gate counter evidence includes a bounded report for
+selected single-qubit, controlled
 single-qubit, single-control Rz phase, two-qubit, three-qubit, and composite
 fast-path counter ctests. The current tracked CPU sampling/probability counter
 evidence includes two bounded reports, each with explicit full-register and
@@ -71,14 +72,15 @@ are not tracked as public evidence.
 - Install-prefix build: passed.
 - Default public healthcheck: passed on 2026-07-01, with 28 steps passed and
   0 failed.
-- Latest full public healthcheck wrapper attempt: 2026-07-01 did not pass with
-  31 planned steps; the outer `correctness_gate` subprocess timed out under
-  local compiler/test load. The install-prefix build, standalone
-  one-command correctness gate, and public example smoke gate passed afterward.
+- Latest full public healthcheck: passed on 2026-07-01, with 32 steps passed
+  and 0 failed after adding the dedicated macOS install-prefix signature repair
+  step. The signature repair step refreshed and verified 60 local install-prefix
+  `.dylib` and `.so` loadables before the correctness and public example smoke
+  gates.
 - One-command correctness gate: passed with 4 steps passed, 0 failed, and 0
   skipped, including the Metal runtime counter probe.
 - Public example smoke gate: passed, with 30 steps passed and 0 failed.
-- Current `benchmark_harness_tests`: `166 passed`.
+- Current `benchmark_harness_tests`: `171 passed`.
 - Current `cpu_gate_counter_probe_parse`: 1 bounded report, 11 expected,
   11 selected, 0 missing, and 0 failures, including the single-control Rz
   direct phase fast-path fixture and hardware-efficient ansatz composite
@@ -190,8 +192,8 @@ python3 benchmarks/mklq/run_correctness_gate.py \
   --build-dir build-python
 ```
 
-Latest local result: passed on 2026-06-28 after adding the CPU
-hardware-efficient ansatz state and observable oracle fixture. It reported 4
+Latest local result: passed on 2026-07-01 as part of the full public
+healthcheck wrapper after local install-prefix signature repair. It reported 4
 wrapper steps passed, 0 failed, and 0 skipped. The step-level results were:
 
 - `python_target_smoke`: `61 passed`.
@@ -240,8 +242,8 @@ python3 benchmarks/mklq/run_correctness_gate.py \
 python3 benchmarks/mklq/run_public_healthcheck.py --full --require-clean
 ```
 
-Latest default 2026-07-01 result: `28/28` steps passed. Full public
-healthcheck planned step count: `31/31` steps. The full gate includes Git
+Latest default 2026-07-01 result: `28/28` steps passed. The latest full
+2026-07-01 result is `32/32` steps passed. The full gate includes Git
 repository hygiene, tracked-artifact checks, public metadata checks, the public
 release checklist audit, the upstream sync audit, the self-hosted Apple Silicon
 CI audit, sanitized benchmark summary parsing, the clean CPU performance
@@ -251,15 +253,18 @@ parsing, bounded Metal runtime counter evidence parsing, CPU gate,
 CPU sampling/probability, and Metal counter docs drift detection, concrete
 public docs/workflows report-reference checks, helper `py_compile`, markdown links,
 benchmark evidence regeneration, healthcheck snapshot docs drift detection,
-benchmark harness tests, install-prefix build, the one-command correctness
-gate, and the public example smoke gate.
+benchmark harness tests, install-prefix build, local macOS install-prefix
+signature repair, the one-command correctness gate, and the public example
+smoke gate.
 
 The ignored raw healthcheck JSON records the exact Git state for these local
 runs. The latest default healthcheck benchmark harness step reported
-`166 passed`. A full wrapper rerun reached 30/31 steps before the
-`correctness_gate` wrapper timeout; the standalone correctness gate then
-reported 4 passed and 0 failed, and the public example smoke step reported 30
-passed and 0 failed.
+`171 passed`. The latest full wrapper run reported `32 passed`, including
+install-prefix build, local signature repair, correctness, and example-smoke
+gates in the `--full --require-clean` wrapper. An earlier wrapper run before
+the signature-repair step was added failed when installed `nvq++` smoke
+executables could not load a locally installed loadable with an invalid ad-hoc
+signature.
 
 ## Benchmark Evidence
 

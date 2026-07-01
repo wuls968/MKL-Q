@@ -83,10 +83,16 @@ Use the source build path documented in the README:
 cmake -S . -B build-python -D CUDAQ_ENABLE_MKLQ_BACKEND=ON \
   -D CMAKE_INSTALL_PREFIX="${HOME}/.cudaq-mklq"
 cmake --build build-python --target install -j 6
+python3 benchmarks/mklq/repair_macos_install_signatures.py \
+  --install-prefix "${HOME}/.cudaq-mklq"
 ```
 
 If the build directory already exists, prefer incremental rebuilds over a clean
 build unless CMake configuration changed.
+On macOS, the signature repair command refreshes ad-hoc signatures for local
+install-prefix dylibs, Python extension loadables, and `bin/` Mach-O
+executables before Python imports or installed `nvq++` smoke binaries load
+them. It is not release artifact signing.
 
 ## Correctness Gates
 
@@ -183,6 +189,7 @@ python3 -m py_compile \
   benchmarks/mklq/check_public_claims.py \
   benchmarks/mklq/check_sampling_profile_evidence.py \
   benchmarks/mklq/make_summary.py \
+  benchmarks/mklq/repair_macos_install_signatures.py \
   benchmarks/mklq/run_clean_cpu_benchmark.py \
   benchmarks/mklq/run_correctness_gate.py \
   benchmarks/mklq/run_cpu_scaling_benchmark.py \

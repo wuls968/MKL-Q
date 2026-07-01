@@ -41,6 +41,7 @@ BENCHMARK_HELPERS = (
     "benchmarks/mklq/check_public_claims.py",
     "benchmarks/mklq/check_sampling_profile_evidence.py",
     "benchmarks/mklq/make_summary.py",
+    "benchmarks/mklq/repair_macos_install_signatures.py",
     "benchmarks/mklq/run_clean_cpu_benchmark.py",
     "benchmarks/mklq/run_cpu_scaling_benchmark.py",
     "benchmarks/mklq/run_sampling_scaling_benchmark.py",
@@ -316,6 +317,8 @@ def public_metadata_requirements() -> list[tuple[str, str]]:
         ("docs/mklq/public-release-checklist.md", "check_cpu_gate_counter_docs.py"),
         ("docs/mklq/public-release-checklist.md", "run_preflight_audit.py"),
         ("docs/mklq/public-release-checklist.md", "run_upstream_sync_audit.py"),
+        ("docs/mklq/public-release-checklist.md",
+         "repair_macos_install_signatures.py"),
         ("docs/mklq/public-release-checklist.md", "public_report_references"),
         ("docs/mklq/public-release-checklist.md", "public docs or workflows"),
         ("docs/mklq/public-release-checklist.md", "untracked report files"),
@@ -330,6 +333,8 @@ def public_metadata_requirements() -> list[tuple[str, str]]:
         ("docs/mklq/developer-workflow.md", "run_preflight_audit.py"),
         ("docs/mklq/developer-workflow.md", "run_public_release_checklist_audit.py"),
         ("docs/mklq/developer-workflow.md", "run_public_healthcheck.py"),
+        ("docs/mklq/developer-workflow.md",
+         "repair_macos_install_signatures.py"),
         ("docs/mklq/developer-workflow.md", "multiple bounded reports are tracked"),
         ("docs/mklq/developer-workflow.md",
          "selected counter tests once per report"),
@@ -374,6 +379,9 @@ def public_metadata_requirements() -> list[tuple[str, str]]:
         ("benchmarks/mklq/README.md", "Upstream Sync Audit"),
         ("benchmarks/mklq/README.md", "Self-hosted Apple Silicon CI Audit"),
         ("benchmarks/mklq/README.md", "run_self_hosted_ci_audit.py"),
+        ("benchmarks/mklq/README.md", "Install-prefix Signature Repair"),
+        ("benchmarks/mklq/README.md",
+         "repair_macos_install_signatures.py"),
         ("benchmarks/mklq/README.md", "Metal Runtime Counter Probe"),
         ("benchmarks/mklq/README.md", "Metal Runtime Counter Summary"),
         ("benchmarks/mklq/README.md", "Metal Runtime Counter Docs Guard"),
@@ -393,6 +401,8 @@ def public_metadata_requirements() -> list[tuple[str, str]]:
         ("docs/mklq/testing-matrix.md", "run_public_release_checklist_audit.py"),
         ("docs/mklq/testing-matrix.md", "run_self_hosted_ci_audit.py"),
         ("docs/mklq/testing-matrix.md", "run_upstream_sync_audit.py"),
+        ("docs/mklq/testing-matrix.md",
+         "repair_macos_install_signatures.py"),
         ("docs/mklq/testing-matrix.md", "summarize_metal_runtime_counters.py"),
         ("docs/mklq/testing-matrix.md", "public_report_references"),
         ("docs/mklq/testing-matrix.md", "public docs or workflows"),
@@ -1288,6 +1298,24 @@ def run_install_build(config: HealthcheckConfig) -> dict[str, Any]:
         "install-prefix build failed", result)
 
 
+def run_macos_install_signature_repair(
+        config: HealthcheckConfig) -> dict[str, Any]:
+    script = config.repo_root / "benchmarks" / "mklq" / (
+        "repair_macos_install_signatures.py")
+    command = [
+        config.python_executable,
+        str(script),
+        "--install-prefix",
+        str(config.install_prefix),
+        "--output",
+        str(config.repo_root / "benchmarks" / "mklq" / "results" /
+            f"macos-install-signature-repair-{config.stamp}.json"),
+    ]
+    result = run_command(config, command)
+    return passed(result) if result["returncode"] == 0 else failed(
+        "macOS install-prefix signature repair failed", result)
+
+
 def run_correctness_gate(config: HealthcheckConfig) -> dict[str, Any]:
     script = config.repo_root / "benchmarks" / "mklq" / "run_correctness_gate.py"
     command = [
@@ -1429,6 +1457,10 @@ def build_steps(config: HealthcheckConfig) -> list[Step]:
         steps.append(
             Step("install_prefix_build", "Build and install MKL-Q to the prefix.",
                  run_install_build))
+        steps.append(
+            Step("macos_install_signature_repair",
+                 "Repair local macOS install-prefix dylib signatures.",
+                 run_macos_install_signature_repair))
         steps.append(
             Step("correctness_gate",
                  "Run Python target, nvq++, and TargetConfig correctness gates.",
