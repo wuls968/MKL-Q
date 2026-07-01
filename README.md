@@ -138,6 +138,8 @@ The public benchmark evidence index is summarized in
 [`docs/mklq/benchmark-evidence.md`](docs/mklq/benchmark-evidence.md).
 Tracked CPU sampling phase counter coverage is summarized in
 [`docs/mklq/cpu-sampling-counters.md`](docs/mklq/cpu-sampling-counters.md).
+Tracked CPU gate fast-path counter coverage is summarized in
+[`docs/mklq/cpu-gate-counters.md`](docs/mklq/cpu-gate-counters.md).
 Tracked Metal runtime counter coverage is summarized in
 [`docs/mklq/metal-runtime-counters.md`](docs/mklq/metal-runtime-counters.md).
 Raw local benchmark payloads under `benchmarks/mklq/results/` are intentionally

@@ -140,11 +140,11 @@ Publish the sanitized files under `benchmarks/mklq/reports/` and update
 `benchmarks/mklq/results/*.json` files. Treat local results as machine-specific
 evidence, not release certification.
 
-For bounded CPU sampling/probability counter reports and Metal runtime counter
-reports, regenerate the matching public Markdown and run the docs guards. When
-multiple bounded reports are tracked, aggregate counts in the generated docs are
-summed across reports; repeated daily probes intentionally count the same
-selected counter tests once per report.
+For bounded CPU gate fast-path, CPU sampling/probability, and Metal runtime
+counter reports, regenerate the matching public Markdown and run the docs
+guards. When multiple bounded reports are tracked, aggregate counts in the
+generated docs are summed across reports; repeated daily probes intentionally
+count the same selected counter tests once per report.
 Before describing the branch as public-ready, make sure the preflight
 `public_report_references` check passes. It fails when public docs or workflows
 reference untracked report files under `benchmarks/mklq/reports/*.json`.
@@ -169,11 +169,13 @@ python3 benchmarks/mklq/check_public_claims.py
 python3 benchmarks/mklq/check_performance_evidence.py
 python3 benchmarks/mklq/check_metal_evidence.py
 python3 benchmarks/mklq/check_sampling_profile_evidence.py
+python3 benchmarks/mklq/check_cpu_gate_counter_docs.py
 python3 benchmarks/mklq/check_cpu_sampling_counter_docs.py
 python3 benchmarks/mklq/check_metal_runtime_counter_docs.py
 python3 -m py_compile \
   benchmarks/mklq/bench_mklq_targets.py \
   benchmarks/mklq/bench_probability_kernels.py \
+  benchmarks/mklq/check_cpu_gate_counter_docs.py \
   benchmarks/mklq/check_cpu_sampling_counter_docs.py \
   benchmarks/mklq/check_metal_evidence.py \
   benchmarks/mklq/check_metal_runtime_counter_docs.py \
@@ -185,6 +187,7 @@ python3 -m py_compile \
   benchmarks/mklq/run_correctness_gate.py \
   benchmarks/mklq/run_cpu_scaling_benchmark.py \
   benchmarks/mklq/run_sampling_scaling_benchmark.py \
+  benchmarks/mklq/run_cpu_gate_counter_probe.py \
   benchmarks/mklq/run_metal_runtime_counter_probe.py \
   benchmarks/mklq/run_preflight_audit.py \
   benchmarks/mklq/run_public_release_checklist_audit.py \
@@ -192,6 +195,7 @@ python3 -m py_compile \
   benchmarks/mklq/run_public_healthcheck.py \
   benchmarks/mklq/run_self_hosted_ci_audit.py \
   benchmarks/mklq/run_upstream_sync_audit.py \
+  benchmarks/mklq/summarize_cpu_gate_counters.py \
   benchmarks/mklq/summarize_cpu_sampling_counters.py \
   benchmarks/mklq/summarize_metal_runtime_counters.py \
   benchmarks/mklq/summarize_reports.py \

@@ -70,6 +70,8 @@ Check:
   `.github/branch-protection-main.json`.
 - [ ] `docs/mklq/public-readiness.md` is linked from the README and records the
   current public repository readiness snapshot.
+- [ ] `docs/mklq/cpu-gate-counters.md` is linked from the README and records
+  bounded CPU gate fast-path counter evidence.
 - [ ] `docs/mklq/upstream-sync.md` is linked from the README and records the
   current upstream sync procedure and dry-run audit command.
 - [ ] GitHub About metadata describes MKL-Q, uses Apache-2.0, and avoids stale
@@ -185,11 +187,13 @@ python3 benchmarks/mklq/check_performance_evidence.py
 python3 benchmarks/mklq/check_metal_evidence.py
 python3 benchmarks/mklq/check_public_claims.py
 python3 benchmarks/mklq/check_sampling_profile_evidence.py
+python3 benchmarks/mklq/check_cpu_gate_counter_docs.py
 python3 benchmarks/mklq/check_cpu_sampling_counter_docs.py
 python3 benchmarks/mklq/check_metal_runtime_counter_docs.py
 python3 -m py_compile \
   benchmarks/mklq/bench_mklq_targets.py \
   benchmarks/mklq/bench_probability_kernels.py \
+  benchmarks/mklq/check_cpu_gate_counter_docs.py \
   benchmarks/mklq/check_cpu_sampling_counter_docs.py \
   benchmarks/mklq/check_metal_evidence.py \
   benchmarks/mklq/check_metal_runtime_counter_docs.py \
@@ -201,6 +205,7 @@ python3 -m py_compile \
   benchmarks/mklq/run_cpu_scaling_benchmark.py \
   benchmarks/mklq/run_sampling_scaling_benchmark.py \
   benchmarks/mklq/run_correctness_gate.py \
+  benchmarks/mklq/run_cpu_gate_counter_probe.py \
   benchmarks/mklq/run_cpu_sampling_counter_probe.py \
   benchmarks/mklq/run_metal_runtime_counter_probe.py \
   benchmarks/mklq/run_preflight_audit.py \
@@ -208,6 +213,7 @@ python3 -m py_compile \
   benchmarks/mklq/run_public_readiness_audit.py \
   benchmarks/mklq/run_public_healthcheck.py \
   benchmarks/mklq/run_self_hosted_ci_audit.py \
+  benchmarks/mklq/summarize_cpu_gate_counters.py \
   benchmarks/mklq/summarize_cpu_sampling_counters.py \
   benchmarks/mklq/summarize_metal_runtime_counters.py \
   benchmarks/mklq/summarize_reports.py \
@@ -234,8 +240,8 @@ Expected:
 - [ ] `check_performance_evidence.py` passes for tracked clean CPU summaries.
 - [ ] `check_metal_evidence.py` passes for tracked experimental Metal
       summaries.
-- [ ] CPU sampling/probability and Metal runtime counter docs guards pass for
-  the tracked bounded reports.
+- [ ] CPU gate fast-path, CPU sampling/probability, and Metal runtime counter
+  docs guards pass for the tracked bounded reports.
 - [ ] Counter docs explain that aggregate counts are summed across tracked
   reports, so repeated daily probes count the same selected counter tests once
   per report.

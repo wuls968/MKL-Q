@@ -73,6 +73,8 @@ The public MKL-Q support boundary is documented in:
 - [`validation.md`](validation.md)
 - [`testing-matrix.md`](testing-matrix.md)
 - [`benchmark-evidence.md`](benchmark-evidence.md)
+- [`cpu-gate-counters.md`](cpu-gate-counters.md)
+- [`cpu-sampling-counters.md`](cpu-sampling-counters.md)
 - [`metal-runtime-counters.md`](metal-runtime-counters.md)
 - [`known-limitations.md`](known-limitations.md)
 - [`roadmap.md`](roadmap.md)
@@ -102,10 +104,10 @@ The public GitHub configuration is intentionally lightweight:
   API payload.
 
 The lightweight workflow checks source-only repository hygiene, public metadata,
-tracked benchmark summary parseability, bounded CPU sampling/probability counter
-and Metal runtime counter probe parseability with complete expected counter-test
-coverage, and benchmark helper syntax. It does not build CUDA-Q or run Apple
-Silicon backend correctness tests.
+tracked benchmark summary parseability, bounded CPU gate fast-path, CPU
+sampling/probability, and Metal runtime counter probe parseability with
+complete expected counter-test coverage, and benchmark helper syntax. It does
+not build CUDA-Q or run Apple Silicon backend correctness tests.
 
 The pushed-public readiness audit is handled by
 `benchmarks/mklq/run_public_readiness_audit.py`. In addition to repository
@@ -152,15 +154,21 @@ evidence refresh on 2026-07-01:
   state for the latest public healthcheck gate, and the ignored correctness
   gate JSON records the latest correctness-gate state;
 - install-prefix build: passed;
-- default public healthcheck: passed with 26/26 steps passed;
-- full public healthcheck: passed with 29/29 steps passed;
+- default public healthcheck: passed with 28/28 steps passed;
+- full public healthcheck: latest wrapper attempt did not pass; planned count
+  31/31 steps, with standalone install-prefix build, one-command correctness
+  gate, and public example smoke passing afterward;
 - one-command correctness gate: passed with 4/4 steps passed, including
   `metal_runtime_counter_probe`;
 - public example smoke gate: passed with 30/30 steps passed;
-- current benchmark harness tests: `155 passed`;
+- current benchmark harness tests: `166 passed`;
 - current `cpu_sampling_counter_probe_parse`: 2 bounded reports, 14 expected,
   14 selected, 0 missing, and 0 failures, including full-register and marginal
   probability-fill counter ctests;
+- current `cpu_gate_counter_probe_parse`: 1 bounded report, 11 expected, 11
+  selected, 0 missing, and 0 failures, including the single-control Rz direct
+  phase fast-path fixture and hardware-efficient ansatz composite fast-path
+  fixture;
 - standalone install-prefix Python subset: `37 passed`;
 - `python_target_smoke`: `61 passed`;
 - `nvqpp_smoke`: `2 passed`;
@@ -193,12 +201,14 @@ The current public healthcheck also includes the static
 `check_metal_evidence.py` guard for tracked `mklq-metal` summaries. That guard
 checks local tuning provenance, ignored raw payload paths, successful Metal
 rows, and wording that keeps the experimental mixed-path/host boundary clear.
-It also includes `check_metal_runtime_counter_docs.py`, which fails if the
-public Metal runtime counter summary drifts from the tracked bounded counter
-reports. The preflight audit checks concrete `benchmarks/mklq/reports/*.json`
-references in public docs and workflows, including the lightweight GitHub
-workflow. The public readiness audit additionally runs the static
-`check_public_claims.py` guard before accepting the pushed repository state.
+It also includes `check_cpu_gate_counter_docs.py` and
+`check_metal_runtime_counter_docs.py`, which fail if the public CPU gate
+fast-path or Metal runtime counter summaries drift from the tracked bounded
+counter reports. The preflight audit checks concrete
+`benchmarks/mklq/reports/*.json` references in public docs and workflows,
+including the lightweight GitHub workflow. The public readiness audit
+additionally runs the static `check_public_claims.py` guard before accepting
+the pushed repository state.
 
 ## No Tags Or Releases
 
