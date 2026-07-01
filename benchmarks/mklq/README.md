@@ -284,6 +284,21 @@ gate without build-tree Metal counter evidence. When preserving rejected tuning
 runs, label them clearly and keep them separate from the local baseline so they
 are not read as performance evidence.
 
+## Install-prefix Signature Repair
+
+Use the local macOS signature repair helper after installing to a development
+prefix and before running installed `nvq++` smoke executables:
+
+```bash
+python3 benchmarks/mklq/repair_macos_install_signatures.py \
+  --install-prefix "${HOME}/.cudaq-mklq"
+```
+
+The helper refreshes ad-hoc signatures for local install-prefix dylibs,
+Python extension loadables, and `bin/` Mach-O executables, then writes ignored
+JSON under `benchmarks/mklq/results/`. It is not release artifact signing, does
+not publish binary artifacts, and is skipped on non-Darwin platforms.
+
 ## Preflight Audit
 
 Use the preflight audit before opening or updating a public pull request:
@@ -403,7 +418,8 @@ boundaries, latest hygiene workflow success for the pushed commit, and the
 source-only no-tags/no-releases boundary. It does not run backend correctness
 tests or refresh benchmark evidence.
 
-`--full` adds the install-prefix build and one-command correctness gate. It does
+`--full` adds the install-prefix build, local macOS install-prefix signature
+repair, one-command correctness gate, and public example smoke gate. It does
 not refresh benchmark evidence. To intentionally refresh clean CPU benchmark
 evidence, run from a clean worktree:
 

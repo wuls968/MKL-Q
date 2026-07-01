@@ -116,6 +116,18 @@ def _load_public_healthcheck_module():
     return module
 
 
+def _load_macos_install_signature_repair_module():
+    repo_root = Path(__file__).resolve().parents[3]
+    script = repo_root / "benchmarks" / "mklq" / (
+        "repair_macos_install_signatures.py")
+    spec = importlib.util.spec_from_file_location(
+        "repair_macos_install_signatures", script)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    return module
+
+
 def _load_sampling_profile_evidence_module():
     repo_root = Path(__file__).resolve().parents[3]
     script = repo_root / "benchmarks" / "mklq" / (
@@ -969,6 +981,8 @@ def test_mklq_correctness_gate_plan_lists_expected_steps(tmp_path):
     assert plan["environment"] == {
         "PYTHONPATH": "/tmp/cudaq-runtime",
         "CUDAQ_NVQPP": "/tmp/cudaq-runtime/bin/nvq++",
+        "MKLQ_NVQPP_COMPILE_TIMEOUT_SECONDS": "123",
+        "MKLQ_NVQPP_RUN_TIMEOUT_SECONDS": "123",
     }
     assert [step["name"] for step in plan["steps"]] == [
         "python_target_smoke",
@@ -1062,6 +1076,8 @@ def test_mklq_correctness_gate_writes_json_summary(monkeypatch, tmp_path):
     ]
     assert calls[0]["env"]["PYTHONPATH"] == "/tmp/cudaq-runtime"
     assert calls[1]["env"]["CUDAQ_NVQPP"] == "/tmp/cudaq-runtime/bin/nvq++"
+    assert calls[1]["env"]["MKLQ_NVQPP_COMPILE_TIMEOUT_SECONDS"] == "123"
+    assert calls[1]["env"]["MKLQ_NVQPP_RUN_TIMEOUT_SECONDS"] == "123"
     assert all(step["returncode"] == 0 for step in written["steps"])
     assert all(step["stdout_tail"] == "ok\n" for step in written["steps"])
 
@@ -1153,6 +1169,7 @@ def test_mklq_public_healthcheck_plan_lists_escalating_gates(tmp_path):
         "healthcheck_snapshot_docs",
         "benchmark_harness_tests",
         "install_prefix_build",
+        "macos_install_signature_repair",
         "correctness_gate",
         "example_smoke",
         "clean_cpu_benchmark",
@@ -1204,6 +1221,22 @@ def test_mklq_public_healthcheck_plans_crz_distance_guard(tmp_path):
         "cpu_sampling_counter_probe_parse")
     assert steps.index("benchmark_evidence_regeneration") < steps.index(
         "healthcheck_snapshot_docs")
+
+
+def test_mklq_public_healthcheck_repairs_signatures_before_correctness(tmp_path):
+    module = _load_public_healthcheck_module()
+    config = _public_healthcheck_config(module,
+                                        tmp_path,
+                                        full=True,
+                                        plan_only=True)
+
+    report = module.run_healthcheck(config)
+    steps = [step["name"] for step in report["steps"]]
+
+    assert steps.index("install_prefix_build") < steps.index(
+        "macos_install_signature_repair")
+    assert steps.index("macos_install_signature_repair") < steps.index(
+        "correctness_gate")
 
 
 def _write_healthcheck_snapshot_docs(tmp_path, default_count, full_count):
@@ -1290,6 +1323,100 @@ def test_mklq_public_healthcheck_rejects_stale_snapshot_doc_counts(tmp_path):
     assert result["status"] == "failed"
     assert "healthcheck snapshot docs are stale" in result["message"]
     assert any("validation.md" in item for item in result["details"]["missing"])
+
+
+def test_mklq_macos_signature_repair_dry_run_plans_loadables(monkeypatch,
+                                                             tmp_path):
+    module = _load_macos_install_signature_repair_module()
+    monkeypatch.setattr(module.platform, "system", lambda: "Darwin")
+    prefix = tmp_path / "install"
+    bin_dir = prefix / "bin"
+    lib_dir = prefix / "lib"
+    mlir_dir = prefix / "cudaq" / "mlir" / "_mlir_libs"
+    mlir_dir.mkdir(parents=True)
+    bin_dir.mkdir(parents=True)
+    lib_dir.mkdir(parents=True)
+    (bin_dir / "cudaq-translate").write_bytes(b"\xcf\xfa\xed\xfe")
+    (mlir_dir / "_mlir.cpython-312-darwin.so").write_text("so",
+                                                          encoding="utf-8")
+    (lib_dir / "runtime.dylib").write_text("runtime", encoding="utf-8")
+
+    report = module.build_report(prefix,
+                                 output=tmp_path / "repair.json",
+                                 codesign="codesign-test",
+                                 dry_run=True)
+
+    assert report["summary"] == {
+        "status": "planned",
+        "loadables": 3,
+        "passed": 0,
+        "failed": 0,
+        "planned": 3,
+    }
+    assert [Path(entry["path"]).name for entry in report["loadables"]] == [
+        "cudaq-translate",
+        "_mlir.cpython-312-darwin.so",
+        "runtime.dylib",
+    ]
+    assert all(entry["sign_command"][0] == "codesign-test"
+               for entry in report["loadables"])
+
+
+def test_mklq_macos_signature_repair_runs_sign_and_verify(monkeypatch,
+                                                          tmp_path):
+    module = _load_macos_install_signature_repair_module()
+    monkeypatch.setattr(module.platform, "system", lambda: "Darwin")
+    prefix = tmp_path / "install"
+    bin_dir = prefix / "bin"
+    lib_dir = prefix / "lib"
+    bin_dir.mkdir(parents=True)
+    lib_dir.mkdir(parents=True)
+    executable = bin_dir / "cudaq-translate"
+    executable.write_bytes(b"\xcf\xfa\xed\xfe")
+    dylib = lib_dir / "runtime.dylib"
+    dylib.write_text("runtime", encoding="utf-8")
+    calls = []
+
+    def fake_run(command, capture_output, text):
+        assert capture_output is True
+        assert text is True
+        calls.append(command)
+        return subprocess.CompletedProcess(command, 0, "ok", "")
+
+    monkeypatch.setattr(module.subprocess, "run", fake_run)
+
+    report = module.build_report(prefix,
+                                 output=tmp_path / "repair.json",
+                                 codesign="codesign-test",
+                                 tail_chars=20)
+
+    assert report["summary"] == {
+        "status": "passed",
+        "loadables": 2,
+        "passed": 2,
+        "failed": 0,
+        "planned": 0,
+    }
+    assert calls == [
+        ["codesign-test", "--force", "--sign", "-", str(executable.resolve())],
+        [
+            "codesign-test", "--verify", "--verbose=2",
+            str(executable.resolve())
+        ],
+        ["codesign-test", "--force", "--sign", "-", str(dylib.resolve())],
+        ["codesign-test", "--verify", "--verbose=2", str(dylib.resolve())],
+    ]
+
+
+def test_mklq_macos_signature_repair_skips_non_darwin(monkeypatch, tmp_path):
+    module = _load_macos_install_signature_repair_module()
+    monkeypatch.setattr(module.platform, "system", lambda: "Linux")
+
+    report = module.build_report(tmp_path / "install",
+                                 output=tmp_path / "repair.json")
+
+    assert report["summary"]["status"] == "skipped"
+    assert report["loadables"] == []
 
 
 def test_mklq_public_healthcheck_runs_public_claim_guard(monkeypatch,
@@ -3350,6 +3477,13 @@ def test_mklq_public_healthcheck_compiles_self_hosted_ci_audit():
         module.PY_COMPILE_FILES)
 
 
+def test_mklq_public_healthcheck_compiles_signature_repair_helper():
+    module = _load_public_healthcheck_module()
+
+    assert "benchmarks/mklq/repair_macos_install_signatures.py" in (
+        module.PY_COMPILE_FILES)
+
+
 def test_mklq_public_healthcheck_requires_cpu_sampling_counter_metadata():
     module = _load_public_healthcheck_module()
 
@@ -4146,6 +4280,7 @@ def _write_release_checklist_audit_fixture(
             "benchmarks/mklq/run_public_release_checklist_audit.py",
             "benchmarks/mklq/run_public_healthcheck.py",
             "benchmarks/mklq/run_public_readiness_audit.py",
+            "benchmarks/mklq/repair_macos_install_signatures.py",
             "benchmarks/mklq/run_self_hosted_ci_audit.py",
             "benchmarks/mklq/run_correctness_gate.py",
             "benchmarks/mklq/run_clean_cpu_benchmark.py",
@@ -4221,6 +4356,7 @@ fails when public docs or workflows reference untracked report files.
 
 ```bash
 cmake --build build-python --target install -j 6
+python3 benchmarks/mklq/repair_macos_install_signatures.py --install-prefix "${HOME}/.cudaq-mklq"
 ```
 
 ## Correctness Gate
@@ -4247,6 +4383,7 @@ python3 benchmarks/mklq/run_public_release_checklist_audit.py
 python3 benchmarks/mklq/run_public_healthcheck.py
 python3 benchmarks/mklq/run_public_healthcheck.py --full --require-clean
 python3 benchmarks/mklq/run_self_hosted_ci_audit.py
+python3 benchmarks/mklq/repair_macos_install_signatures.py
 python3 benchmarks/mklq/check_performance_evidence.py
 python3 benchmarks/mklq/check_metal_evidence.py
 python3 benchmarks/mklq/check_public_claims.py
@@ -4291,6 +4428,7 @@ python3 benchmarks/mklq/run_preflight_audit.py
 python3 benchmarks/mklq/run_public_release_checklist_audit.py
 python3 benchmarks/mklq/run_public_healthcheck.py
 python3 benchmarks/mklq/run_self_hosted_ci_audit.py
+python3 benchmarks/mklq/repair_macos_install_signatures.py
 git diff --check
 git ls-files .github/workflows | sort
 python3 benchmarks/mklq/check_public_claims.py
@@ -4301,6 +4439,7 @@ python3 benchmarks/mklq/check_cpu_gate_counter_docs.py
 python3 benchmarks/mklq/check_cpu_sampling_counter_docs.py
 python3 benchmarks/mklq/check_metal_runtime_counter_docs.py
 python3 -m py_compile \
+  benchmarks/mklq/repair_macos_install_signatures.py \
   benchmarks/mklq/run_cpu_gate_counter_probe.py \
   benchmarks/mklq/run_cpu_scaling_benchmark.py \
   benchmarks/mklq/run_sampling_scaling_benchmark.py \

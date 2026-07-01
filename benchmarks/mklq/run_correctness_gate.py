@@ -70,9 +70,12 @@ def command_path(config: CorrectnessGateConfig, path: Path) -> str:
 
 
 def fixed_env(config: CorrectnessGateConfig) -> dict[str, str]:
+    nvqpp_timeout_seconds = str(max(config.timeout_seconds, 90))
     return {
         "PYTHONPATH": config.pythonpath,
         "CUDAQ_NVQPP": str(config.nvqpp),
+        "MKLQ_NVQPP_COMPILE_TIMEOUT_SECONDS": nvqpp_timeout_seconds,
+        "MKLQ_NVQPP_RUN_TIMEOUT_SECONDS": nvqpp_timeout_seconds,
     }
 
 

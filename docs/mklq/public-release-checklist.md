@@ -111,6 +111,8 @@ Run on Apple Silicon macOS:
 
 ```bash
 cmake --build build-python --target install -j 6
+python3 benchmarks/mklq/repair_macos_install_signatures.py \
+  --install-prefix "${HOME}/.cudaq-mklq"
 ```
 
 Expected:
@@ -118,6 +120,10 @@ Expected:
 - [ ] The install prefix is the intended local prefix, usually
   `${HOME}/.cudaq-mklq`.
 - [ ] Build and install complete without errors.
+- [ ] On macOS, local install-prefix dylibs, Python extension loadables, and
+  `bin/` Mach-O executables have refreshed ad-hoc signatures before Python
+  import and installed `nvq++` smoke gates run. This is not release artifact
+  signing.
 - [ ] The installed Python path and `nvq++` path match the next gate.
 
 ## Correctness Gate
@@ -201,6 +207,7 @@ python3 -m py_compile \
   benchmarks/mklq/check_public_claims.py \
   benchmarks/mklq/check_sampling_profile_evidence.py \
   benchmarks/mklq/make_summary.py \
+  benchmarks/mklq/repair_macos_install_signatures.py \
   benchmarks/mklq/run_clean_cpu_benchmark.py \
   benchmarks/mklq/run_cpu_scaling_benchmark.py \
   benchmarks/mklq/run_sampling_scaling_benchmark.py \
