@@ -87,7 +87,7 @@ PUBLIC_MARKDOWN_FILES = (
     "examples/mklq/README.md",
 )
 
-CRZ_DISTANCE_SUMMARY_ID = "local-crz-distance-sweep-cpu-q20-2026-06-22"
+CRZ_DISTANCE_SUMMARY_ID = "local-crz-distance-sweep-cpu-q20-2026-07-01"
 CRZ_DISTANCE_REQUIRED_RATIOS = tuple(
     f"crz_distance_sweep_state_q20_distance_{distance}"
     for distance in range(1, 20))

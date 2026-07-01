@@ -4,7 +4,7 @@ This page records the public repository readiness snapshot for MKL-Q. It is a
 source-only repository audit, not a release certification, package
 certification, Apple Silicon CI replacement, or performance certification.
 
-Snapshot date: 2026-06-30.
+Snapshot date: 2026-07-01.
 
 ## Scope
 
@@ -144,7 +144,8 @@ compares the live core protection fields against that JSON reference.
 
 The latest public local validation evidence is recorded in
 [`validation.md`](validation.md), with a correctness refresh on 2026-06-28 and
-a public metadata refresh on 2026-06-30:
+a public metadata refresh on 2026-06-30, plus a focused CRZ distance-sweep
+evidence refresh on 2026-07-01:
 
 - latest correctness refresh date: 2026-06-28;
 - source state: the ignored raw healthcheck JSON records the exact local Git
@@ -175,6 +176,10 @@ a public metadata refresh on 2026-06-30:
   including `cz-state`, `qft-like-state`, `seeded-clifford-state`, and
   `hardware-efficient-ansatz-state`, with 20 rows reporting `status == "ok"`
   against `61e5f099f2d3b87feb6c3e7cf27d37f1e1d77c04`.
+- CRZ distance-sweep CPU evidence: passed with 38 q20 `qpp-cpu`/`mklq-cpu`
+  rows covering distances 1 through 19, with all rows reporting
+  `status == "ok"` and a minimum local median elapsed ratio of `68.56x`
+  against `a311c8749bbf5edfa553f64eb71a79faeafdd803`.
 - hardware-efficient ansatz CPU scaling evidence: passed with 6 q18/q20/q22
   `qpp-cpu`/`mklq-cpu` rows, with 6 rows reporting `status == "ok"` and local
   median elapsed ratios of `26.84x`, `52.94x`, and `81.37x` against

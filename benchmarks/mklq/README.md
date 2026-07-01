@@ -578,6 +578,20 @@ The generated public index is tracked at
   at 1024 shots, and 126.38x for `sample-partial-register` at 65536 shots.
   Treat this as local clean-worktree CPU evidence, not as cross-machine
   performance certification.
+- `reports/local-crz-distance-sweep-cpu-q20-2026-07-01.summary.json`: tracked
+  sanitized summary for the ignored raw result
+  `results/local-clean-cpu-crz-distance-sweep-q20-2026-07-01.json`
+  (`sha256: e502854a8ca2af9b5beef5840ccabc127dd9bf131e78371f2430cd451f57e8ad`).
+  This run was collected from a clean worktree at
+  `a311c8749bbf5edfa553f64eb71a79faeafdd803` with `qpp-cpu` and `mklq-cpu`
+  rows for `crz-distance-sweep-state` at q20, distances 1 through 19, with
+  `OMP_NUM_THREADS=10`, `OMP_PROC_BIND=close`, `OMP_DYNAMIC=false`,
+  `VECLIB_MAXIMUM_THREADS=1`, `repeats=2`, `warmups=1`, and `layers=8` on
+  Apple M5, 10 logical cores, 16 GB RAM, macOS 26.5.1. All 38 rows completed
+  with `status == "ok"`. In this local run, the minimum median elapsed ratio
+  for `qpp-cpu` over `mklq-cpu` across the distance sweep was 68.56x. Treat
+  this as local clean-worktree CPU evidence, not as cross-machine performance
+  certification.
 - `reports/local-scaling-cpu-hardware-efficient-ansatz-q18-q22-2026-06-30.summary.json`:
   tracked sanitized summary for the ignored raw result
   `results/local-scaling-cpu-hardware-efficient-ansatz-q18-q22-2026-06-30.json`
