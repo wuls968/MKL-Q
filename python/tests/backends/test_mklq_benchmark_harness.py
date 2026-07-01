@@ -278,6 +278,42 @@ def _load_cpu_sampling_counter_probe_module():
     return module
 
 
+def _load_cpu_gate_counter_probe_module():
+    repo_root = Path(__file__).resolve().parents[3]
+    script = repo_root / "benchmarks" / "mklq" / (
+        "run_cpu_gate_counter_probe.py")
+    spec = importlib.util.spec_from_file_location(
+        "run_cpu_gate_counter_probe", script)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    return module
+
+
+def _load_cpu_gate_counter_summary_module():
+    repo_root = Path(__file__).resolve().parents[3]
+    script = repo_root / "benchmarks" / "mklq" / (
+        "summarize_cpu_gate_counters.py")
+    spec = importlib.util.spec_from_file_location(
+        "summarize_cpu_gate_counters", script)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    return module
+
+
+def _load_cpu_gate_counter_docs_module():
+    repo_root = Path(__file__).resolve().parents[3]
+    script = repo_root / "benchmarks" / "mklq" / (
+        "check_cpu_gate_counter_docs.py")
+    spec = importlib.util.spec_from_file_location(
+        "check_cpu_gate_counter_docs", script)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    return module
+
+
 def _load_cpu_sampling_counter_summary_module():
     repo_root = Path(__file__).resolve().parents[3]
     script = repo_root / "benchmarks" / "mklq" / (
@@ -1104,6 +1140,8 @@ def test_mklq_public_healthcheck_plan_lists_escalating_gates(tmp_path):
         "sampling_scaling_evidence_guard",
         "sampling_profile_evidence_guard",
         "metal_evidence_guard",
+        "cpu_gate_counter_probe_parse",
+        "cpu_gate_counter_docs",
         "cpu_sampling_counter_probe_parse",
         "cpu_sampling_counter_docs",
         "metal_runtime_counter_probe_parse",
@@ -1158,6 +1196,12 @@ def test_mklq_public_healthcheck_plans_crz_distance_guard(tmp_path):
         "sampling_profile_evidence_guard")
     assert steps.index("sampling_profile_evidence_guard") < steps.index(
         "metal_evidence_guard")
+    assert steps.index("metal_evidence_guard") < steps.index(
+        "cpu_gate_counter_probe_parse")
+    assert steps.index("cpu_gate_counter_probe_parse") < steps.index(
+        "cpu_gate_counter_docs")
+    assert steps.index("cpu_gate_counter_docs") < steps.index(
+        "cpu_sampling_counter_probe_parse")
     assert steps.index("benchmark_evidence_regeneration") < steps.index(
         "healthcheck_snapshot_docs")
 
@@ -1197,6 +1241,41 @@ def test_mklq_public_healthcheck_checks_snapshot_doc_step_counts(tmp_path):
 
     assert result["status"] == "passed"
     assert result["details"]["expected_counts"] == counts
+
+
+def test_mklq_public_healthcheck_accepts_full_wrapper_timeout_snapshot_docs(
+        tmp_path):
+    module = _load_public_healthcheck_module()
+    config = _public_healthcheck_config(module, tmp_path)
+    counts = module.public_snapshot_step_counts(config)
+    docs = tmp_path / "docs" / "mklq"
+    docs.mkdir(parents=True, exist_ok=True)
+    (docs / "validation.md").write_text(
+        f"""
+Latest full public healthcheck wrapper attempt: 2026-07-01 did not pass with
+{counts["full"]} planned steps; the outer correctness_gate subprocess timed out.
+Default public healthcheck: passed on 2026-07-01, with {counts["default"]} steps
+  passed and 0 failed.
+
+Latest default 2026-07-01 result: `{counts["default"]}/{counts["default"]}` steps passed.
+Full public
+healthcheck planned step count: `{counts["full"]}/{counts["full"]}` steps.
+""",
+        encoding="utf-8",
+    )
+    (docs / "public-readiness.md").write_text(
+        f"""
+- default public healthcheck: passed with {counts["default"]}/{counts["default"]} steps passed;
+- full public healthcheck: latest wrapper attempt did not pass; planned count
+  {counts["full"]}/{counts["full"]} steps, with standalone correctness and example
+  smoke passing afterward;
+""",
+        encoding="utf-8",
+    )
+
+    result = module.run_healthcheck_snapshot_docs_check(config)
+
+    assert result["status"] == "passed"
 
 
 def test_mklq_public_healthcheck_rejects_stale_snapshot_doc_counts(tmp_path):
@@ -2447,6 +2526,225 @@ def test_mklq_metal_runtime_counter_docs_guard_detects_stale_markdown(
     assert result["details"]["summary_status"] == "passed"
 
 
+def test_mklq_cpu_gate_counter_probe_selects_fast_path_tests():
+    module = _load_cpu_gate_counter_probe_module()
+    listing = """
+Test project /repo/build-python
+  Test #710: mklq_cpu_MKLQCpuTester.XFastPathAppliesUncontrolledSingleQubitGate
+  Test #711: mklq_cpu_MKLQCpuTester.CnotFastPathAppliesControlledXGate
+  Test #712: mklq_cpu_MKLQCpuTester.SingleControlRzUsesDedicatedPhaseFastPath
+  Test #713: mklq_cpu_MKLQCpuTester.RowSparseThreeQubitCustomOperationUsesDedicatedFastPath
+  Test #999: mklq_cpu_MKLQCpuTester.UnrelatedCorrectnessTest
+  Test #1000: mklq_metal_MKLQMetalTester.SingleControlRzUsesDedicatedPhaseFastPath
+"""
+
+    tests = module.select_counter_tests(listing)
+
+    assert tests == [
+        "mklq_cpu_MKLQCpuTester.XFastPathAppliesUncontrolledSingleQubitGate",
+        "mklq_cpu_MKLQCpuTester.CnotFastPathAppliesControlledXGate",
+        "mklq_cpu_MKLQCpuTester.SingleControlRzUsesDedicatedPhaseFastPath",
+        "mklq_cpu_MKLQCpuTester.RowSparseThreeQubitCustomOperationUsesDedicatedFastPath",
+    ]
+
+
+def test_mklq_cpu_gate_counter_probe_builds_bounded_report(monkeypatch,
+                                                           tmp_path):
+    module = _load_cpu_gate_counter_probe_module()
+    commands = []
+    expected_test_names = [
+        module.TEST_PREFIX + suffix for suffix in module.COUNTER_TEST_SUFFIXES
+    ]
+
+    def fake_command_output(cwd, command):
+        commands.append(command)
+        lines = ["Test project /tmp/build"]
+        lines.extend(
+            f"  Test #{710 + index}: {name}"
+            for index, name in enumerate(expected_test_names))
+        return "\n".join(lines)
+
+    def fake_run_command(cwd, command):
+        commands.append(command)
+        return {
+            "returncode": 0,
+            "stdout": "gate fast-path counter assertions passed",
+            "stderr": "",
+        }
+
+    monkeypatch.setattr(module, "command_output", fake_command_output)
+    monkeypatch.setattr(module, "run_command", fake_run_command)
+
+    report = module.build_report(repo_root=tmp_path, build_dir=tmp_path)
+
+    assert report["schema_version"] == "mklq-cpu-gate-counter-probe-v1"
+    assert report["evidence_kind"] == "local_runtime_counter_probe"
+    assert report["summary"] == {
+        "status": "passed",
+        "selected": len(expected_test_names),
+        "expected": len(expected_test_names),
+        "missing": 0,
+        "passed": len(expected_test_names),
+        "failed": 0,
+    }
+    assert report["expected_counter_tests"] == expected_test_names
+    assert report["missing_counter_tests"] == []
+    assert report["boundary"]["runtime_counter_evidence"] is True
+    assert report["boundary"]["gate_fast_path_counter_evidence"] is True
+    assert report["boundary"]["single_control_rz_phase_counter_evidence"] is True
+    assert report["boundary"]["release_signoff"] is False
+    assert report["boundary"]["performance_benchmark"] is False
+    assert report["boundary"]["cross_machine_performance_proof"] is False
+    assert [test["status"] for test in report["tests"]] == (
+        ["passed"] * len(expected_test_names))
+    assert all(test["counter_source"] == module.COUNTER_SOURCE
+               for test in report["tests"])
+    assert all("stdout" not in test for test in report["tests"])
+    run_commands = [command for command in commands if command[:1] == ["ctest"]
+                    and "--output-on-failure" in command]
+    assert len(run_commands) == len(expected_test_names)
+    assert run_commands[0][:5] == [
+        "ctest",
+        "--test-dir",
+        str(tmp_path),
+        "-R",
+        module.exact_ctest_regex(expected_test_names[0]),
+    ]
+
+
+def test_mklq_cpu_gate_counter_probe_fails_when_expected_tests_missing(
+        monkeypatch, tmp_path):
+    module = _load_cpu_gate_counter_probe_module()
+
+    def fake_command_output(cwd, command):
+        return """
+Test project /tmp/build
+  Test #712: mklq_cpu_MKLQCpuTester.SingleControlRzUsesDedicatedPhaseFastPath
+"""
+
+    def fake_run_command(cwd, command):
+        return {
+            "returncode": 0,
+            "stdout": "gate fast-path counter assertions passed",
+            "stderr": "",
+        }
+
+    monkeypatch.setattr(module, "command_output", fake_command_output)
+    monkeypatch.setattr(module, "run_command", fake_run_command)
+
+    report = module.build_report(repo_root=tmp_path, build_dir=tmp_path)
+
+    assert report["summary"]["status"] == "failed"
+    assert report["summary"]["selected"] == 1
+    assert report["summary"]["expected"] == len(module.COUNTER_TEST_SUFFIXES)
+    assert report["summary"]["missing"] == len(module.COUNTER_TEST_SUFFIXES) - 1
+    assert (module.TEST_PREFIX + "XFastPathAppliesUncontrolledSingleQubitGate"
+            in report["missing_counter_tests"])
+
+
+def _cpu_gate_counter_summary_fixture():
+    tests = [
+        "mklq_cpu_MKLQCpuTester.XFastPathAppliesUncontrolledSingleQubitGate",
+        "mklq_cpu_MKLQCpuTester.CnotFastPathAppliesControlledXGate",
+        "mklq_cpu_MKLQCpuTester.SingleControlRzUsesDedicatedPhaseFastPath",
+        "mklq_cpu_MKLQCpuTester.HardwareEfficientAnsatzCompositeUsesDedicatedFastPaths",
+        "mklq_cpu_MKLQCpuTester.RowSparseThreeQubitCustomOperationUsesDedicatedFastPath",
+    ]
+    return {
+        "schema_version": "mklq-cpu-gate-counter-probe-v1",
+        "evidence_kind": "local_runtime_counter_probe",
+        "created_at_utc": "2026-07-01T00:00:00+00:00",
+        "summary": {
+            "status": "passed",
+            "expected": len(tests),
+            "selected": len(tests),
+            "missing": 0,
+            "passed": len(tests),
+            "failed": 0,
+        },
+        "boundary": {
+            "runtime_counter_evidence": True,
+            "gate_fast_path_counter_evidence": True,
+            "single_control_rz_phase_counter_evidence": True,
+            "release_signoff": False,
+            "performance_benchmark": False,
+            "cross_machine_performance_proof": False,
+            "raw_logs_truncated": True,
+        },
+        "expected_counter_tests": tests,
+        "missing_counter_tests": [],
+        "tests": [{
+            "name": name,
+            "status": "passed",
+        } for name in tests],
+    }
+
+
+def test_mklq_cpu_gate_counter_summary_groups_fast_path_coverage(tmp_path):
+    module = _load_cpu_gate_counter_summary_module()
+    report = tmp_path / "probe.cpu-gate-counter.json"
+    report.write_text(json.dumps(_cpu_gate_counter_summary_fixture()),
+                      encoding="utf-8")
+
+    summary = module.build_summary([report])
+
+    assert summary["schema_version"] == "mklq-cpu-gate-counter-summary-v1"
+    assert summary["summary"]["status"] == "passed"
+    assert summary["summary"]["selected"] == 5
+    assert summary["boundary"]["gate_fast_path_counter_evidence"] is True
+    categories = {
+        category["category"]: category
+        for category in summary["categories"]
+    }
+    assert categories["single_control_rz_phase"]["passed"] == 1
+    assert categories["controlled_single_qubit_fast_path"]["passed"] == 1
+    assert categories["composite_fast_path"]["passed"] == 1
+    assert categories["three_qubit_fast_path"]["passed"] == 1
+
+
+def test_mklq_cpu_gate_counter_summary_renders_markdown(tmp_path):
+    module = _load_cpu_gate_counter_summary_module()
+    report = tmp_path / "probe.cpu-gate-counter.json"
+    report.write_text(json.dumps(_cpu_gate_counter_summary_fixture()),
+                      encoding="utf-8")
+
+    markdown = module.render_markdown(module.build_summary([report]))
+
+    assert "MKL-Q CPU Gate Counter Summary" in markdown
+    assert "single_control_rz_phase" in markdown
+    assert "gate_fast_path_counter_evidence" in markdown
+    assert "not release sign-off" in markdown
+    assert "Aggregate counts are summed across tracked reports" in markdown
+
+
+def test_mklq_cpu_gate_counter_docs_guard_detects_stale_markdown(tmp_path):
+    guard = _load_cpu_gate_counter_docs_module()
+    summary_module = _load_cpu_gate_counter_summary_module()
+    report_dir = tmp_path / "reports"
+    report_dir.mkdir()
+    report = report_dir / "probe.cpu-gate-counter.json"
+    doc = tmp_path / "cpu-gate-counters.md"
+    report.write_text(json.dumps(_cpu_gate_counter_summary_fixture()),
+                      encoding="utf-8")
+    doc.write_text(
+        summary_module.render_markdown(summary_module.build_summary([report])),
+        encoding="utf-8")
+
+    result = guard.check_docs(report_inputs=[report_dir], doc_path=doc)
+
+    assert result["status"] == "passed"
+    assert result["details"]["expected"] == doc.as_posix()
+    assert result["details"]["report_count"] == 1
+
+    doc.write_text("stale CPU gate counter docs\n", encoding="utf-8")
+
+    result = guard.check_docs(report_inputs=[report_dir], doc_path=doc)
+
+    assert result["status"] == "failed"
+    assert "differs" in result["message"]
+    assert result["details"]["summary_status"] == "passed"
+
+
 def test_mklq_cpu_sampling_counter_probe_selects_phase_tests():
     module = _load_cpu_sampling_counter_probe_module()
     listing = """
@@ -2775,6 +3073,95 @@ def test_mklq_public_healthcheck_parses_cpu_sampling_counter_probe(tmp_path):
     assert "raw stdout" in failures
 
 
+def test_mklq_public_healthcheck_parses_cpu_gate_counter_probe(tmp_path):
+    module = _load_public_healthcheck_module()
+    config = _public_healthcheck_config(module, tmp_path)
+    report_dir = tmp_path / "benchmarks" / "mklq" / "reports"
+    report_dir.mkdir(parents=True)
+    counter_report = report_dir / "probe.cpu-gate-counter.json"
+    expected_tests = [
+        "mklq_cpu_MKLQCpuTester.SingleControlRzUsesDedicatedPhaseFastPath",
+        "mklq_cpu_MKLQCpuTester.CnotFastPathAppliesControlledXGate",
+    ]
+    counter_report.write_text(json.dumps({
+        "schema_version": "mklq-cpu-gate-counter-probe-v1",
+        "evidence_kind": "local_runtime_counter_probe",
+        "summary": {
+            "status": "passed",
+            "expected": 2,
+            "selected": 2,
+            "missing": 0,
+            "passed": 2,
+            "failed": 0,
+        },
+        "boundary": {
+            "runtime_counter_evidence": True,
+            "gate_fast_path_counter_evidence": True,
+            "single_control_rz_phase_counter_evidence": True,
+            "release_signoff": False,
+            "performance_benchmark": False,
+            "cross_machine_performance_proof": False,
+        },
+        "expected_counter_tests": expected_tests,
+        "missing_counter_tests": [],
+        "tests": [{
+            "name": expected_tests[0],
+            "status": "passed",
+        }, {
+            "name": expected_tests[1],
+            "status": "passed",
+        }],
+    }),
+                              encoding="utf-8")
+
+    result = module.run_cpu_gate_counter_probe_parse(config)
+
+    assert result["status"] == "passed"
+    assert result["details"]["counter_report_count"] == 1
+    assert result["details"]["expected_tests"] == 2
+    assert result["details"]["selected_tests"] == 2
+    assert result["details"]["missing_tests"] == 0
+
+    counter_report.write_text(json.dumps({
+        "schema_version": "mklq-cpu-gate-counter-probe-v1",
+        "evidence_kind": "local_runtime_counter_probe",
+        "summary": {
+            "status": "passed",
+            "expected": 2,
+            "selected": 1,
+            "missing": 1,
+            "passed": 1,
+            "failed": 0,
+        },
+        "boundary": {
+            "runtime_counter_evidence": True,
+            "gate_fast_path_counter_evidence": False,
+            "single_control_rz_phase_counter_evidence": False,
+            "release_signoff": False,
+            "performance_benchmark": True,
+            "cross_machine_performance_proof": False,
+        },
+        "expected_counter_tests": expected_tests,
+        "missing_counter_tests": [expected_tests[1]],
+        "tests": [{
+            "name": expected_tests[0],
+            "status": "passed",
+            "stdout": "raw log leak",
+        }],
+    }),
+                              encoding="utf-8")
+
+    result = module.run_cpu_gate_counter_probe_parse(config)
+
+    assert result["status"] == "failed"
+    failures = "\n".join(result["details"]["failures"])
+    assert "gate_fast_path_counter_evidence" in failures
+    assert "single_control_rz_phase_counter_evidence" in failures
+    assert "performance_benchmark" in failures
+    assert "missing counter test count" in failures
+    assert "raw stdout" in failures
+
+
 def test_mklq_public_healthcheck_parses_metal_runtime_counter_probe(tmp_path):
     module = _load_public_healthcheck_module()
     config = _public_healthcheck_config(module, tmp_path)
@@ -2893,6 +3280,10 @@ def test_mklq_public_healthcheck_plan_includes_metal_evidence_guard(tmp_path):
     assert steps.index("performance_evidence_guard") < steps.index(
         "metal_evidence_guard")
     assert steps.index("metal_evidence_guard") < steps.index(
+        "cpu_gate_counter_probe_parse")
+    assert steps.index("cpu_gate_counter_probe_parse") < steps.index(
+        "cpu_gate_counter_docs")
+    assert steps.index("cpu_gate_counter_docs") < steps.index(
         "cpu_sampling_counter_probe_parse")
     assert steps.index("cpu_sampling_counter_probe_parse") < steps.index(
         "cpu_sampling_counter_docs")
@@ -2910,6 +3301,17 @@ def test_mklq_public_healthcheck_compiles_cpu_sampling_counter_helpers():
     assert "benchmarks/mklq/summarize_cpu_sampling_counters.py" in (
         module.PY_COMPILE_FILES)
     assert "benchmarks/mklq/check_cpu_sampling_counter_docs.py" in (
+        module.PY_COMPILE_FILES)
+
+
+def test_mklq_public_healthcheck_compiles_cpu_gate_counter_helpers():
+    module = _load_public_healthcheck_module()
+
+    assert "benchmarks/mklq/run_cpu_gate_counter_probe.py" in (
+        module.PY_COMPILE_FILES)
+    assert "benchmarks/mklq/summarize_cpu_gate_counters.py" in (
+        module.PY_COMPILE_FILES)
+    assert "benchmarks/mklq/check_cpu_gate_counter_docs.py" in (
         module.PY_COMPILE_FILES)
 
 
@@ -2959,6 +3361,23 @@ def test_mklq_public_healthcheck_requires_cpu_sampling_counter_metadata():
             "CPU Sampling Counter Probe") in requirements
     assert ("docs/mklq/testing-matrix.md",
             "run_cpu_sampling_counter_probe.py") in requirements
+
+
+def test_mklq_public_healthcheck_requires_cpu_gate_counter_metadata():
+    module = _load_public_healthcheck_module()
+
+    requirements = set(module.public_metadata_requirements())
+
+    assert ("docs/mklq/cpu-gate-counters.md",
+            "gate fast-path counter evidence") in requirements
+    assert ("docs/mklq/cpu-gate-counters.md",
+            "single_control_rz_phase_counter_evidence") in requirements
+    assert ("benchmarks/mklq/README.md",
+            "CPU Gate Counter Probe") in requirements
+    assert ("docs/mklq/testing-matrix.md",
+            "run_cpu_gate_counter_probe.py") in requirements
+    assert ("docs/mklq/developer-workflow.md",
+            "check_cpu_gate_counter_docs.py") in requirements
 
 
 def test_mklq_public_healthcheck_requires_public_claim_guard_metadata():
@@ -3026,13 +3445,14 @@ def test_mklq_public_hygiene_workflow_checks_counter_report_files():
         encoding="utf-8")
     docs_text = "\n".join(
         Path(path).read_text(encoding="utf-8") for path in [
+            "docs/mklq/cpu-gate-counters.md",
             "docs/mklq/cpu-sampling-counters.md",
             "docs/mklq/metal-runtime-counters.md",
         ])
     reports = sorted(
         set(
             re.findall(
-                r"benchmarks/mklq/reports/[^\s|]+\.(?:cpu-counter|counter)\.json",
+                r"benchmarks/mklq/reports/[^\s|]+\.(?:cpu-gate-counter|cpu-counter|counter)\.json",
                 docs_text,
             )))
 
@@ -3729,10 +4149,13 @@ def _write_release_checklist_audit_fixture(
             "benchmarks/mklq/run_self_hosted_ci_audit.py",
             "benchmarks/mklq/run_correctness_gate.py",
             "benchmarks/mklq/run_clean_cpu_benchmark.py",
+            "benchmarks/mklq/run_cpu_gate_counter_probe.py",
+            "benchmarks/mklq/summarize_cpu_gate_counters.py",
             "benchmarks/mklq/check_performance_evidence.py",
             "benchmarks/mklq/check_metal_evidence.py",
             "benchmarks/mklq/check_public_claims.py",
             "benchmarks/mklq/check_sampling_profile_evidence.py",
+            "benchmarks/mklq/check_cpu_gate_counter_docs.py",
             "benchmarks/mklq/check_cpu_sampling_counter_docs.py",
             "benchmarks/mklq/check_metal_runtime_counter_docs.py",
     ]:
@@ -3810,6 +4233,8 @@ python3 benchmarks/mklq/run_correctness_gate.py --install-prefix "${HOME}/.cudaq
 
 ```bash
 python3 benchmarks/mklq/run_clean_cpu_benchmark.py --pythonpath "${HOME}/.cudaq-mklq" --stamp YYYY-MM-DD
+python3 benchmarks/mklq/run_cpu_gate_counter_probe.py --build-dir build-python --output benchmarks/mklq/reports/local-cpu-gate-counter-probe-YYYY-MM-DD.cpu-gate-counter.json
+python3 benchmarks/mklq/summarize_cpu_gate_counters.py --reports benchmarks/mklq/reports --output docs/mklq/cpu-gate-counters.md
 ```
 
 ## Public Hygiene Gate
@@ -3826,6 +4251,7 @@ python3 benchmarks/mklq/check_performance_evidence.py
 python3 benchmarks/mklq/check_metal_evidence.py
 python3 benchmarks/mklq/check_public_claims.py
 python3 benchmarks/mklq/check_sampling_profile_evidence.py
+python3 benchmarks/mklq/check_cpu_gate_counter_docs.py
 python3 benchmarks/mklq/check_cpu_sampling_counter_docs.py
 python3 benchmarks/mklq/check_metal_runtime_counter_docs.py
 ```
@@ -3871,12 +4297,15 @@ python3 benchmarks/mklq/check_public_claims.py
 python3 benchmarks/mklq/check_performance_evidence.py
 python3 benchmarks/mklq/check_metal_evidence.py
 python3 benchmarks/mklq/check_sampling_profile_evidence.py
+python3 benchmarks/mklq/check_cpu_gate_counter_docs.py
 python3 benchmarks/mklq/check_cpu_sampling_counter_docs.py
 python3 benchmarks/mklq/check_metal_runtime_counter_docs.py
 python3 -m py_compile \
+  benchmarks/mklq/run_cpu_gate_counter_probe.py \
   benchmarks/mklq/run_cpu_scaling_benchmark.py \
   benchmarks/mklq/run_sampling_scaling_benchmark.py \
   benchmarks/mklq/run_upstream_sync_audit.py \
+  benchmarks/mklq/summarize_cpu_gate_counters.py \
   benchmarks/mklq/summarize_cpu_sampling_counters.py \
   benchmarks/mklq/summarize_metal_runtime_counters.py
 ```

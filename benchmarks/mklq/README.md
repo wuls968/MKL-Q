@@ -105,6 +105,8 @@ The JSON report includes:
 - for sampling rows with `--profile-sampling-breakdown`, diagnostic
   harness-level `sampling_kernel_build_seconds_*`, `sampling_call_seconds_*`,
   and `sampling_result_counts_materialization_seconds_*` fields
+- CPU gate fast-path counter evidence lives outside benchmark rows in bounded
+  `.cpu-gate-counter.json` reports and `docs/mklq/cpu-gate-counters.md`
 - CPU sampling phase counter evidence lives outside benchmark rows in bounded
   `.cpu-counter.json` reports and `docs/mklq/cpu-sampling-counters.md`
 - for `mklq-metal` rows, conservative static path labels that state the
@@ -175,6 +177,46 @@ native backend profiler. It records additional timings around Python-visible
 work and explicitly labels rows with
 `sampling_profile_boundary`; do not interpret those fields as internal
 probability-fill, draw, or count-aggregation counters.
+
+## CPU Gate Counter Probe
+
+Use the CPU gate counter probe when changing `mklq-cpu` gate fast paths,
+including single-qubit, controlled single-qubit, single-control Rz phase,
+two-qubit, three-qubit, and composite fast-path selection tests:
+
+```bash
+python3 benchmarks/mklq/run_cpu_gate_counter_probe.py \
+  --build-dir build-python \
+  --output benchmarks/mklq/reports/local-cpu-gate-counter-probe-YYYY-MM-DD.cpu-gate-counter.json
+```
+
+The report is bounded evidence from selected build-tree ctest cases. It records
+whether the complete expected CPU gate fast-path counter test set is present
+and passing; it is not a benchmark result, release sign-off, or cross-machine
+performance proof.
+
+## CPU Gate Counter Summary
+
+Regenerate the public CPU gate counter Markdown summary from tracked bounded
+reports:
+
+```bash
+python3 benchmarks/mklq/summarize_cpu_gate_counters.py \
+  --reports benchmarks/mklq/reports \
+  --output docs/mklq/cpu-gate-counters.md
+```
+
+When multiple bounded reports are tracked, aggregate counts in the generated
+summary are summed across reports. Repeated daily probes intentionally count
+the same selected counter tests once per report.
+
+## CPU Gate Counter Docs Guard
+
+Check that the tracked public Markdown matches the tracked bounded reports:
+
+```bash
+python3 benchmarks/mklq/check_cpu_gate_counter_docs.py
+```
 
 ## CPU Sampling Counter Probe
 
