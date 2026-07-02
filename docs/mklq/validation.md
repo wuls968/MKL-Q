@@ -44,10 +44,13 @@ multi-control single-qubit resident, resident three-target gates, and
 four-or-more-target unsupported gate fallback/reupload fixtures. It also reran
 the full install/build/signature-repair/correctness/example gate on the current
 MKL-Q branch after adding the local macOS install-prefix signature repair step.
-The current tracked CPU gate counter evidence includes a bounded report for
-selected single-qubit, controlled
-single-qubit, single-control Rz phase, two-qubit, three-qubit, and composite
-fast-path counter ctests. The current tracked CPU sampling/probability counter
+The current tracked CPU gate counter evidence includes two bounded reports for
+selected single-qubit, controlled single-qubit, single-control X/CNOT,
+single-control Rz phase, two-qubit, three-qubit, and composite fast-path
+counter ctests. The 2026-07-02 CPU gate counter refresh covers the direct
+target/control pair enumeration path for single-control X/CNOT in addition to
+the earlier single-control Rz direct phase path. The current tracked CPU
+sampling/probability counter
 evidence includes two bounded reports, each with explicit full-register and
 marginal probability-fill counter ctests alongside the existing sampling phase
 counter ctests. The current tracked Metal runtime counter evidence likewise
@@ -91,10 +94,10 @@ these raw payloads are not tracked as public evidence.
   skipped, including the Metal runtime counter probe.
 - Public example smoke gate: passed, with 30 steps passed and 0 failed.
 - Current `benchmark_harness_tests`: `177 passed`.
-- Current `cpu_gate_counter_probe_parse`: 1 bounded report, 11 expected,
-  11 selected, 0 missing, and 0 failures, including the single-control Rz
-  direct phase fast-path fixture and hardware-efficient ansatz composite
-  fast-path fixture.
+- Current `cpu_gate_counter_probe_parse`: 2 bounded reports, 22 expected,
+  22 selected, 0 missing, and 0 failures, including the single-control X/CNOT
+  direct pair fast-path fixture, single-control Rz direct phase fast-path
+  fixture, and hardware-efficient ansatz composite fast-path fixture.
 - Current `cpu_sampling_counter_probe_parse`: 2 bounded reports, 14 expected,
   14 selected, 0 missing, and 0 failures; each report includes full-register
   and marginal probability-fill counter ctests.
