@@ -98,16 +98,16 @@ Expected:
 - [ ] No `docs/superpowers/` or agent-internal paths are tracked.
 - [ ] `.github/workflows/` contains only intentionally reviewed MKL-Q
   workflows: `mklq-public-hygiene.yml` for required public hygiene and
-  `mklq-apple-silicon-ci.yml` for manual self-hosted Apple Silicon checks.
+  `mklq-apple-silicon-ci.yml` for the Apple Silicon push guard plus manual
+  self-hosted full checks.
 - [ ] `.github/workflows/mklq-apple-silicon-ci.yml` is present and reviewed as
-  the manual self-hosted Apple Silicon workflow.
+  the self-hosted Apple Silicon workflow with a lightweight push guard.
 - [ ] `mklq-apple-silicon-ci.yml` keeps the full self-hosted gate behind
   `workflow_dispatch`, keeps `run_full_gate` default skip, uses
   `permissions: contents: read`, and has no pull-request, release, upload, or
   secret-dependent path.
-- [ ] Any non-dispatch workflow-file validation run uses only the lightweight
-  `Dispatch guard` job and does not consume the self-hosted Apple Silicon
-  runner.
+- [ ] Any non-dispatch `main` push run uses only the lightweight `Dispatch
+  guard` job and does not consume the self-hosted Apple Silicon runner.
 - [ ] The `public_report_references` preflight check passes: every concrete
   `benchmarks/mklq/reports/*.json` path referenced by public docs or workflows
   exists and is tracked, and no public docs or workflows reference untracked
@@ -247,9 +247,10 @@ Expected:
 - [ ] Public metadata keywords are present.
 - [ ] `run_public_release_checklist_audit.py` passes and confirms this
   checklist still references the required source-only release gates.
-- [ ] `run_self_hosted_ci_audit.py` passes and confirms the self-hosted Apple
-  Silicon CI workflow remains manual-only, read-only, source-only, and disabled
-  by default.
+- [ ] `run_self_hosted_ci_audit.py` passes and confirms the Apple Silicon CI
+  workflow keeps only the lightweight push guard automatic while the
+  self-hosted full job remains manual, read-only, source-only, and disabled by
+  default.
 - [ ] Public example files exist under `examples/mklq/`.
 - [ ] Banned upstream workflow/contact tokens are absent from public metadata
   and `.github`.
@@ -293,8 +294,9 @@ Expected:
 - [ ] Remote `main` equals local `HEAD`.
 - [ ] `wuls968/MKL-Q` remains a fork of `NVIDIA/cuda-quantum`.
 - [ ] The default branch is `main`.
-- [ ] Only intended MKL-Q automatic workflows run; the Apple Silicon workflow is
-  manual-only unless explicitly dispatched by a maintainer.
+- [ ] Only intended MKL-Q automatic workflows run; the Apple Silicon workflow
+  runs only the lightweight push guard unless explicitly dispatched by a
+  maintainer.
 - [ ] The latest MKL-Q public hygiene workflow completes with `success`.
 - [ ] `main` branch protection is enabled and requires
   `Source-only repository checks`.

@@ -4481,10 +4481,10 @@ python3 benchmarks/mklq/summarize_cpu_gate_counters.py --reports benchmarks/mklq
 ## Public Hygiene Gate
 
 Run the same classes of checks as `.github/workflows/mklq-public-hygiene.yml`:
-Review `.github/workflows/mklq-apple-silicon-ci.yml` for manual Apple Silicon
-runner changes.
-Keep `mklq-apple-silicon-ci.yml` manual-only with workflow_dispatch and
-run_full_gate default skip.
+Review `.github/workflows/mklq-apple-silicon-ci.yml` for Apple Silicon runner
+changes.
+Keep the full `mklq-apple-silicon-ci.yml` self-hosted job manual-only with
+workflow_dispatch and run_full_gate default skip.
 Non-dispatch validation uses only the Dispatch guard.
 
 ```bash
@@ -4567,7 +4567,8 @@ same selected counter tests once per report.
 The preflight `public_report_references` check fails when public docs or
 workflows reference untracked report files under `benchmarks/mklq/reports/*.json`.
 The self-hosted Apple Silicon CI readiness audit keeps
-`mklq-apple-silicon-ci.yml` manual-only until a reviewed activation plan exists.
+only the lightweight `mklq-apple-silicon-ci.yml` push guard automatic until a
+reviewed activation plan exists.
 """
 
 
@@ -4700,7 +4701,7 @@ The runner covers mklq-cpu and mklq-metal.
 Do not enable this heavy workflow by default. The workflow uses
 workflow_dispatch, run_full_gate, default skip activation, no secrets,
 read-only access, permissions: contents: read, timeout-minutes, concurrency,
-no broad push triggers, and Dispatch guard validation.
+broad push Dispatch guard validation, and no pull request triggers.
 
 ## Validation Command
 
@@ -4737,8 +4738,6 @@ on:
   push:
     branches:
       - main
-    paths:
-      - .github/workflows/mklq-apple-silicon-ci.yml
 
 permissions:
   contents: read

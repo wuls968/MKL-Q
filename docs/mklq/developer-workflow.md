@@ -223,9 +223,10 @@ Expected workflow state:
 
 For self-hosted Apple Silicon CI policy or workflow-boundary changes, also
 review [`apple-silicon-ci.md`](apple-silicon-ci.md). The current public branch
-keeps Apple Silicon correctness manual-only through `workflow_dispatch` and
-`run_full_gate=skip` by default; the audit checks that this activation boundary
-remains explicit.
+keeps the full Apple Silicon correctness job manual-only through
+`workflow_dispatch` and `run_full_gate=skip` by default; the broad `main` push
+path runs only the lightweight `Dispatch guard`. The audit checks that this
+activation boundary remains explicit.
 
 Run the full public release checklist before public release-style milestones:
 

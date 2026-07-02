@@ -1,8 +1,8 @@
 # MKL-Q Apple Silicon CI
 
-This page defines the manual self-hosted Apple Silicon correctness gate. It is
-not enabled by default, does not run on pull requests, and is not release
-certification. This page is not release certification.
+This page defines the self-hosted Apple Silicon correctness gate. The expensive
+self-hosted job is manual by default, does not run on pull requests, and is not
+release certification. This page is not release certification.
 
 ## Scope
 
@@ -12,11 +12,11 @@ metadata, public claim boundaries, benchmark summary parsing, and helper script
 syntax. It does not build CUDA-Q and does not run Apple Silicon backend
 correctness tests.
 
-The manual `.github/workflows/mklq-apple-silicon-ci.yml` workflow covers local
+The `.github/workflows/mklq-apple-silicon-ci.yml` workflow covers local
 simulator behavior for `mklq-cpu` and the experimental `mklq-metal` target on a
-private macOS ARM64 runner. It is available only through `workflow_dispatch`,
-defaults `run_full_gate` to `skip`, and runs the full gate only when a
-maintainer explicitly starts it with `run_full_gate=confirm`.
+private macOS ARM64 runner. The full self-hosted job is available only through
+`workflow_dispatch`, defaults `run_full_gate` to `skip`, and runs the full gate
+only when a maintainer explicitly starts it with `run_full_gate=confirm`.
 
 It must remain source-only: no tags, no GitHub Releases, no wheels, no
 installers, and no signed artifacts are produced by this job.
@@ -51,13 +51,12 @@ The reviewed workflow set is:
 .github/workflows/mklq-apple-silicon-ci.yml
 ```
 
-Do not add pull-request triggers or broad push triggers to the Apple Silicon
-workflow until a reviewed activation PR assigns a maintenance owner, confirms
-runner availability, and updates branch protection expectations. Until then it
-remains a manual workflow with `workflow_dispatch`, `run_full_gate`, and default
-skip activation. The only push trigger is limited to `main` changes of
-`.github/workflows/mklq-apple-silicon-ci.yml`, where it runs the lightweight
-`Dispatch guard` instead of the self-hosted correctness job.
+Do not add pull-request triggers to the Apple Silicon workflow until a reviewed
+activation PR assigns a maintenance owner, confirms runner availability, and
+updates branch protection expectations. A broad push trigger on `main` is
+allowed only for the lightweight `Dispatch guard`, which keeps pushed-readiness
+audits tied to the latest `main` commit. The full self-hosted job remains
+manual with `workflow_dispatch`, `run_full_gate`, and default skip activation.
 
 The future workflow should use read-only repository permissions:
 
@@ -67,10 +66,9 @@ permissions: contents: read
 
 It also sets explicit `timeout-minutes` and `concurrency` values so a stuck
 build cannot consume the runner indefinitely and superseded runs cancel cleanly.
-If GitHub creates a non-dispatch validation run for the workflow file, only a
-small unconditional `Dispatch guard` job runs on `ubuntu-latest`; the
-self-hosted Apple Silicon job still requires `workflow_dispatch` with
-`run_full_gate=confirm`.
+For non-dispatch runs on `main`, only a small unconditional `Dispatch guard`
+job runs on `ubuntu-latest`; the self-hosted Apple Silicon job still requires
+`workflow_dispatch` with `run_full_gate=confirm`.
 
 The job should not use secrets. If a future step needs credentials, split that
 work into a separate reviewed release or deployment plan.
@@ -113,7 +111,7 @@ Raw JSON produced by these commands belongs under ignored
 
 ## Activation Checklist
 
-Before making the workflow automatic or branch-protected:
+Before making the full self-hosted job automatic or branch-protected:
 
 - Confirm the runner labels include `self-hosted`, `macOS`, `ARM64`, and
   `mklq-apple-silicon`.
@@ -150,9 +148,9 @@ The Apple Silicon runner should be treated as a build worker, not as a release
 or deployment host. It must not publish packages, create tags, create GitHub
 Releases, upload wheels, sign binaries, or access private services.
 
-This plan deliberately says not enable the heavy workflow by default. The
+This plan deliberately says not enable the heavy job by default. The
 tracked audit script `benchmarks/mklq/run_self_hosted_ci_audit.py` checks this
-document and confirms the Apple Silicon workflow remains manual, read-only,
+document and confirms the Apple Silicon workflow remains read-only,
 source-only, free of pull-request triggers, and limited to the reviewed
-main-branch workflow-file `Dispatch guard` push path until a future activation
-PR changes the policy.
+main-branch broad push `Dispatch guard` path while the full self-hosted job
+stays manual until a future activation PR changes the policy.

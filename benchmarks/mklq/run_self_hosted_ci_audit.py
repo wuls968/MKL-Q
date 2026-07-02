@@ -82,8 +82,6 @@ APPLE_WORKFLOW_REQUIRED_TOKENS = (
     "push:",
     "branches:",
     "- main",
-    "paths:",
-    ".github/workflows/mklq-apple-silicon-ci.yml",
     "permissions:",
     "contents: read",
     "concurrency:",
@@ -105,6 +103,7 @@ APPLE_WORKFLOW_REQUIRED_TOKENS = (
 
 APPLE_WORKFLOW_FORBIDDEN_LINE_PATTERNS = (
     (re.compile(r"^\s*pull_request\s*:", re.MULTILINE), "pull_request:"),
+    (re.compile(r"^\s*paths\s*:", re.MULTILINE), "paths:"),
     (re.compile(r"\bsecrets\."), "secrets."),
     (re.compile(r"upload-artifact"), "upload-artifact"),
     (re.compile(r"gh\s+release"), "gh release"),
@@ -281,7 +280,7 @@ def check_workflow_boundary(config: AuditConfig) -> dict[str, Any]:
     failures += manual_forbidden
     return failed(
         "workflow_boundary",
-        "Apple Silicon correctness workflow boundary is not manual/source-only",
+        "Apple Silicon correctness workflow boundary is not guarded/source-only",
         details) if failures else passed("workflow_boundary", details)
 
 

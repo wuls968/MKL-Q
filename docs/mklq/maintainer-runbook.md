@@ -252,7 +252,8 @@ runtime counter probe parseability with complete expected counter-test
 coverage, and benchmark helper syntax. It does not build CUDA-Q or run Apple
 Silicon backend correctness tests.
 
-The tracked Apple Silicon correctness workflow is manual-only. It uses
+The tracked Apple Silicon correctness workflow runs a lightweight `Dispatch
+guard` on `main` pushes. The full self-hosted correctness job uses
 `workflow_dispatch`, keeps `run_full_gate` default skip, requires a private
 self-hosted runner, and must not be added to branch protection until repeated
 manual runs are stable.
@@ -268,7 +269,8 @@ Before making a heavier workflow automatic or branch-protected, define:
 Use [`apple-silicon-ci.md`](apple-silicon-ci.md) and
 `benchmarks/mklq/run_self_hosted_ci_audit.py` before changing any self-hosted
 Apple Silicon correctness workflow. The current policy keeps that workflow
-manual-only and disabled by default.
+read-only, source-only, free of pull-request triggers, and limited to the
+lightweight push guard unless a maintainer manually confirms the full gate.
 
 Do not copy upstream release, bot, Slack, or required-check automation into
 MKL-Q without explicit review.
