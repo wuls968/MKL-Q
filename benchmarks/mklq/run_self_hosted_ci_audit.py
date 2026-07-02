@@ -80,7 +80,7 @@ APPLE_WORKFLOW_REQUIRED_TOKENS = (
     "contents: read",
     "concurrency:",
     "cancel-in-progress: true",
-    "if: ${{ inputs.run_full_gate == true }}",
+    "if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_full_gate == true }}",
     "runs-on: [self-hosted, macOS, ARM64, mklq-apple-silicon]",
     "timeout-minutes:",
     "fetch-depth: 0",

@@ -4688,7 +4688,7 @@ def _self_hosted_ci_workflow_text() -> str:
     return """
 name: MKL-Q Apple Silicon correctness
 
-on:
+'on':
   workflow_dispatch:
     inputs:
       run_full_gate:
@@ -4704,7 +4704,7 @@ concurrency:
 
 jobs:
   correctness:
-    if: ${{ inputs.run_full_gate == true }}
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_full_gate == true }}
     runs-on: [self-hosted, macOS, ARM64, mklq-apple-silicon]
     timeout-minutes: 180
     steps:
