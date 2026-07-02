@@ -4714,12 +4714,12 @@ concurrency:
 jobs:
   dispatch_guard:
     name: Dispatch guard
-    if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.run_full_gate != 'confirm' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - run: |
-          echo "Manual Apple Silicon gate is skipped unless workflow_dispatch run_full_gate=confirm."
+          echo "Dispatch guard active for ${GITHUB_EVENT_NAME}."
+          echo "Full Apple Silicon gate still requires workflow_dispatch run_full_gate=confirm."
 
   correctness:
     if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.run_full_gate == 'confirm' }}
