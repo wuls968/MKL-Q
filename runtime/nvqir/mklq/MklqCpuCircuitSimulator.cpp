@@ -1076,6 +1076,18 @@ protected:
 
   void applyBitFlipGate(const std::vector<std::size_t> &controls,
                         std::size_t target) {
+    if (controls.size() == 1) {
+      applySingleControlSingleQubitPairs(
+          controls[0], target, [&](std::size_t zeroIndex,
+                                   std::size_t oneIndex) {
+            std::swap(state[zeroIndex], state[oneIndex]);
+          });
+#if defined(MKLQ_ENABLE_TEST_ACCESSORS)
+      ++bitFlipApplications;
+#endif
+      return;
+    }
+
     const auto mask = qubitMask(target);
     const auto lowMask = mask - 1;
     const auto pairCount = stateDimension >> 1;

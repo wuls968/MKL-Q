@@ -285,6 +285,10 @@ static std::array<std::complex<double>, 4> yMatrixForTest() {
   return {{{0.0, 0.0}, {0.0, -1.0}, {0.0, 1.0}, {0.0, 0.0}}};
 }
 
+static std::array<std::complex<double>, 4> xMatrixForTest() {
+  return {{{0.0, 0.0}, {1.0, 0.0}, {1.0, 0.0}, {0.0, 0.0}}};
+}
+
 static std::array<std::complex<double>, 4> rxMatrixForTest(double angle) {
   const auto cosine = std::cos(angle / 2.0);
   const auto sine = std::sin(angle / 2.0);
@@ -981,24 +985,42 @@ CUDAQ_TEST(MKLQCpuTester, XFastPathAppliesUncontrolledSingleQubitGate) {
 }
 
 CUDAQ_TEST(MKLQCpuTester, CnotFastPathAppliesControlledXGate) {
-  MklqCpuCircuitSimulatorTester sim;
-  sim.setStateForTest({
+  const std::vector<std::complex<double>> initial{
       {1.0, 0.0},
       {2.0, -1.0},
       {0.5, 0.25},
       {-3.0, 0.5},
-  });
+      {0.25, -0.5},
+      {1.5, 0.5},
+      {-2.0, 1.0},
+      {0.75, -1.25},
+  };
 
-  sim.x({0}, 1);
-  sim.flushGateQueue();
-  const auto state = sim.stateVectorForTest();
+  struct Case {
+    std::string_view name;
+    std::size_t control;
+    std::size_t target;
+  };
 
-  ASSERT_EQ(state.size(), 4);
-  expectNear(state[0], {1.0, 0.0});
-  expectNear(state[1], {-3.0, 0.5});
-  expectNear(state[2], {0.5, 0.25});
-  expectNear(state[3], {2.0, -1.0});
-  EXPECT_EQ(sim.bitFlipApplicationsForTest(), 1);
+  for (const auto &testCase : std::vector<Case>{
+           {"control below target", 0, 2},
+           {"control above target", 2, 0},
+       }) {
+    SCOPED_TRACE(testCase.name);
+    MklqCpuCircuitSimulatorTester sim;
+    sim.setStateForTest(initial);
+
+    sim.x({testCase.control}, testCase.target);
+    sim.flushGateQueue();
+
+    expectStateNear(
+        sim.stateVectorForTest(),
+        applySingleQubitMatrixForTest(initial, testCase.target,
+                                      xMatrixForTest(), {testCase.control}));
+    EXPECT_EQ(sim.bitFlipApplicationsForTest(), 1);
+    EXPECT_EQ(sim.specializedSingleQubitApplicationsForTest(), 1);
+    EXPECT_EQ(sim.specializedSingleControlQubitApplicationsForTest(), 1);
+  }
 }
 
 CUDAQ_TEST(MKLQCpuTester, CustomOperationNamedXUsesGenericSingleQubitPath) {
@@ -1406,9 +1428,9 @@ CUDAQ_TEST(MKLQCpuTester,
   EXPECT_EQ(sim.swapApplicationsForTest(), swapGateCount);
   EXPECT_EQ(sim.phaseApplicationsForTest(), crzGateCount + czGateCount);
   EXPECT_EQ(sim.specializedSingleControlQubitApplicationsForTest(),
-            crzGateCount + crxGateCount);
+            cxGateCount + crzGateCount + crxGateCount);
   EXPECT_EQ(sim.specializedSingleQubitApplicationsForTest(),
-            rotationGateCount + crzGateCount + crxGateCount);
+            rotationGateCount + cxGateCount + crzGateCount + crxGateCount);
 }
 
 CUDAQ_TEST(MKLQCpuTester, TwoZeroBitIndexMappingClearsRequestedBits) {

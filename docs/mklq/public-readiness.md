@@ -181,10 +181,10 @@ refreshes on 2026-07-02 and focused CRZ distance-sweep evidence retained from
 - current `cpu_sampling_counter_probe_parse`: 2 bounded reports, 14 expected,
   14 selected, 0 missing, and 0 failures, including full-register and marginal
   probability-fill counter ctests;
-- current `cpu_gate_counter_probe_parse`: 1 bounded report, 11 expected, 11
-  selected, 0 missing, and 0 failures, including the single-control Rz direct
-  phase fast-path fixture and hardware-efficient ansatz composite fast-path
-  fixture;
+- current `cpu_gate_counter_probe_parse`: 2 bounded reports, 22 expected, 22
+  selected, 0 missing, and 0 failures, including the single-control X/CNOT
+  direct pair fast-path fixture, single-control Rz direct phase fast-path
+  fixture, and hardware-efficient ansatz composite fast-path fixture;
 - standalone install-prefix Python subset: `37 passed`;
 - `python_target_smoke`: `61 passed`;
 - `nvqpp_smoke`: `2 passed`;
