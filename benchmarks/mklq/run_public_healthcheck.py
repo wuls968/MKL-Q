@@ -460,6 +460,10 @@ def public_metadata_paths(root: Path) -> list[Path]:
     return sorted(set(paths))
 
 
+def normalize_whitespace(text: str) -> str:
+    return " ".join(text.split())
+
+
 def run_public_metadata_check(config: HealthcheckConfig) -> dict[str, Any]:
     missing: list[str] = []
     for relative_path, token in public_metadata_requirements():
@@ -467,7 +471,8 @@ def run_public_metadata_check(config: HealthcheckConfig) -> dict[str, Any]:
         if not path.exists():
             missing.append(f"{relative_path}: file is missing")
             continue
-        if token not in path.read_text(encoding="utf-8", errors="replace"):
+        text = path.read_text(encoding="utf-8", errors="replace")
+        if normalize_whitespace(token) not in normalize_whitespace(text):
             missing.append(f"{relative_path}: missing {token!r}")
 
     banned_failures: list[str] = []

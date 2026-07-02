@@ -217,8 +217,16 @@ def read_checklist(root: Path) -> str:
     return checklist_path(root).read_text(encoding="utf-8")
 
 
+def normalize_whitespace(text: str) -> str:
+    return " ".join(text.split())
+
+
 def missing_tokens(text: str, tokens: tuple[str, ...]) -> list[str]:
-    return [token for token in tokens if token not in text]
+    normalized_text = normalize_whitespace(text)
+    return [
+        token for token in tokens
+        if normalize_whitespace(token) not in normalized_text
+    ]
 
 
 def check_checklist_structure(config: AuditConfig, text: str) -> dict[str, Any]:

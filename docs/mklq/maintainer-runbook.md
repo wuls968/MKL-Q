@@ -250,7 +250,7 @@ coverage, and benchmark helper syntax. It does not build CUDA-Q or run Apple
 Silicon backend correctness tests.
 
 The tracked Apple Silicon correctness workflow is manual-only. It uses
-`workflow_dispatch`, keeps `run_full_gate` default false, requires a private
+`workflow_dispatch`, keeps `run_full_gate` default skip, requires a private
 self-hosted runner, and must not be added to branch protection until repeated
 manual runs are stable.
 

@@ -97,9 +97,9 @@ The public GitHub configuration is intentionally lightweight:
 - `.github/workflows/mklq-public-hygiene.yml` is the required lightweight
   workflow for pushes and pull requests.
 - `.github/workflows/mklq-apple-silicon-ci.yml` is a manual
-  `workflow_dispatch` workflow for a private self-hosted Apple Silicon runner;
-  it defaults `run_full_gate` to `false`, has no push or pull-request trigger,
-  and is not part of branch protection.
+`workflow_dispatch` workflow for a private self-hosted Apple Silicon runner;
+  it defaults `run_full_gate` to `skip`, has no pull-request trigger, and is
+  not part of branch protection.
 - `.github/ISSUE_TEMPLATE/bug_report.yaml` and
   `.github/ISSUE_TEMPLATE/feature_request.yaml` are the only issue templates.
 - `.github/pull_request_template.md` records compatibility, validation,
@@ -115,7 +115,7 @@ complete expected counter-test coverage, and benchmark helper syntax. It does
 not build CUDA-Q or run Apple Silicon backend correctness tests.
 
 The manual Apple Silicon workflow runs the full local public healthcheck only
-when a maintainer explicitly dispatches it with `run_full_gate=true`. It is
+when a maintainer explicitly dispatches it with `run_full_gate=confirm`. It is
 source-only and must not create tags, GitHub Releases, wheels, installers, or
 signed artifacts. Non-dispatch validation runs are limited to the lightweight
 `Dispatch guard` job and do not consume a self-hosted Apple Silicon runner.

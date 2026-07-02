@@ -4448,7 +4448,7 @@ Run the same classes of checks as `.github/workflows/mklq-public-hygiene.yml`:
 Review `.github/workflows/mklq-apple-silicon-ci.yml` for manual Apple Silicon
 runner changes.
 Keep `mklq-apple-silicon-ci.yml` manual-only with workflow_dispatch and
-run_full_gate default false.
+run_full_gate default skip.
 Non-dispatch validation uses only the Dispatch guard.
 
 ```bash
@@ -4662,9 +4662,9 @@ The runner covers mklq-cpu and mklq-metal.
 ## Workflow Policy
 
 Do not enable this heavy workflow by default. The workflow uses
-workflow_dispatch, run_full_gate, default false activation, no secrets,
-read-only access, permissions: contents: read, timeout-minutes, and
-concurrency.
+workflow_dispatch, run_full_gate, default skip activation, no secrets,
+read-only access, permissions: contents: read, timeout-minutes, concurrency,
+no broad push triggers, and Dispatch guard validation.
 
 ## Validation Command
 
@@ -4689,12 +4689,20 @@ def _self_hosted_ci_workflow_text() -> str:
     return """
 name: MKL-Q Apple Silicon correctness
 
-'on':
+on:
   workflow_dispatch:
     inputs:
       run_full_gate:
-        type: boolean
-        default: false
+        type: choice
+        options:
+          - skip
+          - confirm
+        default: skip
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/mklq-apple-silicon-ci.yml
 
 permissions:
   contents: read
@@ -4706,15 +4714,15 @@ concurrency:
 jobs:
   dispatch_guard:
     name: Dispatch guard
-    if: ${{ github.event_name != 'workflow_dispatch' || inputs.run_full_gate != true }}
+    if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.run_full_gate != 'confirm' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - run: |
-          echo "Manual Apple Silicon gate is skipped unless workflow_dispatch run_full_gate=true."
+          echo "Manual Apple Silicon gate is skipped unless workflow_dispatch run_full_gate=confirm."
 
   correctness:
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_full_gate == true }}
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.run_full_gate == 'confirm' }}
     runs-on: [self-hosted, macOS, ARM64, mklq-apple-silicon]
     timeout-minutes: 180
     steps:

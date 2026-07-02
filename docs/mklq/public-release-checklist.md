@@ -101,9 +101,10 @@ Expected:
   `mklq-apple-silicon-ci.yml` for manual self-hosted Apple Silicon checks.
 - [ ] `.github/workflows/mklq-apple-silicon-ci.yml` is present and reviewed as
   the manual self-hosted Apple Silicon workflow.
-- [ ] `mklq-apple-silicon-ci.yml` has only `workflow_dispatch`, keeps
-  `run_full_gate` default false, uses `permissions: contents: read`, and has no
-  push, pull-request, release, upload, or secret-dependent path.
+- [ ] `mklq-apple-silicon-ci.yml` keeps the full self-hosted gate behind
+  `workflow_dispatch`, keeps `run_full_gate` default skip, uses
+  `permissions: contents: read`, and has no pull-request, release, upload, or
+  secret-dependent path.
 - [ ] Any non-dispatch workflow-file validation run uses only the lightweight
   `Dispatch guard` job and does not consume the self-hosted Apple Silicon
   runner.

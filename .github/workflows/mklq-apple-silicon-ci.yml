@@ -1,13 +1,21 @@
 name: MKL-Q Apple Silicon correctness
 
-'on':
+on:
   workflow_dispatch:
     inputs:
       run_full_gate:
-        description: Run the full self-hosted Apple Silicon gate.
+        description: Select confirm to run the full self-hosted Apple Silicon gate.
         required: true
-        type: boolean
-        default: false
+        type: choice
+        options:
+          - skip
+          - confirm
+        default: skip
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/mklq-apple-silicon-ci.yml
 
 permissions:
   contents: read
@@ -19,7 +27,7 @@ concurrency:
 jobs:
   dispatch_guard:
     name: Dispatch guard
-    if: ${{ github.event_name != 'workflow_dispatch' || inputs.run_full_gate != true }}
+    if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.run_full_gate != 'confirm' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -27,11 +35,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          echo "Manual Apple Silicon gate is skipped unless workflow_dispatch run_full_gate=true."
+          echo "Manual Apple Silicon gate is skipped unless workflow_dispatch run_full_gate=confirm."
 
   correctness:
     name: Manual Apple Silicon correctness gate
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_full_gate == true }}
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.run_full_gate == 'confirm' }}
     runs-on: [self-hosted, macOS, ARM64, mklq-apple-silicon]
     timeout-minutes: 180
     env:

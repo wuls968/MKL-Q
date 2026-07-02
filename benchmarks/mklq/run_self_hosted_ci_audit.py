@@ -51,7 +51,9 @@ REQUIRED_TOKENS = (
     "concurrency",
     "workflow_dispatch",
     "run_full_gate",
-    "default false",
+    "default skip",
+    "broad push",
+    "Dispatch guard",
     "manual",
     "run_public_healthcheck.py --full --require-clean",
     "run_correctness_gate.py",
@@ -74,17 +76,23 @@ APPLE_WORKFLOW_REQUIRED_TOKENS = (
     "name: MKL-Q Apple Silicon correctness",
     "workflow_dispatch:",
     "run_full_gate:",
-    "type: boolean",
-    "default: false",
+    "type: choice",
+    "confirm",
+    "default: skip",
+    "push:",
+    "branches:",
+    "- main",
+    "paths:",
+    ".github/workflows/mklq-apple-silicon-ci.yml",
     "permissions:",
     "contents: read",
     "concurrency:",
     "cancel-in-progress: true",
     "name: Dispatch guard",
-    "if: ${{ github.event_name != 'workflow_dispatch' || inputs.run_full_gate != true }}",
+    "if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.run_full_gate != 'confirm' }}",
     "runs-on: ubuntu-latest",
-    "Manual Apple Silicon gate is skipped unless workflow_dispatch run_full_gate=true.",
-    "if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_full_gate == true }}",
+    "Manual Apple Silicon gate is skipped unless workflow_dispatch run_full_gate=confirm.",
+    "if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.run_full_gate == 'confirm' }}",
     "runs-on: [self-hosted, macOS, ARM64, mklq-apple-silicon]",
     "timeout-minutes:",
     "fetch-depth: 0",
@@ -97,7 +105,6 @@ APPLE_WORKFLOW_REQUIRED_TOKENS = (
 
 APPLE_WORKFLOW_FORBIDDEN_LINE_PATTERNS = (
     (re.compile(r"^\s*pull_request\s*:", re.MULTILINE), "pull_request:"),
-    (re.compile(r"^\s*push\s*:", re.MULTILINE), "push:"),
     (re.compile(r"\bsecrets\."), "secrets."),
     (re.compile(r"upload-artifact"), "upload-artifact"),
     (re.compile(r"gh\s+release"), "gh release"),
@@ -162,8 +169,16 @@ def summarize(checks: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def normalize_whitespace(text: str) -> str:
+    return " ".join(text.split())
+
+
 def missing_tokens(text: str, tokens: tuple[str, ...]) -> list[str]:
-    return [token for token in tokens if token not in text]
+    normalized_text = normalize_whitespace(text)
+    return [
+        token for token in tokens
+        if normalize_whitespace(token) not in normalized_text
+    ]
 
 
 def forbidden_workflow_lines(text: str) -> list[dict[str, Any]]:
