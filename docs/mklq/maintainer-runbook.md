@@ -59,6 +59,9 @@ Expected state:
 - The repository is not shallow.
 - `.github/workflows/` contains only intentionally reviewed MKL-Q workflows.
 - The latest pushed commit has a completed `MKL-Q public hygiene` run.
+- The latest pushed commit has a completed `MKL-Q Apple Silicon correctness`
+  guard run; a skipped manual correctness job is acceptable unless the
+  maintainer intentionally dispatched `run_full_gate=confirm`.
 - `main` branch protection matches [`branch-protection.md`](branch-protection.md).
 - `run_preflight_audit.py` passes before opening or updating public PRs.
 - `run_public_readiness_audit.py` passes for the pushed public state.
