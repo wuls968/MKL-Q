@@ -4714,12 +4714,12 @@ concurrency:
 jobs:
   dispatch_guard:
     name: Dispatch guard
-    if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.run_full_gate != 'confirm' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - run: |
-          echo "Manual Apple Silicon gate is skipped unless workflow_dispatch run_full_gate=confirm."
+          echo "Dispatch guard active for ${GITHUB_EVENT_NAME}."
+          echo "Full Apple Silicon gate still requires workflow_dispatch run_full_gate=confirm."
 
   correctness:
     if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.run_full_gate == 'confirm' }}
@@ -4871,6 +4871,34 @@ def test_mklq_self_hosted_ci_audit_rejects_automatic_manual_workflow(
     assert report["summary"]["status"] == "failed"
     checks = {check["name"]: check for check in report["checks"]}
     assert any("pull_request:" in item["token"] for item in checks[
+        "workflow_boundary"]["details"]["manual_forbidden_lines"])
+
+
+def test_mklq_self_hosted_ci_audit_rejects_runner_context_in_job_env(
+        monkeypatch, tmp_path):
+    module = _load_self_hosted_ci_audit_module()
+    _write_self_hosted_ci_audit_fixture(tmp_path, _self_hosted_ci_doc_text())
+    workflow = _self_hosted_ci_workflow_text().replace(
+        "    steps:\n",
+        "    env:\n"
+        "      MKLQ_INSTALL_PREFIX: ${{ runner.temp }}/cudaq-mklq-install\n"
+        "    steps:\n",
+        1,
+    )
+    (tmp_path / ".github" / "workflows" /
+     "mklq-apple-silicon-ci.yml").write_text(workflow, encoding="utf-8")
+    monkeypatch.setattr(
+        module, "command_output",
+        lambda root, args: _self_hosted_workflow_list())
+    config = module.AuditConfig(repo_root=tmp_path,
+                                output=tmp_path / "results" /
+                                "self-hosted-ci-audit.json")
+
+    report = module.build_report(config)
+
+    assert report["summary"]["status"] == "failed"
+    checks = {check["name"]: check for check in report["checks"]}
+    assert any("${{ runner." in item["token"] for item in checks[
         "workflow_boundary"]["details"]["manual_forbidden_lines"])
 
 

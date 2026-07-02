@@ -89,9 +89,9 @@ APPLE_WORKFLOW_REQUIRED_TOKENS = (
     "concurrency:",
     "cancel-in-progress: true",
     "name: Dispatch guard",
-    "if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.run_full_gate != 'confirm' }}",
     "runs-on: ubuntu-latest",
-    "Manual Apple Silicon gate is skipped unless workflow_dispatch run_full_gate=confirm.",
+    "Dispatch guard active for ${GITHUB_EVENT_NAME}.",
+    "Full Apple Silicon gate still requires workflow_dispatch run_full_gate=confirm.",
     "if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.run_full_gate == 'confirm' }}",
     "runs-on: [self-hosted, macOS, ARM64, mklq-apple-silicon]",
     "timeout-minutes:",
@@ -111,6 +111,7 @@ APPLE_WORKFLOW_FORBIDDEN_LINE_PATTERNS = (
     (re.compile(r"git\s+tag"), "git tag"),
     (re.compile(r"twine\s+upload"), "twine upload"),
     (re.compile(r"\.whl\b"), ".whl"),
+    (re.compile(r"\$\{\{\s*runner\."), "${{ runner."),
 )
 
 

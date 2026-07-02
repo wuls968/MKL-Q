@@ -27,7 +27,6 @@ concurrency:
 jobs:
   dispatch_guard:
     name: Dispatch guard
-    if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.run_full_gate != 'confirm' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -35,7 +34,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          echo "Manual Apple Silicon gate is skipped unless workflow_dispatch run_full_gate=confirm."
+          echo "Dispatch guard active for ${GITHUB_EVENT_NAME}."
+          echo "Full Apple Silicon gate still requires workflow_dispatch run_full_gate=confirm."
 
   correctness:
     name: Manual Apple Silicon correctness gate
@@ -44,7 +44,6 @@ jobs:
     timeout-minutes: 180
     env:
       MKLQ_BUILD_DIR: build-python
-      MKLQ_INSTALL_PREFIX: ${{ runner.temp }}/cudaq-mklq-install
     steps:
       - name: Check out source
         uses: actions/checkout@v7
@@ -77,7 +76,7 @@ jobs:
           python3 benchmarks/mklq/run_public_healthcheck.py \
             --full \
             --require-clean \
-            --install-prefix "${MKLQ_INSTALL_PREFIX}" \
+            --install-prefix "${RUNNER_TEMP}/cudaq-mklq-install" \
             --build-dir "${MKLQ_BUILD_DIR}" \
             --jobs 6 \
             --timeout-seconds 1800 \
