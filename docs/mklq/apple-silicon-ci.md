@@ -2,7 +2,7 @@
 
 This page defines the manual self-hosted Apple Silicon correctness gate. It is
 not enabled by default, does not run on pull requests, and is not release
-certification.
+certification. This page is not release certification.
 
 ## Scope
 
