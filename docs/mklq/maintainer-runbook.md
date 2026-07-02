@@ -271,6 +271,18 @@ Use [`apple-silicon-ci.md`](apple-silicon-ci.md) and
 Apple Silicon correctness workflow. The current policy keeps that workflow
 read-only, source-only, free of pull-request triggers, and limited to the
 lightweight push guard unless a maintainer manually confirms the full gate.
+Before dispatching `run_full_gate=confirm`, run:
+
+```bash
+python3 benchmarks/mklq/run_self_hosted_ci_audit.py \
+  --check-runners \
+  --repo wuls968/MKL-Q
+```
+
+This live `actions/runners` inventory check must find an online runner with
+`self-hosted`, `macOS`, `ARM64`, and `mklq-apple-silicon` labels; otherwise the
+full gate will only queue and should not be treated as hosted correctness
+evidence.
 
 Do not copy upstream release, bot, Slack, or required-check automation into
 MKL-Q without explicit review.

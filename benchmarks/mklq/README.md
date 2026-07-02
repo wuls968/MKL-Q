@@ -373,10 +373,22 @@ python3 benchmarks/mklq/run_self_hosted_ci_audit.py
 The audit checks that the Apple Silicon CI readiness plan names the expected
 self-hosted macOS ARM64 runner labels, validation commands, security boundary,
 activation checklist, and source-only no-release behavior. It also confirms the
-tracked Apple Silicon workflow is manual-only, read-only, default-off, free of
-pull-request, secret, release, or upload paths, and limited to the reviewed
-main-branch workflow-file `Dispatch guard` push path. It writes ignored JSON
-under `benchmarks/mklq/results/`.
+tracked Apple Silicon workflow keeps only the lightweight `main` push
+`Dispatch guard` automatic while the full self-hosted job remains manual,
+read-only, default-off, free of pull-request, secret, release, or upload paths.
+It writes ignored JSON under `benchmarks/mklq/results/`.
+
+Before dispatching `run_full_gate=confirm`, use the optional live runner
+inventory check:
+
+```bash
+python3 benchmarks/mklq/run_self_hosted_ci_audit.py \
+  --check-runners \
+  --repo wuls968/MKL-Q
+```
+
+That mode queries the GitHub `actions/runners` API and fails unless an online
+runner has `self-hosted`, `macOS`, `ARM64`, and `mklq-apple-silicon` labels.
 
 ## Public Health Check
 

@@ -20,10 +20,13 @@ from typing import Any
 
 
 SCHEMA_VERSION = "mklq-self-hosted-ci-audit-v1"
+DEFAULT_REPO = "wuls968/MKL-Q"
 DOC_PATH = Path("docs/mklq/apple-silicon-ci.md")
 LIGHTWEIGHT_WORKFLOW = ".github/workflows/mklq-public-hygiene.yml"
 APPLE_SILICON_WORKFLOW = ".github/workflows/mklq-apple-silicon-ci.yml"
 EXPECTED_WORKFLOWS = sorted((LIGHTWEIGHT_WORKFLOW, APPLE_SILICON_WORKFLOW))
+REQUIRED_RUNNER_LABELS = ("self-hosted", "macOS", "ARM64",
+                          "mklq-apple-silicon")
 
 REQUIRED_SECTIONS = (
     "Scope",
@@ -52,6 +55,8 @@ REQUIRED_TOKENS = (
     "workflow_dispatch",
     "run_full_gate",
     "default skip",
+    "--check-runners",
+    "actions/runners",
     "broad push",
     "Dispatch guard",
     "manual",
@@ -118,6 +123,8 @@ APPLE_WORKFLOW_FORBIDDEN_LINE_PATTERNS = (
 class AuditConfig:
     repo_root: Path
     output: Path
+    repo: str = DEFAULT_REPO
+    check_runners: bool = False
 
 
 def repo_root() -> Path:
@@ -138,6 +145,12 @@ def command_path(root: Path, path: Path) -> str:
 
 def command_output(root: Path, args: list[str]) -> str:
     return subprocess.check_output(args, cwd=root, text=True).rstrip("\n")
+
+
+def load_json(text: str, fallback: Any) -> Any:
+    if not text.strip():
+        return fallback
+    return json.loads(text)
 
 
 def passed(name: str, details: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -284,9 +297,75 @@ def check_workflow_boundary(config: AuditConfig) -> dict[str, Any]:
         details) if failures else passed("workflow_boundary", details)
 
 
+def runner_labels(runner: dict[str, Any]) -> set[str]:
+    labels = runner.get("labels") or []
+    return {
+        label.get("name", "") for label in labels
+        if isinstance(label, dict) and label.get("name")
+    }
+
+
+def summarize_runner(runner: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "name": runner.get("name", ""),
+        "os": runner.get("os", ""),
+        "status": runner.get("status", ""),
+        "busy": bool(runner.get("busy", False)),
+        "labels": sorted(runner_labels(runner)),
+    }
+
+
+def check_runner_inventory(config: AuditConfig) -> dict[str, Any]:
+    command = ["gh", "api", f"repos/{config.repo}/actions/runners"]
+    try:
+        payload = load_json(command_output(config.repo_root, command), {})
+    except (json.JSONDecodeError, OSError, subprocess.CalledProcessError) as exc:
+        return failed("runner_inventory",
+                      "could not query GitHub Actions runner inventory", {
+                          "repo": config.repo,
+                          "command": command,
+                          "error": str(exc),
+                      })
+    if not isinstance(payload, dict):
+        return failed("runner_inventory",
+                      "GitHub Actions runner inventory response is not an object",
+                      {
+                          "repo": config.repo,
+                          "command": command,
+                      })
+
+    runners = payload.get("runners") or []
+    required = set(REQUIRED_RUNNER_LABELS)
+    summarized = [summarize_runner(runner) for runner in runners]
+    matching = [
+        runner for runner in summarized
+        if required.issubset(set(runner["labels"]))
+    ]
+    online_matching = [
+        runner for runner in matching if runner.get("status") == "online"
+    ]
+    details = {
+        "repo": config.repo,
+        "required_labels": list(REQUIRED_RUNNER_LABELS),
+        "runner_count": int(payload.get("total_count", len(runners)) or 0),
+        "matching_runner_count": len(matching),
+        "online_matching_runner_count": len(online_matching),
+        "matching_runners": matching,
+    }
+    if not online_matching:
+        return failed(
+            "runner_inventory",
+            "no online self-hosted runner has the required Apple Silicon labels",
+            details)
+    return passed("runner_inventory", details)
+
+
 def build_report(config: AuditConfig) -> dict[str, Any]:
     root = config.repo_root.resolve()
-    resolved = AuditConfig(repo_root=root, output=config.output)
+    resolved = AuditConfig(repo_root=root,
+                           output=config.output,
+                           repo=config.repo,
+                           check_runners=config.check_runners)
     doc = root / DOC_PATH
     text = doc.read_text(encoding="utf-8") if doc.exists() else ""
     checks = [
@@ -295,11 +374,15 @@ def build_report(config: AuditConfig) -> dict[str, Any]:
         check_doc_tokens(resolved, text),
         check_workflow_boundary(resolved),
     ]
+    if resolved.check_runners:
+        checks.append(check_runner_inventory(resolved))
     return {
         "schema_version": SCHEMA_VERSION,
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
         "repo_root": root.as_posix(),
         "doc": command_path(root, doc),
+        "repo": resolved.repo,
+        "check_runners": resolved.check_runners,
         "summary": summarize(checks),
         "checks": checks,
     }
@@ -315,6 +398,14 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--output",
                         type=Path,
                         help="Optional JSON output path.")
+    parser.add_argument("--repo",
+                        default=DEFAULT_REPO,
+                        help="GitHub repository for live runner checks.")
+    parser.add_argument("--check-runners",
+                        action="store_true",
+                        help=("Query GitHub Actions runner inventory and fail "
+                              "unless an online runner has the required "
+                              "Apple Silicon labels."))
     return parser.parse_args(argv)
 
 
@@ -324,7 +415,10 @@ def main(argv: list[str]) -> int:
     stamp = date.today().isoformat()
     output = args.output or output_default(stamp)
     output = output if output.is_absolute() else root / output
-    config = AuditConfig(repo_root=root, output=output)
+    config = AuditConfig(repo_root=root,
+                         output=output,
+                         repo=args.repo,
+                         check_runners=args.check_runners)
     report = build_report(config)
     payload = json.dumps(report, indent=2, sort_keys=True) + "\n"
     output.parent.mkdir(parents=True, exist_ok=True)

@@ -115,6 +115,17 @@ Before making the full self-hosted job automatic or branch-protected:
 
 - Confirm the runner labels include `self-hosted`, `macOS`, `ARM64`, and
   `mklq-apple-silicon`.
+- Confirm the live GitHub runner inventory has an online runner with the
+  required labels before dispatching the full gate:
+
+  ```bash
+  python3 benchmarks/mklq/run_self_hosted_ci_audit.py \
+    --check-runners \
+    --repo wuls968/MKL-Q
+  ```
+
+  This uses the GitHub `actions/runners` API and is expected to fail when no
+  private self-hosted runner is registered.
 - Confirm manual `workflow_dispatch` runs with `run_full_gate=confirm` complete
   successfully on the intended runner.
 - Confirm the runner has no secrets, signing assets, or personal credentials in
