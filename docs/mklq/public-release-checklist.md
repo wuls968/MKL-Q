@@ -104,6 +104,9 @@ Expected:
 - [ ] `mklq-apple-silicon-ci.yml` has only `workflow_dispatch`, keeps
   `run_full_gate` default false, uses `permissions: contents: read`, and has no
   push, pull-request, release, upload, or secret-dependent path.
+- [ ] Any non-dispatch workflow-file validation run uses only the lightweight
+  `Dispatch guard` job and does not consume the self-hosted Apple Silicon
+  runner.
 - [ ] The `public_report_references` preflight check passes: every concrete
   `benchmarks/mklq/reports/*.json` path referenced by public docs or workflows
   exists and is tracked, and no public docs or workflows reference untracked

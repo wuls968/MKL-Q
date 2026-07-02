@@ -64,6 +64,9 @@ permissions: contents: read
 
 It also sets explicit `timeout-minutes` and `concurrency` values so a stuck
 build cannot consume the runner indefinitely and superseded runs cancel cleanly.
+If GitHub creates a non-dispatch validation run for the workflow file, only a
+small `Dispatch guard` job runs on `ubuntu-latest`; the self-hosted Apple
+Silicon job still requires `workflow_dispatch` with `run_full_gate=true`.
 
 The job should not use secrets. If a future step needs credentials, split that
 work into a separate reviewed release or deployment plan.

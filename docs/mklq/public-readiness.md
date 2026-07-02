@@ -117,7 +117,8 @@ not build CUDA-Q or run Apple Silicon backend correctness tests.
 The manual Apple Silicon workflow runs the full local public healthcheck only
 when a maintainer explicitly dispatches it with `run_full_gate=true`. It is
 source-only and must not create tags, GitHub Releases, wheels, installers, or
-signed artifacts.
+signed artifacts. Non-dispatch validation runs are limited to the lightweight
+`Dispatch guard` job and do not consume a self-hosted Apple Silicon runner.
 
 The pushed-public readiness audit is handled by
 `benchmarks/mklq/run_public_readiness_audit.py`. In addition to repository

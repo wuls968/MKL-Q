@@ -301,6 +301,7 @@ def check_healthcheck_integration(config: AuditConfig,
             "run_public_readiness_audit.py",
             "run_self_hosted_ci_audit.py",
             "mklq-apple-silicon-ci.yml",
+            "Dispatch guard",
             "mklq-public-hygiene.yml",
         ),
     )

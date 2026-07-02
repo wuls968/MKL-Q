@@ -4449,6 +4449,7 @@ Review `.github/workflows/mklq-apple-silicon-ci.yml` for manual Apple Silicon
 runner changes.
 Keep `mklq-apple-silicon-ci.yml` manual-only with workflow_dispatch and
 run_full_gate default false.
+Non-dispatch validation uses only the Dispatch guard.
 
 ```bash
 python3 benchmarks/mklq/run_preflight_audit.py --require-clean
@@ -4703,6 +4704,15 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  dispatch_guard:
+    name: Dispatch guard
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.run_full_gate != true }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - run: |
+          echo "Manual Apple Silicon gate is skipped unless workflow_dispatch run_full_gate=true."
+
   correctness:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_full_gate == true }}
     runs-on: [self-hosted, macOS, ARM64, mklq-apple-silicon]
