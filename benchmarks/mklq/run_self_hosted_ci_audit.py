@@ -111,6 +111,7 @@ APPLE_WORKFLOW_FORBIDDEN_LINE_PATTERNS = (
     (re.compile(r"git\s+tag"), "git tag"),
     (re.compile(r"twine\s+upload"), "twine upload"),
     (re.compile(r"\.whl\b"), ".whl"),
+    (re.compile(r"\$\{\{\s*runner\."), "${{ runner."),
 )
 
 

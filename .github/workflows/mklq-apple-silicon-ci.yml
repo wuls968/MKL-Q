@@ -44,7 +44,6 @@ jobs:
     timeout-minutes: 180
     env:
       MKLQ_BUILD_DIR: build-python
-      MKLQ_INSTALL_PREFIX: ${{ runner.temp }}/cudaq-mklq-install
     steps:
       - name: Check out source
         uses: actions/checkout@v7
@@ -77,7 +76,7 @@ jobs:
           python3 benchmarks/mklq/run_public_healthcheck.py \
             --full \
             --require-clean \
-            --install-prefix "${MKLQ_INSTALL_PREFIX}" \
+            --install-prefix "${RUNNER_TEMP}/cudaq-mklq-install" \
             --build-dir "${MKLQ_BUILD_DIR}" \
             --jobs 6 \
             --timeout-seconds 1800 \
