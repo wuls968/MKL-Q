@@ -3688,7 +3688,9 @@ def _readiness_repo_payload():
 def _write_readiness_local_files(root: Path, *, label_color="1d76db"):
     github = root / ".github"
     issue_templates = github / "ISSUE_TEMPLATE"
+    docs = root / "docs" / "mklq"
     issue_templates.mkdir(parents=True)
+    docs.mkdir(parents=True)
     (github / "workflows").mkdir(parents=True)
     (github / "workflows" / "mklq-public-hygiene.yml").write_text(
         "name: MKL-Q public hygiene\n", encoding="utf-8")
@@ -3771,6 +3773,27 @@ def _write_readiness_local_files(root: Path, *, label_color="1d76db"):
             "body: []",
             "",
         ]),
+        encoding="utf-8")
+    (docs / "public-readiness.md").write_text(
+        """
+# MKL-Q Public Readiness
+
+This page records the source-only repository audit.
+
+It does not certify:
+
+- binary artifacts.
+
+The pushed-public readiness audit is handled by
+`benchmarks/mklq/run_public_readiness_audit.py`.
+
+Expected result:
+
+- the latest pushed commit has a successful `MKL-Q public hygiene` run;
+- live branch protection matches `.github/branch-protection-main.json`;
+- no release tags or GitHub Releases exist in the current source-only phase;
+- `mklq-metal` is experimental and must not be described as default-ready.
+""",
         encoding="utf-8")
 
 
@@ -3923,8 +3946,32 @@ def test_mklq_public_readiness_audit_builds_passing_report(monkeypatch,
     assert checks["public_claim_boundaries"]["status"] == "passed"
     assert checks["branch_protection_reference"]["status"] == "passed"
     assert checks["branch_protection"]["status"] == "passed"
+    assert checks["public_readiness_doc"]["status"] == "passed"
     assert checks["latest_public_hygiene"]["details"]["headSha"] == "abc123"
     assert any(call[:3] == ["gh", "repo", "view"] for call in calls)
+
+
+def test_mklq_public_readiness_audit_rejects_missing_doc_boundary(tmp_path):
+    module = _load_public_readiness_audit_module()
+    _write_readiness_local_files(tmp_path)
+    (tmp_path / "docs" / "mklq" / "public-readiness.md").write_text(
+        "# MKL-Q Public Readiness\n\nsource-only repository audit\n",
+        encoding="utf-8")
+    config = module.AuditConfig(
+        repo_root=tmp_path,
+        repo="wuls968/MKL-Q",
+        workflow="MKL-Q public hygiene",
+        output=tmp_path / "readiness.json",
+    )
+
+    result = module.check_public_readiness_doc(config)
+
+    assert result["status"] == "failed"
+    assert (
+        "public readiness document is missing boundary phrases"
+        in result["message"])
+    assert "latest_hygiene" in result["details"]["missing_phrase_keys"]
+    assert "no_tags_or_releases" in result["details"]["missing_phrase_keys"]
 
 
 def test_mklq_public_readiness_audit_rejects_release_tags_and_unprotected_main(

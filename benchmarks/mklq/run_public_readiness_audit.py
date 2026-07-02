@@ -42,6 +42,28 @@ TRACKED_ARTIFACT_PATTERN = re.compile(
     r"\.pyc$|\.DS_Store$|^build(-python)?/|"
     r"^benchmarks/mklq/results/|^docs/superpowers/|"
     r"^(dist|wheelhouse)/|\.(whl|dmg|pkg|zip)$|\.tar\.gz$")
+PUBLIC_READINESS_DOC = Path("docs/mklq/public-readiness.md")
+PUBLIC_READINESS_REQUIRED_PHRASES = [
+    ("source_only_audit", "source-only repository audit"),
+    ("does_not_certify", "It does not certify:"),
+    ("audit_script", "run_public_readiness_audit.py"),
+    (
+        "latest_hygiene",
+        "latest pushed commit has a successful `MKL-Q public hygiene` run",
+    ),
+    (
+        "branch_protection_reference",
+        "live branch protection matches `.github/branch-protection-main.json`",
+    ),
+    (
+        "no_tags_or_releases",
+        "no release tags or GitHub Releases exist in the current source-only phase",
+    ),
+    (
+        "metal_experimental",
+        "`mklq-metal` is experimental and must not be described as default-ready",
+    ),
+]
 
 
 @dataclass(frozen=True)
@@ -440,6 +462,31 @@ def check_public_claim_boundaries(config: AuditConfig) -> dict[str, Any]:
     return passed("public_claim_boundaries", result)
 
 
+def check_public_readiness_doc(config: AuditConfig) -> dict[str, Any]:
+    path = config.repo_root / PUBLIC_READINESS_DOC
+    if not path.exists():
+        return failed("public_readiness_doc",
+                      f"{PUBLIC_READINESS_DOC.as_posix()} is missing",
+                      {"path": PUBLIC_READINESS_DOC.as_posix()})
+    text = path.read_text(encoding="utf-8", errors="replace")
+    missing = [
+        key for key, phrase in PUBLIC_READINESS_REQUIRED_PHRASES
+        if phrase not in text
+    ]
+    details = {
+        "path": PUBLIC_READINESS_DOC.as_posix(),
+        "required_phrase_keys": [
+            key for key, _ in PUBLIC_READINESS_REQUIRED_PHRASES
+        ],
+        "missing_phrase_keys": missing,
+    }
+    if missing:
+        return failed("public_readiness_doc",
+                      "public readiness document is missing boundary phrases",
+                      details)
+    return passed("public_readiness_doc", details)
+
+
 def check_latest_public_hygiene(config: AuditConfig) -> dict[str, Any]:
     runs = load_json(
         command_output(config.repo_root, [
@@ -518,6 +565,7 @@ def build_report(config: AuditConfig) -> dict[str, Any]:
         check_branch_protection(config),
         check_branch_protection_reference(config),
         check_public_claim_boundaries(config),
+        check_public_readiness_doc(config),
         check_latest_public_hygiene(config),
         check_no_releases(config),
     ]
