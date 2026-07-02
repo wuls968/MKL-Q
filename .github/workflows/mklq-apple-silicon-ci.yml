@@ -14,8 +14,6 @@ on:
   push:
     branches:
       - main
-    paths:
-      - .github/workflows/mklq-apple-silicon-ci.yml
 
 permissions:
   contents: read
