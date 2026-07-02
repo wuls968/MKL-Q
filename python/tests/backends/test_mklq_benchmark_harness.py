@@ -3802,6 +3802,7 @@ The pushed-public readiness audit is handled by
 Expected result:
 
 - the latest pushed commit has a successful `MKL-Q public hygiene` run;
+- the latest pushed commit has a successful `MKL-Q Apple Silicon correctness` run;
 - live branch protection matches `.github/branch-protection-main.json`;
 - no release tags or GitHub Releases exist in the current source-only phase;
 - `mklq-metal` is experimental and must not be described as default-ready.
@@ -3964,6 +3965,7 @@ def test_mklq_public_readiness_audit_builds_passing_report(monkeypatch,
     assert checks["branch_protection"]["status"] == "passed"
     assert checks["public_readiness_doc"]["status"] == "passed"
     assert checks["latest_public_hygiene"]["details"]["headSha"] == "abc123"
+    assert checks["latest_apple_workflow"]["details"]["headSha"] == "abc123"
     assert any(call[:3] == ["gh", "repo", "view"] for call in calls)
 
 
@@ -4105,6 +4107,40 @@ def test_mklq_public_readiness_audit_rejects_release_tags_and_unprotected_main(
     assert "live label metadata differs from .github/labels.yml" in failures
     assert "public claim-boundary check failed" in failures
     assert "branch protection differs from .github/branch-protection-main.json" in failures
+
+
+def test_mklq_public_readiness_audit_rejects_failed_apple_workflow(
+        monkeypatch, tmp_path):
+    module = _load_public_readiness_audit_module()
+    _write_readiness_local_files(tmp_path)
+    config = module.AuditConfig(
+        repo_root=tmp_path,
+        repo="wuls968/MKL-Q",
+        workflow="MKL-Q public hygiene",
+        output=tmp_path / "readiness.json",
+    )
+
+    def fake_command_output(cwd, command):
+        if command == ["git", "rev-parse", "HEAD"]:
+            return "abc123"
+        if command[:8] == [
+                "gh", "run", "list", "--repo", "wuls968/MKL-Q", "--branch",
+                "main", "--workflow"
+        ]:
+            return json.dumps([{
+                "status": "completed",
+                "conclusion": "failure",
+                "headSha": "abc123",
+            }])
+        raise AssertionError(command)
+
+    monkeypatch.setattr(module, "command_output", fake_command_output)
+
+    result = module.check_latest_apple_workflow(config)
+
+    assert result["status"] == "failed"
+    assert "latest Apple Silicon workflow run did not succeed" in result[
+        "message"]
 
 
 def _write_upstream_sync_audit_fixture(root: Path, text: str):

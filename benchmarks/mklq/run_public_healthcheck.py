@@ -369,6 +369,7 @@ def public_metadata_requirements() -> list[tuple[str, str]]:
         ("docs/mklq/public-readiness.md", "Public Readiness"),
         ("docs/mklq/public-readiness.md", "run_public_readiness_audit.py"),
         ("docs/mklq/public-readiness.md", "mklq-apple-silicon-ci.yml"),
+        ("docs/mklq/public-readiness.md", "MKL-Q Apple Silicon correctness"),
         ("docs/mklq/cpu-gate-counters.md", "gate fast-path counter evidence"),
         ("docs/mklq/cpu-gate-counters.md",
          "single_control_rz_phase_counter_evidence"),

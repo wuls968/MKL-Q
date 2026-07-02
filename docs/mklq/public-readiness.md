@@ -126,8 +126,10 @@ identity and latest workflow status, it checks that the public issue template
 set is intentional, every issue-template label is declared in
 `.github/labels.yml`, live GitHub label metadata matches the tracked label
 taxonomy, live `main` branch protection matches
-`.github/branch-protection-main.json`, and the public claim-boundary guard
-passes.
+`.github/branch-protection-main.json`, the latest pushed commit has a
+successful `MKL-Q public hygiene` run, the latest pushed commit has a
+successful `MKL-Q Apple Silicon correctness` run, and the public
+claim-boundary guard passes.
 
 The pushed readiness audit was revalidated on 2026-07-01 after the protected
 `main` branch completed the `MKL-Q public hygiene` workflow successfully for

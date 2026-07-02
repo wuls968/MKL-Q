@@ -22,6 +22,7 @@ from typing import Any
 SCHEMA_VERSION = "mklq-public-readiness-audit-v1"
 DEFAULT_REPO = "wuls968/MKL-Q"
 DEFAULT_WORKFLOW = "MKL-Q public hygiene"
+APPLE_WORKFLOW = "MKL-Q Apple Silicon correctness"
 REQUIRED_STATUS_CHECK = "Source-only repository checks"
 EXPECTED_DESCRIPTION = (
     "CUDA-Q-compatible Apple Silicon simulator fork with MKL-Q targets")
@@ -54,6 +55,10 @@ PUBLIC_READINESS_REQUIRED_PHRASES = [
     (
         "latest_hygiene",
         "latest pushed commit has a successful `MKL-Q public hygiene` run",
+    ),
+    (
+        "latest_apple_workflow",
+        "latest pushed commit has a successful `MKL-Q Apple Silicon correctness` run",
     ),
     (
         "branch_protection_reference",
@@ -118,6 +123,10 @@ def load_json(text: str, fallback: Any) -> Any:
     if not text.strip():
         return fallback
     return json.loads(text)
+
+
+def normalize_whitespace(text: str) -> str:
+    return " ".join(text.split())
 
 
 def unquote_yaml_scalar(value: str) -> str:
@@ -472,9 +481,10 @@ def check_public_readiness_doc(config: AuditConfig) -> dict[str, Any]:
                       f"{PUBLIC_READINESS_DOC.as_posix()} is missing",
                       {"path": PUBLIC_READINESS_DOC.as_posix()})
     text = path.read_text(encoding="utf-8", errors="replace")
+    normalized_text = normalize_whitespace(text)
     missing = [
         key for key, phrase in PUBLIC_READINESS_REQUIRED_PHRASES
-        if phrase not in text
+        if normalize_whitespace(phrase) not in normalized_text
     ]
     details = {
         "path": PUBLIC_READINESS_DOC.as_posix(),
@@ -520,6 +530,38 @@ def check_latest_public_hygiene(config: AuditConfig) -> dict[str, Any]:
         failures.append("latest public hygiene run is not for local HEAD")
     return failed("latest_public_hygiene", "; ".join(failures),
                   run) if failures else passed("latest_public_hygiene", run)
+
+
+def check_latest_apple_workflow(config: AuditConfig) -> dict[str, Any]:
+    runs = load_json(
+        command_output(config.repo_root, [
+            "gh",
+            "run",
+            "list",
+            "--repo",
+            config.repo,
+            "--branch",
+            "main",
+            "--workflow",
+            APPLE_WORKFLOW,
+            "--limit",
+            "1",
+            "--json",
+            "status,conclusion,headSha,url,name,event,createdAt",
+        ]), [])
+    head = command_output(config.repo_root, ["git", "rev-parse", "HEAD"])
+    run = runs[0] if runs else {}
+    failures: list[str] = []
+    if not run:
+        failures.append("no Apple Silicon workflow run found")
+    if run.get("status") != "completed":
+        failures.append("latest Apple Silicon workflow run is not completed")
+    if run.get("conclusion") != "success":
+        failures.append("latest Apple Silicon workflow run did not succeed")
+    if run.get("headSha") != head:
+        failures.append("latest Apple Silicon workflow run is not for local HEAD")
+    return failed("latest_apple_workflow", "; ".join(failures),
+                  run) if failures else passed("latest_apple_workflow", run)
 
 
 def check_no_releases(config: AuditConfig) -> dict[str, Any]:
@@ -570,6 +612,7 @@ def build_report(config: AuditConfig) -> dict[str, Any]:
         check_public_claim_boundaries(config),
         check_public_readiness_doc(config),
         check_latest_public_hygiene(config),
+        check_latest_apple_workflow(config),
         check_no_releases(config),
     ]
     return {

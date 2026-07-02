@@ -415,9 +415,10 @@ The readiness audit is intended for a clean local `main` that matches
 `origin/main`. It checks the public fork identity, tracked workflow set, issue
 template set, issue-template labels, live GitHub label metadata, live branch
 protection drift against `.github/branch-protection-main.json`, public claim
-boundaries, latest hygiene workflow success for the pushed commit, and the
-source-only no-tags/no-releases boundary. It does not run backend correctness
-tests or refresh benchmark evidence.
+boundaries, latest public hygiene workflow success, latest Apple Silicon
+workflow success for the pushed commit, and the source-only no-tags/no-releases
+boundary. It does not run backend correctness tests or refresh benchmark
+evidence.
 
 `--full` adds the install-prefix build, local macOS install-prefix signature
 repair, one-command correctness gate, and public example smoke gate. It does
