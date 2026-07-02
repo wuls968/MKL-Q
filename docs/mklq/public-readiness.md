@@ -118,11 +118,11 @@ taxonomy, live `main` branch protection matches
 `.github/branch-protection-main.json`, and the public claim-boundary guard
 passes.
 
-The pushed readiness audit was validated on 2026-06-30 after the protected
-`main` branch completed the `MKL-Q public hygiene` workflow successfully. Use
-the readiness commands below for the exact latest commit and workflow run IDs;
-this tracked page records the stable source-only readiness boundary, not a
-moving run log.
+The pushed readiness audit was revalidated on 2026-07-01 after the protected
+`main` branch completed the `MKL-Q public hygiene` workflow successfully for
+the post-PR #56 head. Use the readiness commands below for the exact latest
+commit and workflow run IDs; this tracked page records the stable source-only
+readiness boundary, not a moving run log.
 
 ## Branch Protection
 
@@ -158,8 +158,8 @@ healthcheck refresh, and focused CRZ distance-sweep evidence refresh on
 - full public healthcheck: passed with 32/32 steps passed after adding the
   dedicated local macOS install-prefix signature repair step; the repair step
   refreshed and verified 60 local install-prefix `.dylib`, `.so`, and `bin/`
-  Mach-O loadables
-  before correctness and public example smoke gates;
+  Mach-O loadables/executables before correctness and public example smoke
+  gates;
 - one-command correctness gate: passed with 4/4 steps passed, including
   `metal_runtime_counter_probe`;
 - public example smoke gate: passed with 30/30 steps passed;
