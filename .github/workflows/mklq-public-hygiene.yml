@@ -50,6 +50,7 @@ jobs:
           test -f docs/mklq/cpu-sampling-counters.md
           test -f docs/mklq/metal-runtime-counters.md
           test -f .github/branch-protection-main.json
+          test -f .github/workflows/mklq-apple-silicon-ci.yml
           test -f .github/pull_request_template.md
           test -f examples/mklq/README.md
           test -f examples/mklq/python/bell.py
@@ -109,6 +110,8 @@ jobs:
           grep -q 'run_self_hosted_ci_audit.py' benchmarks/mklq/README.md
           grep -q 'self-hosted' docs/mklq/apple-silicon-ci.md
           grep -q 'Apple Silicon' docs/mklq/apple-silicon-ci.md
+          grep -q 'mklq-apple-silicon-ci.yml' docs/mklq/apple-silicon-ci.md
+          grep -q 'run_full_gate' docs/mklq/apple-silicon-ci.md
           grep -q 'run_public_healthcheck.py --full --require-clean' docs/mklq/apple-silicon-ci.md
           grep -q 'not release certification' docs/mklq/apple-silicon-ci.md
           grep -q 'check_metal_evidence.py' docs/mklq/testing-matrix.md

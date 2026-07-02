@@ -37,6 +37,7 @@ REQUIRED_DOC_TOKENS = (
     "run_public_healthcheck.py",
     "run_correctness_gate.py",
     "run_public_release_checklist_audit.py",
+    ".github/workflows/mklq-apple-silicon-ci.yml",
     ".github/workflows/mklq-public-hygiene.yml",
     "mklq-metal",
 )

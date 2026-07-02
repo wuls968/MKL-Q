@@ -10,6 +10,7 @@
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -21,6 +22,8 @@ from typing import Any
 SCHEMA_VERSION = "mklq-self-hosted-ci-audit-v1"
 DOC_PATH = Path("docs/mklq/apple-silicon-ci.md")
 LIGHTWEIGHT_WORKFLOW = ".github/workflows/mklq-public-hygiene.yml"
+APPLE_SILICON_WORKFLOW = ".github/workflows/mklq-apple-silicon-ci.yml"
+EXPECTED_WORKFLOWS = sorted((LIGHTWEIGHT_WORKFLOW, APPLE_SILICON_WORKFLOW))
 
 REQUIRED_SECTIONS = (
     "Scope",
@@ -46,6 +49,12 @@ REQUIRED_TOKENS = (
     "permissions: contents: read",
     "timeout-minutes",
     "concurrency",
+    "workflow_dispatch",
+    "run_full_gate",
+    "default skip",
+    "broad push",
+    "Dispatch guard",
+    "manual",
     "run_public_healthcheck.py --full --require-clean",
     "run_correctness_gate.py",
     "benchmarks/mklq/results/",
@@ -58,10 +67,50 @@ REQUIRED_TOKENS = (
 LIGHTWEIGHT_WORKFLOW_FORBIDDEN_LINES = (
     "runs-on: self-hosted",
     "runs-on: [self-hosted",
-    "mklq-apple-silicon",
     "python3 benchmarks/mklq/run_public_healthcheck.py --full",
     "python3 benchmarks/mklq/run_correctness_gate.py",
     "cmake --build build-python --target install",
+)
+
+APPLE_WORKFLOW_REQUIRED_TOKENS = (
+    "name: MKL-Q Apple Silicon correctness",
+    "workflow_dispatch:",
+    "run_full_gate:",
+    "type: choice",
+    "confirm",
+    "default: skip",
+    "push:",
+    "branches:",
+    "- main",
+    "paths:",
+    ".github/workflows/mklq-apple-silicon-ci.yml",
+    "permissions:",
+    "contents: read",
+    "concurrency:",
+    "cancel-in-progress: true",
+    "name: Dispatch guard",
+    "if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.run_full_gate != 'confirm' }}",
+    "runs-on: ubuntu-latest",
+    "Manual Apple Silicon gate is skipped unless workflow_dispatch run_full_gate=confirm.",
+    "if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.run_full_gate == 'confirm' }}",
+    "runs-on: [self-hosted, macOS, ARM64, mklq-apple-silicon]",
+    "timeout-minutes:",
+    "fetch-depth: 0",
+    "persist-credentials: false",
+    "run_public_healthcheck.py",
+    "--full",
+    "--require-clean",
+    "benchmarks/mklq/results/",
+)
+
+APPLE_WORKFLOW_FORBIDDEN_LINE_PATTERNS = (
+    (re.compile(r"^\s*pull_request\s*:", re.MULTILINE), "pull_request:"),
+    (re.compile(r"\bsecrets\."), "secrets."),
+    (re.compile(r"upload-artifact"), "upload-artifact"),
+    (re.compile(r"gh\s+release"), "gh release"),
+    (re.compile(r"git\s+tag"), "git tag"),
+    (re.compile(r"twine\s+upload"), "twine upload"),
+    (re.compile(r"\.whl\b"), ".whl"),
 )
 
 
@@ -120,8 +169,16 @@ def summarize(checks: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def normalize_whitespace(text: str) -> str:
+    return " ".join(text.split())
+
+
 def missing_tokens(text: str, tokens: tuple[str, ...]) -> list[str]:
-    return [token for token in tokens if token not in text]
+    normalized_text = normalize_whitespace(text)
+    return [
+        token for token in tokens
+        if normalize_whitespace(token) not in normalized_text
+    ]
 
 
 def forbidden_workflow_lines(text: str) -> list[dict[str, Any]]:
@@ -134,6 +191,22 @@ def forbidden_workflow_lines(text: str) -> list[dict[str, Any]]:
                     "token": token,
                     "text": line.strip(),
                 })
+    return matches
+
+
+def forbidden_manual_workflow_lines(text: str) -> list[dict[str, Any]]:
+    matches: list[dict[str, Any]] = []
+    lines = text.splitlines()
+    for pattern, label in APPLE_WORKFLOW_FORBIDDEN_LINE_PATTERNS:
+        for match in pattern.finditer(text):
+            line_number = text.count("\n", 0, match.start()) + 1
+            line_text = lines[line_number - 1].strip() if line_number <= len(
+                lines) else ""
+            matches.append({
+                "line": line_number,
+                "token": label,
+                "text": line_text,
+            })
     return matches
 
 
@@ -173,24 +246,41 @@ def check_workflow_boundary(config: AuditConfig) -> dict[str, Any]:
     workflows = command_output(config.repo_root,
                                ["git", "ls-files",
                                 ".github/workflows"]).splitlines()
-    unexpected = [path for path in workflows if path != LIGHTWEIGHT_WORKFLOW]
+    unexpected = [path for path in workflows if path not in EXPECTED_WORKFLOWS]
+    missing = [path for path in EXPECTED_WORKFLOWS if path not in workflows]
 
-    workflow_path = config.repo_root / LIGHTWEIGHT_WORKFLOW
-    forbidden: list[dict[str, Any]] = []
-    if workflow_path.exists():
-        text = workflow_path.read_text(encoding="utf-8", errors="replace")
-        forbidden = forbidden_workflow_lines(text)
+    lightweight_path = config.repo_root / LIGHTWEIGHT_WORKFLOW
+    lightweight_forbidden: list[dict[str, Any]] = []
+    if lightweight_path.exists():
+        lightweight_text = lightweight_path.read_text(encoding="utf-8",
+                                                      errors="replace")
+        lightweight_forbidden = forbidden_workflow_lines(lightweight_text)
+
+    manual_path = config.repo_root / APPLE_SILICON_WORKFLOW
+    manual_missing_tokens: list[str] = []
+    manual_forbidden: list[dict[str, Any]] = []
+    if manual_path.exists():
+        manual_text = manual_path.read_text(encoding="utf-8", errors="replace")
+        manual_missing_tokens = missing_tokens(manual_text,
+                                               APPLE_WORKFLOW_REQUIRED_TOKENS)
+        manual_forbidden = forbidden_manual_workflow_lines(manual_text)
 
     details = {
         "workflows": workflows,
+        "expected_workflows": EXPECTED_WORKFLOWS,
         "unexpected_workflows": unexpected,
+        "missing_workflows": missing,
         "lightweight_workflow": LIGHTWEIGHT_WORKFLOW,
-        "forbidden_lines": forbidden,
+        "manual_workflow": APPLE_SILICON_WORKFLOW,
+        "lightweight_forbidden_lines": lightweight_forbidden,
+        "manual_missing_tokens": manual_missing_tokens,
+        "manual_forbidden_lines": manual_forbidden,
     }
-    failures = unexpected + forbidden
+    failures = unexpected + missing + lightweight_forbidden + manual_missing_tokens
+    failures += manual_forbidden
     return failed(
         "workflow_boundary",
-        "Apple Silicon correctness CI must not be enabled in the lightweight workflow",
+        "Apple Silicon correctness workflow boundary is not manual/source-only",
         details) if failures else passed("workflow_boundary", details)
 
 

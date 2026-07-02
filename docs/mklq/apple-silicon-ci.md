@@ -1,19 +1,25 @@
 # MKL-Q Apple Silicon CI
 
-This page defines the readiness plan for a future self-hosted Apple Silicon
-correctness gate. It is not enabled by default and is not release certification.
+This page defines the manual self-hosted Apple Silicon correctness gate. It is
+not enabled by default, does not run on pull requests, and is not release
+certification. This page is not release certification.
 
 ## Scope
 
-The public `main` branch currently keeps GitHub Actions lightweight. The
-enabled workflow checks source-only repository hygiene, public metadata, public
-claim boundaries, benchmark summary parsing, and helper script syntax. It does
-not build CUDA-Q and does not run Apple Silicon backend correctness tests.
+The public `main` branch keeps required GitHub Actions lightweight. The required
+`MKL-Q public hygiene` workflow checks source-only repository hygiene, public
+metadata, public claim boundaries, benchmark summary parsing, and helper script
+syntax. It does not build CUDA-Q and does not run Apple Silicon backend
+correctness tests.
 
-The future Apple Silicon correctness job should cover local simulator behavior
-for `mklq-cpu` and the experimental `mklq-metal` target on macOS ARM64. It must
-remain source-only: no tags, no GitHub Releases, no wheels, no installers, and
-no signed artifacts are produced by this job.
+The manual `.github/workflows/mklq-apple-silicon-ci.yml` workflow covers local
+simulator behavior for `mklq-cpu` and the experimental `mklq-metal` target on a
+private macOS ARM64 runner. It is available only through `workflow_dispatch`,
+defaults `run_full_gate` to `skip`, and runs the full gate only when a
+maintainer explicitly starts it with `run_full_gate=confirm`.
+
+It must remain source-only: no tags, no GitHub Releases, no wheels, no
+installers, and no signed artifacts are produced by this job.
 
 ## Runner Requirements
 
@@ -38,10 +44,20 @@ The runner must provide:
 
 ## Workflow Policy
 
-Do not enable a heavy Apple Silicon workflow until a reviewed activation PR
-assigns a maintenance owner and confirms runner availability. Until then,
-`.github/workflows/` must contain only the lightweight
-`mklq-public-hygiene.yml` workflow.
+The reviewed workflow set is:
+
+```text
+.github/workflows/mklq-public-hygiene.yml
+.github/workflows/mklq-apple-silicon-ci.yml
+```
+
+Do not add pull-request triggers or broad push triggers to the Apple Silicon
+workflow until a reviewed activation PR assigns a maintenance owner, confirms
+runner availability, and updates branch protection expectations. Until then it
+remains a manual workflow with `workflow_dispatch`, `run_full_gate`, and default
+skip activation. The only push trigger is limited to `main` changes of
+`.github/workflows/mklq-apple-silicon-ci.yml`, where it runs the lightweight
+`Dispatch guard` instead of the self-hosted correctness job.
 
 The future workflow should use read-only repository permissions:
 
@@ -49,23 +65,37 @@ The future workflow should use read-only repository permissions:
 permissions: contents: read
 ```
 
-It should also set explicit `timeout-minutes` and `concurrency` values so a
-stuck build cannot consume the runner indefinitely and superseded runs cancel
-cleanly.
+It also sets explicit `timeout-minutes` and `concurrency` values so a stuck
+build cannot consume the runner indefinitely and superseded runs cancel cleanly.
+If GitHub creates a non-dispatch validation run for the workflow file, only a
+small `Dispatch guard` job runs on `ubuntu-latest`; the self-hosted Apple
+Silicon job still requires `workflow_dispatch` with `run_full_gate=confirm`.
 
 The job should not use secrets. If a future step needs credentials, split that
 work into a separate reviewed release or deployment plan.
 
 ## Validation Command
 
-The intended self-hosted correctness job should build from source and then run
-the full local public healthcheck:
+The manual self-hosted correctness job builds from source and then runs the full
+local public healthcheck:
 
 ```bash
 cmake -S . -B build-python -D CUDAQ_ENABLE_MKLQ_BACKEND=ON \
   -D CMAKE_INSTALL_PREFIX="${HOME}/.cudaq-mklq"
 cmake --build build-python --target install -j 6
 python3 benchmarks/mklq/run_public_healthcheck.py --full --require-clean
+```
+
+The tracked workflow invokes the same gate through:
+
+```bash
+python3 benchmarks/mklq/run_public_healthcheck.py \
+  --full \
+  --require-clean \
+  --install-prefix "${MKLQ_INSTALL_PREFIX}" \
+  --build-dir "${MKLQ_BUILD_DIR}" \
+  --jobs 6 \
+  --timeout-seconds 1800
 ```
 
 For focused debugging, the same runner may run the one-command correctness
@@ -82,10 +112,12 @@ Raw JSON produced by these commands belongs under ignored
 
 ## Activation Checklist
 
-Before enabling the workflow:
+Before making the workflow automatic or branch-protected:
 
 - Confirm the runner labels include `self-hosted`, `macOS`, `ARM64`, and
   `mklq-apple-silicon`.
+- Confirm manual `workflow_dispatch` runs with `run_full_gate=confirm` complete
+  successfully on the intended runner.
 - Confirm the runner has no secrets, signing assets, or personal credentials in
   the working directory.
 - Confirm the job uses `permissions: contents: read`.
@@ -119,5 +151,7 @@ Releases, upload wheels, sign binaries, or access private services.
 
 This plan deliberately says not enable the heavy workflow by default. The
 tracked audit script `benchmarks/mklq/run_self_hosted_ci_audit.py` checks this
-document and confirms the enabled workflow set remains lightweight until a
-future activation PR changes the policy.
+document and confirms the Apple Silicon workflow remains manual, read-only,
+source-only, free of pull-request triggers, and limited to the reviewed
+main-branch workflow-file `Dispatch guard` push path until a future activation
+PR changes the policy.

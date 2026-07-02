@@ -1,0 +1,84 @@
+name: MKL-Q Apple Silicon correctness
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_full_gate:
+        description: Select confirm to run the full self-hosted Apple Silicon gate.
+        required: true
+        type: choice
+        options:
+          - skip
+          - confirm
+        default: skip
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/mklq-apple-silicon-ci.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mklq-apple-silicon-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  dispatch_guard:
+    name: Dispatch guard
+    if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.run_full_gate != 'confirm' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Explain manual activation
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Manual Apple Silicon gate is skipped unless workflow_dispatch run_full_gate=confirm."
+
+  correctness:
+    name: Manual Apple Silicon correctness gate
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.run_full_gate == 'confirm' }}
+    runs-on: [self-hosted, macOS, ARM64, mklq-apple-silicon]
+    timeout-minutes: 180
+    env:
+      MKLQ_BUILD_DIR: build-python
+      MKLQ_INSTALL_PREFIX: ${{ runner.temp }}/cudaq-mklq-install
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Show runner context
+        shell: bash
+        run: |
+          set -euo pipefail
+          uname -a
+          sw_vers
+          python3 --version
+          cmake --version
+          ninja --version
+
+      - name: Verify source checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          git status --short --branch
+          test "$(git rev-parse --is-shallow-repository)" = "false"
+          git ls-files .github/workflows | sort
+
+      - name: Run full MKL-Q local healthcheck
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 benchmarks/mklq/run_public_healthcheck.py \
+            --full \
+            --require-clean \
+            --install-prefix "${MKLQ_INSTALL_PREFIX}" \
+            --build-dir "${MKLQ_BUILD_DIR}" \
+            --jobs 6 \
+            --timeout-seconds 1800 \
+            --output "benchmarks/mklq/results/apple-silicon-ci-${GITHUB_RUN_ID}.json"
