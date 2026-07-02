@@ -4,7 +4,7 @@ This page records the public repository readiness snapshot for MKL-Q. It is a
 source-only repository audit, not a release certification, package
 certification, Apple Silicon CI replacement, or performance certification.
 
-Snapshot date: 2026-07-01.
+Snapshot date: 2026-07-02.
 
 ## Scope
 
@@ -131,11 +131,12 @@ successful `MKL-Q public hygiene` run, the latest pushed commit has a
 successful `MKL-Q Apple Silicon correctness` run, and the public
 claim-boundary guard passes.
 
-The pushed readiness audit was revalidated on 2026-07-01 after the protected
-`main` branch completed the `MKL-Q public hygiene` workflow successfully for
-the post-PR #56 head. Use the readiness commands below for the exact latest
-commit and workflow run IDs; this tracked page records the stable source-only
-readiness boundary, not a moving run log.
+The pushed readiness audit was revalidated on 2026-07-02 after the protected
+`main` branch completed the `MKL-Q public hygiene` and `MKL-Q Apple Silicon
+correctness` guard workflows successfully for the pushed head. Use the
+readiness commands below for exact latest commit and workflow run IDs; this
+tracked page records the stable source-only readiness boundary, not a moving
+run log.
 
 ## Branch Protection
 
@@ -158,11 +159,11 @@ compares the live core protection fields against that JSON reference.
 ## Validation Snapshot
 
 The latest public local validation evidence is recorded in
-[`validation.md`](validation.md), with a correctness refresh, public
-healthcheck refresh, and focused CRZ distance-sweep evidence refresh on
+[`validation.md`](validation.md), with correctness and public healthcheck
+refreshes on 2026-07-02 and focused CRZ distance-sweep evidence retained from
 2026-07-01:
 
-- latest correctness refresh date: 2026-07-01;
+- latest correctness refresh date: 2026-07-02;
 - source state: the ignored raw healthcheck JSON records the exact local Git
   state for the latest public healthcheck gate, and the ignored correctness
   gate JSON records the latest correctness-gate state;
@@ -176,7 +177,7 @@ healthcheck refresh, and focused CRZ distance-sweep evidence refresh on
 - one-command correctness gate: passed with 4/4 steps passed, including
   `metal_runtime_counter_probe`;
 - public example smoke gate: passed with 30/30 steps passed;
-- current benchmark harness tests: `171 passed`;
+- current benchmark harness tests: `177 passed`;
 - current `cpu_sampling_counter_probe_parse`: 2 bounded reports, 14 expected,
   14 selected, 0 missing, and 0 failures, including full-register and marginal
   probability-fill counter ctests;
