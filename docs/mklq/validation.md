@@ -15,8 +15,8 @@ boundary and evidence limits.
 
 ## Current Evidence Snapshot
 
-Latest local correctness refresh: 2026-07-01. Latest public healthcheck
-refresh: 2026-07-01.
+Latest local correctness refresh: 2026-07-02. Latest public healthcheck
+refresh: 2026-07-02.
 
 The install-prefix build, one-command correctness gate, public example smoke
 gate, default public healthcheck, and standalone install-prefix Python subset
@@ -28,6 +28,10 @@ again on 2026-06-24 after syncing CUDA-Q upstream and before refreshing the
 tracked bounded CPU/Metal counter reports.
 The one-command correctness gate was refreshed again on 2026-06-28 after adding
 the CPU hardware-efficient ansatz state and observable oracle fixture.
+The full public healthcheck was refreshed again on 2026-07-02 on clean
+`main` after adding the self-hosted runner inventory audit, confirming that the
+install-prefix build, local signature repair, correctness gate, and public
+examples still pass together.
 The clean CPU benchmark summary was refreshed separately against
 `23d34ab226c3e4d7a47f15af3292bf81ce25987b` after adding the
 hardware-efficient ansatz composite row to the clean evidence gate. The older
@@ -54,6 +58,8 @@ selected tests once per report.
 Raw wrapper output was written to ignored local paths
 `benchmarks/mklq/results/public-healthcheck-2026-06-24.json`,
 `benchmarks/mklq/results/public-healthcheck-2026-07-01.json`,
+`benchmarks/mklq/results/public-healthcheck-after-full-doc-refresh-2026-07-02.json`,
+`benchmarks/mklq/results/public-healthcheck-full-main-2026-07-02.json`,
 `benchmarks/mklq/results/public-healthcheck-full-2026-06-22.json`,
 `benchmarks/mklq/results/public-healthcheck-full-2026-06-23.json`,
 `benchmarks/mklq/results/public-healthcheck-full-2026-06-24.json`,
@@ -61,18 +67,22 @@ Raw wrapper output was written to ignored local paths
 `benchmarks/mklq/results/local-correctness-gate-2026-06-23.json`,
 `benchmarks/mklq/results/local-correctness-gate-2026-06-24.json`,
 `benchmarks/mklq/results/local-correctness-gate-2026-06-28.json`,
+`benchmarks/mklq/results/local-correctness-gate-2026-07-02.json`,
 `benchmarks/mklq/results/local-metal-runtime-counter-probe-2026-06-22.counter.json`,
 `benchmarks/mklq/results/local-metal-runtime-counter-probe-2026-06-23.counter.json`,
 `benchmarks/mklq/results/local-metal-runtime-counter-probe-2026-06-24.counter.json`,
 `benchmarks/mklq/results/local-metal-runtime-counter-probe-2026-06-28.counter.json`,
+`benchmarks/mklq/results/local-metal-runtime-counter-probe-2026-07-02.counter.json`,
 `benchmarks/mklq/results/local-sampling-scaling-cpu-q18-q22-2026-06-23.json`,
-and `benchmarks/mklq/results/example-smoke-2026-06-23.json`; these raw payloads
-are not tracked as public evidence.
+`benchmarks/mklq/results/example-smoke-2026-06-23.json`,
+`benchmarks/mklq/results/example-smoke-2026-07-02.json`, and
+`benchmarks/mklq/results/macos-install-signature-repair-2026-07-02.json`;
+these raw payloads are not tracked as public evidence.
 
 - Install-prefix build: passed.
-- Default public healthcheck: passed on 2026-07-01, with 28 steps passed and
+- Default public healthcheck: passed on 2026-07-02, with 28 steps passed and
   0 failed.
-- Latest full public healthcheck: passed on 2026-07-01, with 32 steps passed
+- Latest full public healthcheck: passed on 2026-07-02, with 32 steps passed
   and 0 failed after adding the dedicated macOS install-prefix signature repair
   step. The signature repair step refreshed and verified 60 local install-prefix
   `.dylib` and `.so` loadables before the correctness and public example smoke
@@ -80,7 +90,7 @@ are not tracked as public evidence.
 - One-command correctness gate: passed with 4 steps passed, 0 failed, and 0
   skipped, including the Metal runtime counter probe.
 - Public example smoke gate: passed, with 30 steps passed and 0 failed.
-- Current `benchmark_harness_tests`: `171 passed`.
+- Current `benchmark_harness_tests`: `177 passed`.
 - Current `cpu_gate_counter_probe_parse`: 1 bounded report, 11 expected,
   11 selected, 0 missing, and 0 failures, including the single-control Rz
   direct phase fast-path fixture and hardware-efficient ansatz composite
@@ -192,7 +202,7 @@ python3 benchmarks/mklq/run_correctness_gate.py \
   --build-dir build-python
 ```
 
-Latest local result: passed on 2026-07-01 as part of the full public
+Latest local result: passed on 2026-07-02 as part of the full public
 healthcheck wrapper after local install-prefix signature repair. It reported 4
 wrapper steps passed, 0 failed, and 0 skipped. The step-level results were:
 
@@ -242,8 +252,8 @@ python3 benchmarks/mklq/run_correctness_gate.py \
 python3 benchmarks/mklq/run_public_healthcheck.py --full --require-clean
 ```
 
-Latest default 2026-07-01 result: `28/28` steps passed. The latest full
-2026-07-01 result is `32/32` steps passed. The full gate includes Git
+Latest default 2026-07-02 result: `28/28` steps passed. The latest full
+2026-07-02 result is `32/32` steps passed. The full gate includes Git
 repository hygiene, tracked-artifact checks, public metadata checks, the public
 release checklist audit, the upstream sync audit, the self-hosted Apple Silicon
 CI audit, sanitized benchmark summary parsing, the clean CPU performance
@@ -259,7 +269,7 @@ smoke gate.
 
 The ignored raw healthcheck JSON records the exact Git state for these local
 runs. The latest default healthcheck benchmark harness step reported
-`171 passed`. The latest full wrapper run reported `32 passed`, including
+`177 passed`. The latest full wrapper run reported `32 passed`, including
 install-prefix build, local signature repair, correctness, and example-smoke
 gates in the `--full --require-clean` wrapper. An earlier wrapper run before
 the signature-repair step was added failed when installed `nvq++` smoke
