@@ -76,10 +76,13 @@ It aggregates Python target fixtures, `nvq++` smoke tests, and the build-tree
 TargetConfig `ctest` selection. This is the strongest local gate currently
 maintained by MKL-Q.
 
-GitHub Actions intentionally runs only the lightweight public hygiene workflow.
-That workflow checks public metadata, tracked artifact hygiene, benchmark
-summary parseability, and helper-script compilation. It does not build CUDA-Q,
-run the Apple Silicon simulator tests, or certify Metal runtime behavior.
+GitHub Actions intentionally requires only the lightweight public hygiene
+workflow for pushes and pull requests. A manual self-hosted Apple Silicon
+workflow exists for private runner validation, but it is default-off and not a
+branch-protected CI claim. The required hygiene workflow checks public metadata,
+tracked artifact hygiene, benchmark summary parseability, and helper-script
+compilation. It does not build CUDA-Q, run the Apple Silicon simulator tests, or
+certify Metal runtime behavior.
 
 ## Noise-Model Boundary
 

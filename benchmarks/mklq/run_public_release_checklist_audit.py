@@ -78,6 +78,7 @@ REQUIRED_REFERENCED_FILES = (
     "docs/mklq/maintainer-runbook.md",
     "docs/mklq/branch-protection.md",
     "docs/mklq/issue-labels.md",
+    ".github/workflows/mklq-apple-silicon-ci.yml",
     ".github/workflows/mklq-public-hygiene.yml",
     "benchmarks/mklq/run_preflight_audit.py",
     "benchmarks/mklq/run_upstream_sync_audit.py",
@@ -121,6 +122,7 @@ PREFLIGHT_REFERENCE_REQUIRED_TOKENS = (
 
 HEALTHCHECK_INTEGRATION_FILES = (
     "benchmarks/mklq/run_public_healthcheck.py",
+    ".github/workflows/mklq-apple-silicon-ci.yml",
     ".github/workflows/mklq-public-hygiene.yml",
 )
 
@@ -152,6 +154,7 @@ DEVELOPER_WORKFLOW_REQUIRED_TOKENS = (
     "workflows",
     "untracked report files",
     "self-hosted Apple Silicon CI",
+    "mklq-apple-silicon-ci.yml",
 )
 
 
@@ -297,6 +300,7 @@ def check_healthcheck_integration(config: AuditConfig,
             "run_public_healthcheck.py",
             "run_public_readiness_audit.py",
             "run_self_hosted_ci_audit.py",
+            "mklq-apple-silicon-ci.yml",
             "mklq-public-hygiene.yml",
         ),
     )

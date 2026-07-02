@@ -217,13 +217,15 @@ python3 -m py_compile \
 Expected workflow state:
 
 ```text
+.github/workflows/mklq-apple-silicon-ci.yml
 .github/workflows/mklq-public-hygiene.yml
 ```
 
 For self-hosted Apple Silicon CI policy or workflow-boundary changes, also
 review [`apple-silicon-ci.md`](apple-silicon-ci.md). The current public branch
-keeps the heavy correctness workflow disabled by default; the audit checks that
-this activation boundary remains explicit.
+keeps Apple Silicon correctness manual-only through `workflow_dispatch` and
+`run_full_gate=false` by default; the audit checks that this activation boundary
+remains explicit.
 
 Run the full public release checklist before public release-style milestones:
 

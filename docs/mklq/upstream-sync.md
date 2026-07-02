@@ -119,6 +119,7 @@ Keep these MKL-Q-owned surfaces unless the sync intentionally changes them:
 - `benchmarks/mklq/`
 - `docs/mklq/`
 - `.github/workflows/mklq-public-hygiene.yml`
+- `.github/workflows/mklq-apple-silicon-ci.yml`
 - `.github/ISSUE_TEMPLATE/`
 - `.github/pull_request_template.md`
 

@@ -29,6 +29,10 @@ TRACKED_ARTIFACT_PATTERN = re.compile(
     r"\.pyc$|\.DS_Store$|^build(-python)?/|"
     r"^benchmarks/mklq/results/|^docs/superpowers/|"
     r"^(dist|wheelhouse)/|\.(whl|dmg|pkg|zip)$|\.tar\.gz$")
+EXPECTED_WORKFLOWS = [
+    ".github/workflows/mklq-apple-silicon-ci.yml",
+    ".github/workflows/mklq-public-hygiene.yml",
+]
 
 BENCHMARK_HELPERS = (
     "benchmarks/mklq/bench_mklq_targets.py",
@@ -255,7 +259,7 @@ def run_git_repository_check(config: HealthcheckConfig) -> dict[str, Any]:
     failures: list[str] = []
     if shallow.strip() != "false":
         failures.append("repository is shallow")
-    if workflows != [".github/workflows/mklq-public-hygiene.yml"]:
+    if workflows != EXPECTED_WORKFLOWS:
         failures.append("unexpected tracked GitHub workflow set")
     if config.require_clean:
         dirty_lines = [line for line in status.splitlines() if not line.startswith("##")]
@@ -294,6 +298,12 @@ def public_metadata_requirements() -> list[tuple[str, str]]:
         ("README.md", "cudaq"),
         ("README.md", "examples/mklq"),
         ("README.md", "apple-silicon-ci.md"),
+        (".github/workflows/mklq-apple-silicon-ci.yml", "workflow_dispatch"),
+        (".github/workflows/mklq-apple-silicon-ci.yml", "run_full_gate"),
+        (".github/workflows/mklq-apple-silicon-ci.yml",
+         "permissions:\n  contents: read"),
+        (".github/workflows/mklq-apple-silicon-ci.yml", "--full"),
+        (".github/workflows/mklq-apple-silicon-ci.yml", "--require-clean"),
         ("examples/mklq/README.md", "mklq-cpu"),
         ("examples/mklq/README.md", "mklq-metal"),
         ("examples/mklq/README.md", "nvq++"),
@@ -304,13 +314,17 @@ def public_metadata_requirements() -> list[tuple[str, str]]:
         ("docs/mklq/testing-matrix.md", "Capability Coverage"),
         ("docs/mklq/testing-matrix.md", "every operation stays on Metal"),
         ("docs/mklq/apple-silicon-ci.md", "self-hosted"),
+        ("docs/mklq/apple-silicon-ci.md", "workflow_dispatch"),
+        ("docs/mklq/apple-silicon-ci.md", "run_full_gate"),
         ("docs/mklq/apple-silicon-ci.md",
          "run_public_healthcheck.py --full --require-clean"),
         ("docs/mklq/apple-silicon-ci.md", "not release certification"),
+        ("docs/mklq/upstream-sync.md", ".github/workflows/mklq-apple-silicon-ci.yml"),
         ("docs/mklq/upstream-sync.md", "Post-merge Gates"),
         ("docs/mklq/upstream-sync.md", "run_upstream_sync_audit.py"),
         ("docs/mklq/release-policy.md", "source-only"),
         ("docs/mklq/public-release-checklist.md", "GitHub Verification"),
+        ("docs/mklq/public-release-checklist.md", "mklq-apple-silicon-ci.yml"),
         ("docs/mklq/public-release-checklist.md", "run_public_release_checklist_audit.py"),
         ("docs/mklq/public-release-checklist.md", "check_performance_evidence.py"),
         ("docs/mklq/public-release-checklist.md", "check_metal_evidence.py"),
@@ -323,6 +337,7 @@ def public_metadata_requirements() -> list[tuple[str, str]]:
         ("docs/mklq/public-release-checklist.md", "public docs or workflows"),
         ("docs/mklq/public-release-checklist.md", "untracked report files"),
         ("docs/mklq/developer-workflow.md", "Public Hygiene"),
+        ("docs/mklq/developer-workflow.md", "mklq-apple-silicon-ci.yml"),
         ("docs/mklq/developer-workflow.md", "check_performance_evidence.py"),
         ("docs/mklq/developer-workflow.md", "check_metal_evidence.py"),
         ("docs/mklq/developer-workflow.md", "check_public_claims.py"),
@@ -353,6 +368,7 @@ def public_metadata_requirements() -> list[tuple[str, str]]:
         (".github/branch-protection-main.json", "\"enforce_admins\": true"),
         ("docs/mklq/public-readiness.md", "Public Readiness"),
         ("docs/mklq/public-readiness.md", "run_public_readiness_audit.py"),
+        ("docs/mklq/public-readiness.md", "mklq-apple-silicon-ci.yml"),
         ("docs/mklq/cpu-gate-counters.md", "gate fast-path counter evidence"),
         ("docs/mklq/cpu-gate-counters.md",
          "single_control_rz_phase_counter_evidence"),

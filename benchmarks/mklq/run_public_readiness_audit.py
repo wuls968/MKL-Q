@@ -37,6 +37,10 @@ EXPECTED_ISSUE_TEMPLATES = [
     ".github/ISSUE_TEMPLATE/bug_report.yaml",
     ".github/ISSUE_TEMPLATE/feature_request.yaml",
 ]
+EXPECTED_WORKFLOWS = [
+    ".github/workflows/mklq-apple-silicon-ci.yml",
+    ".github/workflows/mklq-public-hygiene.yml",
+]
 TRACKED_ARTIFACT_PATTERN = re.compile(
     r"(^|/)(__pycache__|\.pytest_cache)(/|$)|"
     r"\.pyc$|\.DS_Store$|^build(-python)?/|"
@@ -265,10 +269,9 @@ def check_workflows(config: AuditConfig) -> dict[str, Any]:
     workflows = command_output(config.repo_root,
                                ["git", "ls-files",
                                 ".github/workflows"]).splitlines()
-    expected = [".github/workflows/mklq-public-hygiene.yml"]
-    details = {"workflows": workflows}
+    details = {"workflows": workflows, "expected_workflows": EXPECTED_WORKFLOWS}
     return failed("github_workflows", "unexpected workflow set",
-                  details) if workflows != expected else passed(
+                  details) if workflows != EXPECTED_WORKFLOWS else passed(
                       "github_workflows", details)
 
 

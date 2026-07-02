@@ -135,7 +135,8 @@ The issue label taxonomy used for public triage is tracked in
 [`docs/mklq/issue-labels.md`](docs/mklq/issue-labels.md).
 The intended `main` branch protection policy is tracked in
 [`docs/mklq/branch-protection.md`](docs/mklq/branch-protection.md).
-The self-hosted Apple Silicon correctness CI activation plan is tracked in
+The manual self-hosted Apple Silicon correctness CI workflow and activation
+boundary are tracked in
 [`docs/mklq/apple-silicon-ci.md`](docs/mklq/apple-silicon-ci.md).
 The current public repository readiness snapshot is tracked in
 [`docs/mklq/public-readiness.md`](docs/mklq/public-readiness.md).
