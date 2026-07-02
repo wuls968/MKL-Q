@@ -191,6 +191,7 @@ correctness:
 
 ```bash
 python3 benchmarks/mklq/run_public_healthcheck.py --full --require-clean
+python3 benchmarks/mklq/run_self_hosted_ci_audit.py --check-runners --repo wuls968/MKL-Q
 ```
 
 The underlying lightweight checks include:
@@ -251,6 +252,11 @@ Expected:
   workflow keeps only the lightweight push guard automatic while the
   self-hosted full job remains manual, read-only, source-only, and disabled by
   default.
+- [ ] Before any `run_full_gate=confirm` dispatch is cited as evidence,
+  `python3 benchmarks/mklq/run_self_hosted_ci_audit.py --check-runners --repo
+  wuls968/MKL-Q` passes and confirms the live `actions/runners` inventory has
+  an online runner with `self-hosted`, `macOS`, `ARM64`, and
+  `mklq-apple-silicon` labels.
 - [ ] Public example files exist under `examples/mklq/`.
 - [ ] Banned upstream workflow/contact tokens are absent from public metadata
   and `.github`.

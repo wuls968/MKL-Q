@@ -51,6 +51,7 @@ REQUIRED_COMMAND_TOKENS = (
     "python3 benchmarks/mklq/run_public_healthcheck.py",
     "python3 benchmarks/mklq/run_public_healthcheck.py --full --require-clean",
     "python3 benchmarks/mklq/run_self_hosted_ci_audit.py",
+    "python3 benchmarks/mklq/run_self_hosted_ci_audit.py --check-runners --repo wuls968/MKL-Q",
     "python3 benchmarks/mklq/check_performance_evidence.py",
     "python3 benchmarks/mklq/check_metal_evidence.py",
     "python3 benchmarks/mklq/check_public_claims.py",

@@ -3620,6 +3620,8 @@ def test_mklq_public_healthcheck_requires_self_hosted_ci_audit_metadata():
     assert ("docs/mklq/apple-silicon-ci.md",
             "workflow_dispatch") in requirements
     assert ("docs/mklq/apple-silicon-ci.md", "run_full_gate") in requirements
+    assert ("docs/mklq/apple-silicon-ci.md", "--check-runners") in requirements
+    assert ("docs/mklq/apple-silicon-ci.md", "actions/runners") in requirements
     assert (".github/workflows/mklq-apple-silicon-ci.yml",
             "workflow_dispatch") in requirements
     assert (".github/workflows/mklq-apple-silicon-ci.yml",
@@ -3631,6 +3633,7 @@ def test_mklq_public_healthcheck_requires_self_hosted_ci_audit_metadata():
             "Self-hosted Apple Silicon CI Audit") in requirements
     assert ("benchmarks/mklq/README.md",
             "run_self_hosted_ci_audit.py") in requirements
+    assert ("benchmarks/mklq/README.md", "--check-runners") in requirements
     assert ("docs/mklq/testing-matrix.md",
             "run_self_hosted_ci_audit.py") in requirements
 
@@ -4493,6 +4496,7 @@ python3 benchmarks/mklq/run_public_release_checklist_audit.py
 python3 benchmarks/mklq/run_public_healthcheck.py
 python3 benchmarks/mklq/run_public_healthcheck.py --full --require-clean
 python3 benchmarks/mklq/run_self_hosted_ci_audit.py
+python3 benchmarks/mklq/run_self_hosted_ci_audit.py --check-runners --repo wuls968/MKL-Q
 python3 benchmarks/mklq/repair_macos_install_signatures.py
 python3 benchmarks/mklq/check_performance_evidence.py
 python3 benchmarks/mklq/check_metal_evidence.py
@@ -4522,8 +4526,8 @@ python3 benchmarks/mklq/run_public_readiness_audit.py
 - `mklq-metal` is described as full Metal-native or default-ready.
 - Local benchmark evidence is described as release certification.
 - The GitHub Actions run for the pushed commit is failing or still unknown.
-- `mklq-apple-silicon-ci.yml` adds push, pull_request, secrets, release, or
-  upload paths.
+- `mklq-apple-silicon-ci.yml` adds pull_request, secrets, release, upload
+  paths, or a self-hosted job outside manual `run_full_gate=confirm`.
 """
 
 
@@ -4702,6 +4706,7 @@ Do not enable this heavy workflow by default. The workflow uses
 workflow_dispatch, run_full_gate, default skip activation, no secrets,
 read-only access, permissions: contents: read, timeout-minutes, concurrency,
 broad push Dispatch guard validation, and no pull request triggers.
+Before dispatching the full gate, run --check-runners to query actions/runners.
 
 ## Validation Command
 
@@ -4808,6 +4813,80 @@ def test_mklq_self_hosted_ci_audit_builds_passing_report(monkeypatch,
 
     assert report["schema_version"] == "mklq-self-hosted-ci-audit-v1"
     assert report["summary"] == {"status": "passed", "passed": 4, "failed": 0}
+
+
+def test_mklq_self_hosted_ci_audit_checks_online_runner_inventory(
+        monkeypatch, tmp_path):
+    module = _load_self_hosted_ci_audit_module()
+    _write_self_hosted_ci_audit_fixture(tmp_path, _self_hosted_ci_doc_text())
+
+    def fake_command_output(root, args):
+        if args == ["git", "ls-files", ".github/workflows"]:
+            return _self_hosted_workflow_list()
+        if args == ["gh", "api", "repos/wuls968/MKL-Q/actions/runners"]:
+            return json.dumps({
+                "total_count":
+                    1,
+                "runners": [{
+                    "name":
+                        "apple-m5",
+                    "os":
+                        "macOS",
+                    "status":
+                        "online",
+                    "busy":
+                        False,
+                    "labels": [{
+                        "name": "self-hosted"
+                    }, {
+                        "name": "macOS"
+                    }, {
+                        "name": "ARM64"
+                    }, {
+                        "name": "mklq-apple-silicon"
+                    }],
+                }],
+            })
+        raise AssertionError(args)
+
+    monkeypatch.setattr(module, "command_output", fake_command_output)
+    config = module.AuditConfig(repo_root=tmp_path,
+                                output=tmp_path / "results" /
+                                "self-hosted-ci-audit.json",
+                                check_runners=True)
+
+    report = module.build_report(config)
+
+    assert report["summary"] == {"status": "passed", "passed": 5, "failed": 0}
+    checks = {check["name"]: check for check in report["checks"]}
+    assert checks["runner_inventory"]["details"][
+        "online_matching_runner_count"] == 1
+
+
+def test_mklq_self_hosted_ci_audit_rejects_missing_runner_inventory(
+        monkeypatch, tmp_path):
+    module = _load_self_hosted_ci_audit_module()
+    _write_self_hosted_ci_audit_fixture(tmp_path, _self_hosted_ci_doc_text())
+
+    def fake_command_output(root, args):
+        if args == ["git", "ls-files", ".github/workflows"]:
+            return _self_hosted_workflow_list()
+        if args == ["gh", "api", "repos/wuls968/MKL-Q/actions/runners"]:
+            return json.dumps({"total_count": 0, "runners": []})
+        raise AssertionError(args)
+
+    monkeypatch.setattr(module, "command_output", fake_command_output)
+    config = module.AuditConfig(repo_root=tmp_path,
+                                output=tmp_path / "results" /
+                                "self-hosted-ci-audit.json",
+                                check_runners=True)
+
+    report = module.build_report(config)
+
+    assert report["summary"]["status"] == "failed"
+    checks = {check["name"]: check for check in report["checks"]}
+    assert checks["runner_inventory"]["status"] == "failed"
+    assert checks["runner_inventory"]["details"]["runner_count"] == 0
 
 
 def test_mklq_self_hosted_ci_audit_rejects_missing_security_boundary(

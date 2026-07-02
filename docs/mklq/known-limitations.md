@@ -84,6 +84,17 @@ tracked artifact hygiene, benchmark summary parseability, and helper-script
 compilation. It does not build CUDA-Q, run the Apple Silicon simulator tests, or
 certify Metal runtime behavior.
 
+Before treating a self-hosted `run_full_gate=confirm` dispatch as hosted Apple
+Silicon evidence, first run:
+
+```bash
+python3 benchmarks/mklq/run_self_hosted_ci_audit.py --check-runners --repo wuls968/MKL-Q
+```
+
+That live runner inventory check must find an online runner with the
+`self-hosted`, `macOS`, `ARM64`, and `mklq-apple-silicon` labels. Otherwise a
+full workflow dispatch can only queue and is not correctness evidence.
+
 ## Noise-Model Boundary
 
 `mklq-cpu` and `mklq-metal` are currently noiseless state-vector simulator
