@@ -1274,6 +1274,46 @@ CUDAQ_TEST(MKLQCpuTester, ControlledBuiltInSingleQubitFastPathsMatchMatrices) {
   }
 }
 
+static void expectSingleControlBuiltInGateUsesDedicatedFastPath(
+    std::string_view gateName,
+    std::function<void(MklqCpuCircuitSimulatorTester &, std::size_t,
+                       std::size_t)>
+        apply,
+    const std::array<std::complex<double>, 4> &matrix) {
+  const std::vector<std::complex<double>> initial{
+      {1.0, 0.0},   {2.0, -1.0}, {0.5, 0.25}, {-3.0, 0.5},
+      {0.25, -0.5}, {1.5, 0.5},  {-2.0, 1.0}, {0.75, -1.25},
+  };
+
+  struct Case {
+    std::string_view name;
+    std::size_t control;
+    std::size_t target;
+  };
+
+  for (const auto &testCase : std::vector<Case>{
+           {"control below target", 0, 2},
+           {"control above target", 2, 0},
+       }) {
+    SCOPED_TRACE(gateName);
+    SCOPED_TRACE(testCase.name);
+    MklqCpuCircuitSimulatorTester sim;
+    sim.setStateForTest(initial);
+
+    apply(sim, testCase.control, testCase.target);
+    sim.flushGateQueue();
+
+    expectStateNear(
+        sim.stateVectorForTest(),
+        applySingleQubitMatrixForTest(initial, testCase.target, matrix,
+                                      {testCase.control}));
+    EXPECT_EQ(sim.specializedSingleQubitApplicationsForTest(), 1);
+    EXPECT_EQ(sim.specializedSingleControlQubitApplicationsForTest(), 1);
+    EXPECT_EQ(sim.bitFlipApplicationsForTest(), 0);
+    EXPECT_EQ(sim.phaseApplicationsForTest(), 0);
+  }
+}
+
 CUDAQ_TEST(MKLQCpuTester,
            SingleControlBuiltInSingleQubitGatesUseDedicatedFastPath) {
   const std::vector<std::complex<double>> initial{
@@ -1313,6 +1353,45 @@ CUDAQ_TEST(MKLQCpuTester,
     EXPECT_EQ(sim.specializedSingleQubitApplicationsForTest(), 1);
     EXPECT_EQ(sim.specializedSingleControlQubitApplicationsForTest(), 1);
   }
+}
+
+CUDAQ_TEST(MKLQCpuTester,
+           SingleControlBuiltInHadamardGateUsesDedicatedFastPath) {
+  expectSingleControlBuiltInGateUsesDedicatedFastPath(
+      "ch",
+      [](auto &sim, auto control, auto target) {
+        sim.h(std::vector<std::size_t>{control}, target);
+      },
+      hMatrixForTest());
+}
+
+CUDAQ_TEST(MKLQCpuTester, SingleControlBuiltInYGateUsesDedicatedFastPath) {
+  expectSingleControlBuiltInGateUsesDedicatedFastPath(
+      "cy",
+      [](auto &sim, auto control, auto target) {
+        sim.y(std::vector<std::size_t>{control}, target);
+      },
+      yMatrixForTest());
+}
+
+CUDAQ_TEST(MKLQCpuTester, SingleControlBuiltInRxGateUsesDedicatedFastPath) {
+  constexpr double angle = 0.375;
+  expectSingleControlBuiltInGateUsesDedicatedFastPath(
+      "crx",
+      [&](auto &sim, auto control, auto target) {
+        sim.rx(angle, std::vector<std::size_t>{control}, target);
+      },
+      rxMatrixForTest(angle));
+}
+
+CUDAQ_TEST(MKLQCpuTester, SingleControlBuiltInRyGateUsesDedicatedFastPath) {
+  constexpr double angle = -0.625;
+  expectSingleControlBuiltInGateUsesDedicatedFastPath(
+      "cry",
+      [&](auto &sim, auto control, auto target) {
+        sim.ry(angle, std::vector<std::size_t>{control}, target);
+      },
+      ryMatrixForTest(angle));
 }
 
 CUDAQ_TEST(MKLQCpuTester, SingleControlRzUsesDedicatedPhaseFastPath) {

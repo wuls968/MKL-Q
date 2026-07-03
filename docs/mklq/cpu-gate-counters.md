@@ -9,11 +9,11 @@ Caveat: this is gate fast-path counter evidence from selected build-tree ctest c
 | Field | Value |
 | --- | --- |
 | `status` | passed |
-| `report_count` | 2 |
-| `expected` | 22 |
-| `selected` | 22 |
+| `report_count` | 3 |
+| `expected` | 37 |
+| `selected` | 37 |
 | `missing` | 0 |
-| `passed` | 22 |
+| `passed` | 37 |
 | `failed` | 0 |
 | `runtime_counter_evidence` | True |
 | `gate_fast_path_counter_evidence` | True |
@@ -29,14 +29,14 @@ Aggregate counts are summed across tracked reports. Repeated daily probes intent
 
 | Category | Passed | Failed | Unknown | Description |
 | --- | ---: | ---: | ---: | --- |
-| composite_fast_path | 2 | 0 | 0 | Composite circuit fast-path selection counter tests |
-| controlled_single_qubit_fast_path | 6 | 0 | 0 | Controlled built-in single-qubit gate fast-path counter tests |
-| multi_control_boundary | 2 | 0 | 0 | Multi-control generic specialized-path boundary tests |
-| phase_fast_path | 2 | 0 | 0 | Phase-sign gate fast-path counter tests |
-| single_control_rz_phase | 2 | 0 | 0 | Single-control Rz direct phase fast-path counter tests |
-| single_qubit_fast_path | 4 | 0 | 0 | Uncontrolled built-in single-qubit gate fast-path counter tests |
-| three_qubit_fast_path | 2 | 0 | 0 | Three-qubit row-sparse fast-path counter tests |
-| two_qubit_fast_path | 2 | 0 | 0 | Two-qubit gate fast-path counter tests |
+| composite_fast_path | 3 | 0 | 0 | Composite circuit fast-path selection counter tests |
+| controlled_single_qubit_fast_path | 13 | 0 | 0 | Controlled built-in single-qubit gate fast-path counter tests |
+| multi_control_boundary | 3 | 0 | 0 | Multi-control generic specialized-path boundary tests |
+| phase_fast_path | 3 | 0 | 0 | Phase-sign gate fast-path counter tests |
+| single_control_rz_phase | 3 | 0 | 0 | Single-control Rz direct phase fast-path counter tests |
+| single_qubit_fast_path | 6 | 0 | 0 | Uncontrolled built-in single-qubit gate fast-path counter tests |
+| three_qubit_fast_path | 3 | 0 | 0 | Three-qubit row-sparse fast-path counter tests |
+| two_qubit_fast_path | 3 | 0 | 0 | Two-qubit gate fast-path counter tests |
 
 ## Selected Tests
 
@@ -45,7 +45,11 @@ Aggregate counts are summed across tracked reports. Repeated daily probes intent
 | composite_fast_path | `mklq_cpu_MKLQCpuTester.HardwareEfficientAnsatzCompositeUsesDedicatedFastPaths` |
 | controlled_single_qubit_fast_path | `mklq_cpu_MKLQCpuTester.CnotFastPathAppliesControlledXGate` |
 | controlled_single_qubit_fast_path | `mklq_cpu_MKLQCpuTester.ControlledBuiltInSingleQubitFastPathsMatchMatrices` |
+| controlled_single_qubit_fast_path | `mklq_cpu_MKLQCpuTester.SingleControlBuiltInHadamardGateUsesDedicatedFastPath` |
+| controlled_single_qubit_fast_path | `mklq_cpu_MKLQCpuTester.SingleControlBuiltInRxGateUsesDedicatedFastPath` |
+| controlled_single_qubit_fast_path | `mklq_cpu_MKLQCpuTester.SingleControlBuiltInRyGateUsesDedicatedFastPath` |
 | controlled_single_qubit_fast_path | `mklq_cpu_MKLQCpuTester.SingleControlBuiltInSingleQubitGatesUseDedicatedFastPath` |
+| controlled_single_qubit_fast_path | `mklq_cpu_MKLQCpuTester.SingleControlBuiltInYGateUsesDedicatedFastPath` |
 | multi_control_boundary | `mklq_cpu_MKLQCpuTester.MultiControlBuiltInSingleQubitGatesKeepGenericSpecializedPath` |
 | phase_fast_path | `mklq_cpu_MKLQCpuTester.CzFastPathAppliesControlledZGate` |
 | single_control_rz_phase | `mklq_cpu_MKLQCpuTester.SingleControlRzUsesDedicatedPhaseFastPath` |
@@ -60,6 +64,7 @@ Aggregate counts are summed across tracked reports. Repeated daily probes intent
 | --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
 | benchmarks/mklq/reports/local-cpu-gate-counter-probe-2026-07-01.cpu-gate-counter.json | 2026-07-01T12:43:23.665224+00:00 | passed | 11 | 11 | 0 | 11 | 0 |
 | benchmarks/mklq/reports/local-cpu-gate-counter-probe-2026-07-02.cpu-gate-counter.json | 2026-07-02T08:01:23.418220+00:00 | passed | 11 | 11 | 0 | 11 | 0 |
+| benchmarks/mklq/reports/local-cpu-gate-counter-probe-2026-07-03.cpu-gate-counter.json | 2026-07-03T09:42:16.858470+00:00 | passed | 15 | 15 | 0 | 15 | 0 |
 
 ## Regenerate
 

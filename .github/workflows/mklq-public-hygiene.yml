@@ -87,6 +87,7 @@ jobs:
           test -f benchmarks/mklq/summarize_metal_runtime_counters.py
           test -f benchmarks/mklq/reports/local-cpu-gate-counter-probe-2026-07-01.cpu-gate-counter.json
           test -f benchmarks/mklq/reports/local-cpu-gate-counter-probe-2026-07-02.cpu-gate-counter.json
+          test -f benchmarks/mklq/reports/local-cpu-gate-counter-probe-2026-07-03.cpu-gate-counter.json
           test -f benchmarks/mklq/reports/local-cpu-sampling-counter-probe-2026-06-23.cpu-counter.json
           test -f benchmarks/mklq/reports/local-cpu-sampling-counter-probe-2026-06-24.cpu-counter.json
           test -f benchmarks/mklq/reports/local-metal-runtime-counter-probe-2026-06-23.counter.json
