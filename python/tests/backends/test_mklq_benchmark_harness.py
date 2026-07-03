@@ -674,6 +674,9 @@ def test_mklq_summary_generator_rejects_dirty_by_default(tmp_path):
 
 def test_mklq_clean_cpu_gate_plan_uses_fixed_environment(tmp_path):
     module = _load_clean_benchmark_gate_module()
+    assert module.DEFAULT_GATE_CASES == (
+        "y-state,ch-state,cy-state,crx-state,cry-state,crz-state,cz-state,"
+        "two-qubit-state,three-qubit-state")
     config = module.GateConfig(
         repo_root=tmp_path,
         pythonpath="/tmp/cudaq-runtime",
@@ -689,7 +692,9 @@ def test_mklq_clean_cpu_gate_plan_uses_fixed_environment(tmp_path):
         reports_dir=tmp_path / "reports",
         evidence_output=tmp_path / "benchmark-evidence.md",
         targets="qpp-cpu,mklq-cpu",
-        gate_cases="y-state,ch-state,cy-state,crx-state,cry-state,crz-state,cz-state",
+        gate_cases=(
+            "y-state,ch-state,cy-state,crx-state,cry-state,crz-state,"
+            "cz-state,two-qubit-state,three-qubit-state"),
         composite_cases=
         "qft-like-state,seeded-clifford-state,hardware-efficient-ansatz-state",
         sampling_cases="sample-full-register,sample-partial-register",
@@ -714,7 +719,8 @@ def test_mklq_clean_cpu_gate_plan_uses_fixed_environment(tmp_path):
         "PYTHONPATH": "/tmp/cudaq-runtime",
     }
     assert plan["paths"]["gate_raw"].endswith(
-        "local-clean-cpu-gate-y-ch-cy-crx-cry-crz-cz-q20-2026-06-21.json")
+        "local-clean-cpu-gate-y-ch-cy-crx-cry-crz-cz-two-qubit-three-qubit"
+        "-q20-2026-06-21.json")
     assert plan["paths"]["composite_raw"].endswith(
         "local-clean-cpu-composite-qft-like-seeded-clifford-hardware-efficient-ansatz-q20-2026-06-21.json"
     )
@@ -725,7 +731,8 @@ def test_mklq_clean_cpu_gate_plan_uses_fixed_environment(tmp_path):
     gate_command = plan["commands"]["gate_raw"]
     assert "--isolate-rows" in gate_command
     assert gate_command[gate_command.index("--cases") + 1] == (
-        "y-state,ch-state,cy-state,crx-state,cry-state,crz-state,cz-state")
+        "y-state,ch-state,cy-state,crx-state,cry-state,crz-state,cz-state,"
+        "two-qubit-state,three-qubit-state")
     assert gate_command[gate_command.index("--targets") + 1] == (
         "qpp-cpu,mklq-cpu")
     composite_command = plan["commands"]["composite_raw"]
@@ -1440,6 +1447,8 @@ def test_mklq_public_healthcheck_runs_public_claim_guard(monkeypatch,
 def test_mklq_public_healthcheck_runs_latest_performance_guard(monkeypatch,
                                                                tmp_path):
     module = _load_public_healthcheck_module()
+    assert module.CLEAN_CPU_SUMMARY_ID == (
+        "local-clean-cpu-q20-2026-07-03-two-three")
     config = _public_healthcheck_config(module, tmp_path)
     seen = {}
 
@@ -2107,11 +2116,14 @@ def _performance_summary(module,
 
 def test_mklq_performance_evidence_guard_accepts_clean_cpu_summary():
     module = _load_performance_evidence_module()
-    assert module.DEFAULT_SUMMARY_ID == "local-clean-cpu-q20-2026-07-03"
+    assert module.DEFAULT_SUMMARY_ID == (
+        "local-clean-cpu-q20-2026-07-03-two-three")
     assert "ch_state_q20" in module.DEFAULT_REQUIRED_RATIOS
     assert "crx_state_q20" in module.DEFAULT_REQUIRED_RATIOS
     assert "cry_state_q20" in module.DEFAULT_REQUIRED_RATIOS
     assert "crz_state_q20" in module.DEFAULT_REQUIRED_RATIOS
+    assert "two_qubit_state_q20" in module.DEFAULT_REQUIRED_RATIOS
+    assert "three_qubit_state_q20" in module.DEFAULT_REQUIRED_RATIOS
     assert "qft_like_state_q20" in module.DEFAULT_REQUIRED_RATIOS
     assert "seeded_clifford_state_q20" in module.DEFAULT_REQUIRED_RATIOS
     assert "hardware_efficient_ansatz_state_q20" in (
@@ -7525,31 +7537,33 @@ def test_mklq_benchmark_summary_records_latest_clean_cpu_evidence():
     repo_root = Path(__file__).resolve().parents[3]
     summary_path = (
         repo_root / "benchmarks" / "mklq" / "reports" /
-        "local-clean-cpu-q20-2026-07-03.summary.json")
+        "local-clean-cpu-q20-2026-07-03-two-three.summary.json")
 
     summary = json.loads(summary_path.read_text(encoding="utf-8"))
 
     assert summary["schema_version"] == "mklq-benchmark-summary-v1"
     assert summary["evidence_kind"] == "clean_local_benchmark_evidence"
-    assert summary["summary_id"] == "local-clean-cpu-q20-2026-07-03"
+    assert summary["summary_id"] == (
+        "local-clean-cpu-q20-2026-07-03-two-three")
     assert summary["git"]["commit"] == (
-        "e6843424cec9c636a76b71bb1c12a035401c2d00")
+        "dbebe3744f826ba4cbeed2b99708a2bdab03b11e")
     assert summary["git"]["dirty"] is False
     assert summary["interpretation"]["clean_worktree"] is True
     assert summary["raw_results"][0]["sha256"] == (
-        "d116aec76b8fcc5da0445e58ffe9596411cdba57665ce347f724d4ace24a9288")
-    assert summary["raw_results"][0]["status_rows"] == {"ok": 14}
+        "e45243bbdabaf2c79cb598e1592eddcdd7baa51fbbd7b6cc777d21c29243bbcc")
+    assert summary["raw_results"][0]["status_rows"] == {"ok": 18}
     assert summary["raw_results"][1]["sha256"] == (
-        "88d0a2b69681c9fc958c936ba0205cd8b7b85dba12629f420fe73269efe9faea")
+        "d57ba2e9a520e8d6be69f4fe24cd27499534b4c81bda4e76c380490834546eeb")
     assert summary["raw_results"][1]["status_rows"] == {"ok": 6}
     assert summary["raw_results"][2]["sha256"] == (
-        "9e5f0b0a94ad4326f3059ac18f8f8ae92fe63baf84a7e14155f8f8fc9e81bf98")
+        "7a66431362fd606c4ed96cab1546bfd9acbf6423f294cc86a7455cc738e9ec91")
     assert summary["raw_results"][2]["status_rows"] == {"ok": 8}
     assert summary["machine"]["cpu_brand"] == "Apple M5"
     assert summary["config"]["targets"] == ["qpp-cpu", "mklq-cpu"]
     assert summary["config"]["cases"] == [
         "y-state", "ch-state", "cy-state", "crx-state", "cry-state",
-        "crz-state", "cz-state", "qft-like-state", "seeded-clifford-state",
+        "crz-state", "cz-state", "two-qubit-state", "three-qubit-state",
+        "qft-like-state", "seeded-clifford-state",
         "hardware-efficient-ansatz-state", "sample-full-register",
         "sample-partial-register",
     ]
@@ -7563,30 +7577,46 @@ def test_mklq_benchmark_summary_records_latest_clean_cpu_evidence():
         (row["target"], row["case"], row["shots"]): row
         for row in summary["rows"]
     }
-    assert len(rows) == 28
+    assert len(rows) == 32
     ch = rows[("mklq-cpu", "ch-state", 1024)]
     assert ch["elapsed_seconds_median"] == pytest.approx(
-        0.2455371669784654)
+        0.46432510449085385)
     assert ch["gate_count"] == 192
     assert ch["ch_gate_count"] == 152
     crx = rows[("mklq-cpu", "crx-state", 1024)]
     assert crx["elapsed_seconds_median"] == pytest.approx(
-        0.11632566701155156)
+        0.6602933124813717)
     assert crx["gate_count"] == 192
     assert crx["crx_gate_count"] == 152
     cry = rows[("mklq-cpu", "cry-state", 1024)]
     assert cry["elapsed_seconds_median"] == pytest.approx(
-        0.16777720802929252)
+        0.3119013544928748)
     assert cry["gate_count"] == 192
     assert cry["cry_gate_count"] == 152
     crz = rows[("mklq-cpu", "crz-state", 1024)]
     assert crz["elapsed_seconds_median"] == pytest.approx(
-        0.12135641652275808)
+        0.3315926455252338)
     assert crz["gate_count"] == 192
     assert crz["crz_gate_count"] == 152
+    two_qubit = rows[("mklq-cpu", "two-qubit-state", 1024)]
+    assert two_qubit["elapsed_seconds_median"] == pytest.approx(
+        0.35009195847669616)
+    assert two_qubit["gate_count"] == 182
+    assert two_qubit[
+        "two_qubit_gate_state_throughput_per_second"] == pytest.approx(
+            519.8634118644425)
+    three_qubit = rows[("mklq-cpu", "three-qubit-state", 1024)]
+    assert three_qubit["elapsed_seconds_median"] == pytest.approx(
+        0.7065899164881557)
+    assert three_qubit["gate_count"] == 184
+    assert three_qubit["state_prep_gate_count"] == 40
+    assert three_qubit["three_qubit_gate_count"] == 144
+    assert three_qubit[
+        "three_qubit_gate_state_throughput_per_second"] == pytest.approx(
+            203.795718902555)
     ansatz = rows[("mklq-cpu", "hardware-efficient-ansatz-state", 1024)]
     assert ansatz["elapsed_seconds_median"] == pytest.approx(
-        0.41414914550841786)
+        0.47098418697714806)
     assert ansatz["gate_count"] == 792
     assert ansatz["ansatz_rotation_gate_count"] == 480
     assert ansatz["ansatz_cx_gate_count"] == 80
@@ -7597,31 +7627,37 @@ def test_mklq_benchmark_summary_records_latest_clean_cpu_evidence():
     assert ansatz["ansatz_entangler_gate_count"] == 304
     assert ansatz[
         "hardware_efficient_ansatz_state_throughput_per_second"
-    ] == pytest.approx(1912.3545432593487)
+    ] == pytest.approx(1681.5851187768806)
     assert rows[("mklq-cpu", "qft-like-state", 1024)][
-        "elapsed_seconds_median"] == pytest.approx(1.4552725834655575)
+        "elapsed_seconds_median"] == pytest.approx(1.250389687513234)
     assert rows[("mklq-cpu", "sample-partial-register", 65536)][
-        "elapsed_seconds_median"] == pytest.approx(0.01988293748581782)
+        "elapsed_seconds_median"] == pytest.approx(0.040841833484591916)
 
     ratios = summary["comparison"]["clean_worktree_cross_target_ratio"]
     assert ratios["qpp_cpu_over_mklq_cpu_ch_state_q20"] == pytest.approx(
-        36.06768633029786)
+        34.208184659526225)
     assert ratios["qpp_cpu_over_mklq_cpu_crx_state_q20"] == pytest.approx(
-        76.43138457652253)
+        23.70866713108767)
     assert ratios["qpp_cpu_over_mklq_cpu_cry_state_q20"] == pytest.approx(
-        78.64238800363567)
+        50.174126048428036)
     assert ratios["qpp_cpu_over_mklq_cpu_crz_state_q20"] == pytest.approx(
-        96.48836170350988)
+        49.12960007353075)
+    assert ratios[
+        "qpp_cpu_over_mklq_cpu_two_qubit_state_q20"] == pytest.approx(
+            56.81897206256883)
+    assert ratios[
+        "qpp_cpu_over_mklq_cpu_three_qubit_state_q20"] == pytest.approx(
+            41.92185030848571)
     assert ratios[
         "qpp_cpu_over_mklq_cpu_hardware_efficient_ansatz_state_q20"
-    ] == pytest.approx(77.80366831479472)
+    ] == pytest.approx(80.59153330629606)
     assert ratios["qpp_cpu_over_mklq_cpu_y_state_q20"] == pytest.approx(
-        44.90249456083558)
+        25.42461866930103)
     assert ratios["qpp_cpu_over_mklq_cpu_qft_like_state_q20"] == pytest.approx(
-        54.081437473431144)
+        78.7669513852718)
     assert ratios[
         "qpp_cpu_over_mklq_cpu_seeded_clifford_state_q20"] == pytest.approx(
-            116.72520666158489)
+            98.45772901695285)
 
 
 def test_mklq_benchmark_summary_records_latest_crz_distance_evidence():
