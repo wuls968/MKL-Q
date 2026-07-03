@@ -2454,13 +2454,69 @@ Test project /repo/build-python
     tests = module.select_counter_tests(listing)
 
     assert tests == [
-        "mklq_metal_MKLQMetalTester.MetalRuntimeKeepsResidentStateAcrossGateSequence",
         "mklq_metal_MKLQMetalTester.MetalRuntimeAppliesResidentThreeQubitGate",
+        "mklq_metal_MKLQMetalTester.MetalRuntimeKeepsResidentStateAcrossGateSequence",
         "mklq_metal_MKLQMetalTester.MetalRuntimeFillsResidentProbabilitiesWithoutStateReadback",
         "mklq_metal_MKLQMetalTester.SimulatorKeepsSupportedGateSequenceResidentUntilReadback",
         "mklq_metal_MKLQMetalTester.SimulatorSamplesResidentDenseStateWithoutReadback",
         "mklq_metal_MKLQMetalTester.SimulatorMeasuresAndResetsResidentStateWithoutReadback",
     ]
+
+
+def test_mklq_metal_runtime_counter_probe_tracks_runtime_counter_surface():
+    module = _load_metal_runtime_counter_probe_module()
+    expected_suffixes = {
+        "MetalRuntimeAppliesSingleQubitGate",
+        "MetalRuntimeAppliesControlledSingleQubitGate",
+        "MetalRuntimeAppliesTwoQubitGate",
+        "MetalRuntimeAppliesControlledTwoQubitGate",
+        "MetalRuntimeAppliesResidentThreeQubitGate",
+        "MetalRuntimeFillsFullRegisterProbabilities",
+        "MetalRuntimeProbabilityFillMatchesCpuNorms",
+        "MetalRuntimeFillsResidentMarginalProbabilities",
+        "MetalRuntimeComputesAndCollapsesResidentQubitProbability",
+        "MetalRuntimeKeepsResidentStateAcrossGateSequence",
+        "MetalRuntimeKeepsResidentYAndControlledYSequence",
+        "MetalRuntimeFillsResidentProbabilitiesWithoutStateReadback",
+        "MetalRuntimeRejectsTargetsOutsideStateRange",
+        "SimulatorUsesMetalFullRegisterProbabilityFill",
+        "SimulatorKeepsSupportedGateSequenceResidentUntilReadback",
+        "SimulatorKeepsYAndControlledYResidentUntilReadback",
+        "SimulatorKeepsBuiltInYAndControlledYResidentUntilReadback",
+        "SimulatorKeepsBuiltInRxAndControlledRxResidentUntilReadback",
+        "SimulatorKeepsBuiltInRyAndControlledRyResidentUntilReadback",
+        "SimulatorKeepsBuiltInRzAndControlledRzResidentUntilReadback",
+        "SimulatorKeepsBuiltInPhaseFamilyResidentUntilReadback",
+        "SimulatorKeepsMultiControlSingleQubitResidentUntilReadback",
+        "SimulatorSamplesResidentDenseStateWithoutReadback",
+        "SimulatorSamplesLargeResidentPartialRegisterThroughFullProbability",
+        "SimulatorSamplesSmallResidentPartialRegisterThroughMarginalProbability",
+        "SimulatorSamplesDeterministicSparseStateWithOneBitStringConversion",
+        "SimulatorSynchronizesResidentStateBeforeUnsupportedGate",
+        "SimulatorKeepsThreeQubitGateResidentUntilReadback",
+        "SimulatorReuploadsResidentStateAfterUnsupportedGateFallback",
+        "SimulatorMeasuresAndResetsResidentStateWithoutReadback",
+        "SimulatorResetsResidentNonzeroTargetWithoutReadback",
+        "SimulatorPoisonsResidentStateWhenSingleGateFails",
+        "SimulatorPoisonsResidentStateWhenTwoGateFails",
+        "SimulatorPoisonsResidentStateWhenThreeGateFails",
+        "SimulatorThrowsWhenResidentMeasurementProbabilityFails",
+        "SimulatorThrowsWhenResidentMeasurementCollapseFails",
+        "SimulatorThrowsWhenResidentResetGateFails",
+        "SimulatorSynchronizesResidentStateBeforeZeroShotExpectation",
+        "SimulatorSamplesDenseFullRegisterThroughMetalProbabilityFill",
+    }
+    metadata_only_suffixes = {
+        "RegistersSeparateBackendName",
+        "DiagnosticsUseMetalPrefix",
+        "DetectsMetalRuntimeDevice",
+    }
+
+    suffixes = set(module.COUNTER_TEST_SUFFIXES)
+
+    assert suffixes == expected_suffixes
+    assert suffixes.isdisjoint(metadata_only_suffixes)
+    assert len(module.COUNTER_TEST_SUFFIXES) == 39
 
 
 def test_mklq_metal_runtime_counter_probe_builds_bounded_report(monkeypatch,
@@ -2525,7 +2581,7 @@ def test_mklq_metal_runtime_counter_probe_builds_bounded_report(monkeypatch,
         "--test-dir",
         str(tmp_path),
         "-R",
-        r"^mklq_metal_MKLQMetalTester\.MetalRuntimeKeepsResidentStateAcrossGateSequence$",
+        r"^mklq_metal_MKLQMetalTester\.MetalRuntimeAppliesSingleQubitGate$",
     ]
 
 

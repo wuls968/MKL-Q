@@ -105,7 +105,7 @@ latest full 2026-07-03 result is `33/33` steps passed.
 - One-command correctness gate: passed with 4 steps passed, 0 failed, and 0
   skipped, including the Metal runtime counter probe.
 - Public example smoke gate: passed, with 30 steps passed and 0 failed.
-- Current `benchmark_harness_tests`: `180 passed`.
+- Current `benchmark_harness_tests`: `181 passed`.
 - Current `cpu_gate_counter_probe_parse`: 3 bounded reports, 37 expected,
   37 selected, 0 missing, and 0 failures, including single-control X/CNOT,
   per-gate single-control H/Y/Rx/Ry direct pair fixtures, single-control Rz
@@ -121,9 +121,10 @@ latest full 2026-07-03 result is `33/33` steps passed.
   `HardwareEfficientAnsatzCompositeUsesDedicatedFastPaths` CPU counter fixture
   that checks the hardware-efficient ansatz gate mix uses the expected
   rotation, CNOT, CRZ, CZ, CRX, and SWAP fast paths.
-- Current tracked `metal_runtime_counter_probe`: 2 bounded reports, 40
-  expected, 40 selected, 0 missing, and 0 failures; each report runs 20
-  counter ctests independently.
+- Current tracked `metal_runtime_counter_probe`: 3 bounded reports, 79
+  expected, 79 selected, 0 missing, and 0 failures. The latest tracked report
+  runs 39 counter ctests independently; the two older reports remain
+  historical 20-test evidence.
 - Clean CPU benchmark gate: passed, with 32 q20 `qpp-cpu`/`mklq-cpu` rows and
   32 rows reporting `status == "ok"`, including `two-qubit-state`,
   `three-qubit-state`, and `hardware-efficient-ansatz-state`.
@@ -231,13 +232,12 @@ wrapper steps passed, 0 failed, and 0 skipped. The step-level results were:
 - `nvqpp_smoke`: `2 passed`.
 - `target_config_ctest`: `93/93 passed`, including the hardware-efficient
   ansatz composite CPU fast-path counter fixture.
-- `metal_runtime_counter_probe`: 20 expected, 20 selected, 0 missing, and 20
-  independently executed passing counter ctests, including the resident
-  direct three-target runtime fixture, built-in Rx/Ry/Rz,
-  controlled-Rx/Ry/Rz, and phase-family S/T/Sdg/Tdg fixtures, plus the
-  multi-control single-qubit resident fixture, the simulator resident
-  three-target gate fixture, and the four-or-more-target unsupported gate
-  fallback/reupload boundary fixture.
+- `metal_runtime_counter_probe`: 39 expected, 39 selected, 0 missing, and 39
+  independently executed passing counter ctests, including direct runtime
+  single-, two-, and three-qubit gate fixtures, full-register and marginal
+  probability fixtures, built-in Rx/Ry/Rz and phase-family fixtures, sampling
+  fixtures, measurement/collapse/reset fixtures, unsupported-gate
+  fallback/reupload fixtures, and resident error-boundary fixtures.
 
 The Python smoke step includes the MKL-Q API smoke tests, the CPU correctness
 fixture suite, the limited experimental Metal correctness fixture suite, and
