@@ -1969,6 +1969,31 @@ def test_mklq_public_healthcheck_checks_metadata_tokens(monkeypatch, tmp_path):
     assert "banned_token_failures" in result["details"]
 
 
+def test_mklq_public_healthcheck_can_run_only_named_steps(tmp_path):
+    module = _load_public_healthcheck_module()
+    base = _public_healthcheck_config(module, tmp_path)
+    config = module.HealthcheckConfig(**{
+        **base.__dict__,
+        "only_steps": ("public_metadata",),
+    })
+
+    steps = module.build_steps(config)
+
+    assert [step.name for step in steps] == ["public_metadata"]
+
+
+def test_mklq_public_healthcheck_rejects_unknown_only_step(tmp_path):
+    module = _load_public_healthcheck_module()
+    base = _public_healthcheck_config(module, tmp_path)
+    config = module.HealthcheckConfig(**{
+        **base.__dict__,
+        "only_steps": ("not_a_real_step",),
+    })
+
+    with pytest.raises(ValueError, match="unknown healthcheck step"):
+        module.build_steps(config)
+
+
 def test_mklq_public_healthcheck_requires_metal_guard_in_pr_template():
     module = _load_public_healthcheck_module()
 
@@ -2000,23 +2025,22 @@ def test_mklq_public_healthcheck_requires_metal_execution_boundary_metadata():
             "Metal Execution Boundary") in requirements
 
 
-def test_mklq_public_hygiene_workflow_checks_metal_execution_boundary_doc():
+def _workflow_step_block(workflow: str, step_name: str) -> str:
+    start = workflow.index(f"      - name: {step_name}")
+    next_start = workflow.find("\n      - name:", start + 1)
+    return workflow[start:] if next_start == -1 else workflow[start:next_start]
+
+
+def test_mklq_public_hygiene_workflow_delegates_metadata_to_healthcheck():
     workflow = Path(".github/workflows/mklq-public-hygiene.yml").read_text(
         encoding="utf-8")
+    step = _workflow_step_block(workflow, "Check MKL-Q public metadata")
 
-    assert "test -f docs/mklq/metal-execution-boundary.md" in workflow
-    assert (
-        "grep -q 'mklq-metal execution boundary' docs/mklq/metal-execution-boundary.md"
-        in workflow)
-    assert (
-        "grep -q 'resident Metal state' docs/mklq/metal-execution-boundary.md"
-        in workflow)
-    assert (
-        "grep -q 'CPU-oracle fallback' docs/mklq/metal-execution-boundary.md"
-        in workflow)
-    assert (
-        "grep -q 'not proof that every operation stayed on Metal' docs/mklq/metal-execution-boundary.md"
-        in workflow)
+    assert "python3 benchmarks/mklq/run_public_healthcheck.py" in step
+    assert "--only-step public_metadata" in step
+    assert "--skip-harness-tests" in step
+    assert "grep -q" not in step
+    assert "test -f docs/mklq/metal-execution-boundary.md" not in step
 
 
 def test_mklq_metal_execution_boundary_doc_keeps_workflow_tokens_single_line():
@@ -3783,11 +3807,16 @@ def test_mklq_public_hygiene_workflow_runs_release_checklist_audit():
 def test_mklq_public_hygiene_workflow_runs_self_hosted_ci_audit():
     workflow = Path(".github/workflows/mklq-public-hygiene.yml").read_text(
         encoding="utf-8")
+    benchmark_readme = Path("benchmarks/mklq/README.md").read_text(
+        encoding="utf-8")
 
     assert "Audit self-hosted Apple Silicon CI readiness" in workflow
     assert "python3 benchmarks/mklq/run_self_hosted_ci_audit.py" in workflow
-    assert "Self-hosted Apple Silicon CI Audit" in workflow
-    assert "benchmarks/mklq/README.md" in workflow
+    assert "Self-hosted Apple Silicon CI Audit" in benchmark_readme
+    module = _load_public_healthcheck_module()
+    requirements = set(module.public_metadata_requirements())
+    assert ("benchmarks/mklq/README.md",
+            "Self-hosted Apple Silicon CI Audit") in requirements
     assert workflow.index("Audit public release checklist") < workflow.index(
         "Audit self-hosted Apple Silicon CI readiness")
     assert workflow.index(
@@ -3795,25 +3824,14 @@ def test_mklq_public_hygiene_workflow_runs_self_hosted_ci_audit():
             "Parse benchmark summaries")
 
 
-def test_mklq_public_hygiene_workflow_checks_counter_report_files():
+def test_mklq_public_hygiene_workflow_uses_counter_docs_guards():
     workflow = Path(".github/workflows/mklq-public-hygiene.yml").read_text(
         encoding="utf-8")
-    docs_text = "\n".join(
-        Path(path).read_text(encoding="utf-8") for path in [
-            "docs/mklq/cpu-gate-counters.md",
-            "docs/mklq/cpu-sampling-counters.md",
-            "docs/mklq/metal-runtime-counters.md",
-        ])
-    reports = sorted(
-        set(
-            re.findall(
-                r"benchmarks/mklq/reports/[^\s|]+\.(?:cpu-gate-counter|cpu-counter|counter)\.json",
-                docs_text,
-            )))
 
-    assert reports
-    for report in reports:
-        assert f"test -f {report}" in workflow
+    assert "python3 benchmarks/mklq/check_cpu_gate_counter_docs.py" in workflow
+    assert "python3 benchmarks/mklq/check_cpu_sampling_counter_docs.py" in workflow
+    assert "python3 benchmarks/mklq/check_metal_runtime_counter_docs.py" in workflow
+    assert "test -f benchmarks/mklq/reports/" not in workflow
 
 
 def test_mklq_public_healthcheck_requires_upstream_sync_audit_metadata():

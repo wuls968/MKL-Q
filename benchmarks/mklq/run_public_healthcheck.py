@@ -164,6 +164,7 @@ class HealthcheckConfig:
     include_harness_tests: bool
     refresh_clean_cpu_benchmark: bool
     plan_only: bool
+    only_steps: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -310,6 +311,8 @@ def public_metadata_requirements() -> list[tuple[str, str]]:
         ("README.md", "examples/mklq"),
         ("README.md", "apple-silicon-ci.md"),
         ("README.md", "metal-execution-boundary.md"),
+        (".github/workflows/mklq-public-hygiene.yml",
+         "--only-step public_metadata"),
         (".github/workflows/mklq-apple-silicon-ci.yml", "workflow_dispatch"),
         (".github/workflows/mklq-apple-silicon-ci.yml", "run_full_gate"),
         (".github/workflows/mklq-apple-silicon-ci.yml",
@@ -370,6 +373,7 @@ def public_metadata_requirements() -> list[tuple[str, str]]:
         ("docs/mklq/developer-workflow.md", "run_preflight_audit.py"),
         ("docs/mklq/developer-workflow.md", "run_public_release_checklist_audit.py"),
         ("docs/mklq/developer-workflow.md", "run_public_healthcheck.py"),
+        ("docs/mklq/developer-workflow.md", "--only-step public_metadata"),
         ("docs/mklq/developer-workflow.md",
          "repair_macos_install_signatures.py"),
         ("docs/mklq/developer-workflow.md", "multiple bounded reports are tracked"),
@@ -1545,6 +1549,15 @@ def build_steps(config: HealthcheckConfig) -> list[Step]:
             Step("clean_cpu_benchmark",
                  "Refresh clean qpp-cpu versus mklq-cpu benchmark evidence.",
                  run_clean_cpu_benchmark))
+    if config.only_steps:
+        by_name = {step.name: step for step in steps}
+        unknown = [
+            step_name for step_name in config.only_steps if step_name not in by_name
+        ]
+        if unknown:
+            raise ValueError(
+                "unknown healthcheck step(s): " + ", ".join(sorted(unknown)))
+        return [by_name[step_name] for step_name in config.only_steps]
     return steps
 
 
@@ -1586,6 +1599,7 @@ def run_healthcheck(config: HealthcheckConfig) -> dict[str, Any]:
             "full": config.full,
             "include_harness_tests": config.include_harness_tests,
             "refresh_clean_cpu_benchmark": config.refresh_clean_cpu_benchmark,
+            "only_steps": list(config.only_steps),
         },
         "steps": step_plan(steps),
     }
@@ -1647,6 +1661,7 @@ def make_config(args: argparse.Namespace) -> HealthcheckConfig:
         include_harness_tests=not args.skip_harness_tests,
         refresh_clean_cpu_benchmark=args.refresh_clean_cpu_benchmark,
         plan_only=args.plan_only,
+        only_steps=tuple(args.only_steps or ()),
     )
 
 
@@ -1701,6 +1716,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--plan-only",
                         action="store_true",
                         help="Print the healthcheck plan as JSON without running checks.")
+    parser.add_argument("--only-step",
+                        dest="only_steps",
+                        action="append",
+                        help="Run only the named healthcheck step. May be repeated.")
     return parser.parse_args()
 
 

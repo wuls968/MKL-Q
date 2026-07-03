@@ -214,6 +214,13 @@ python3 -m py_compile \
   examples/mklq/verify_examples.py
 ```
 
+The GitHub public metadata step delegates to the shared healthcheck entrypoint
+instead of duplicating `grep` rules in the workflow:
+
+```bash
+python3 benchmarks/mklq/run_public_healthcheck.py --only-step public_metadata
+```
+
 Expected workflow state:
 
 ```text
