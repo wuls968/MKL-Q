@@ -197,10 +197,11 @@ refreshes on 2026-07-02 and focused CRZ distance-sweep evidence retained from
   controlled-Rx/Ry/Rz, phase-family S/T/Sdg/Tdg, and multi-control
   single-qubit fixtures, plus the simulator resident three-target gate fixture
   and unsupported gate fallback/reupload boundary fixture.
-- clean CPU benchmark gate: passed with 20 q20 `qpp-cpu`/`mklq-cpu` rows,
-  including `cz-state`, `qft-like-state`, `seeded-clifford-state`, and
-  `hardware-efficient-ansatz-state`, with 20 rows reporting `status == "ok"`
-  against `61e5f099f2d3b87feb6c3e7cf27d37f1e1d77c04`.
+- clean CPU benchmark gate: passed with 28 q20 `qpp-cpu`/`mklq-cpu` rows,
+  including `ch-state`, `crx-state`, `cry-state`, `crz-state`, `cz-state`,
+  `qft-like-state`, `seeded-clifford-state`, and
+  `hardware-efficient-ansatz-state`, with 28 rows reporting `status == "ok"`
+  against `e6843424cec9c636a76b71bb1c12a035401c2d00`.
 - CRZ distance-sweep CPU evidence: passed with 38 q20 `qpp-cpu`/`mklq-cpu`
   rows covering distances 1 through 19, with all rows reporting
   `status == "ok"` and a minimum local median elapsed ratio of `68.56x`
