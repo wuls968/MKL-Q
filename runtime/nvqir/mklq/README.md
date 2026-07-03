@@ -114,9 +114,9 @@ target-marker output.
    pass.
 3. Keep `mklq-metal` experimental until Metal-native coverage no longer depends
    on CPU oracle fallback and it passes the same tests against the CPU oracle.
-4. Follow the Metal sampling draw/count plan in
-   `docs/superpowers/plans/2026-06-18-mklq-metal-sampling-draw-count.md`
-   before moving sample count accumulation onto the GPU.
+4. Follow the public Metal execution boundary in
+   `docs/mklq/metal-execution-boundary.md` before moving sample count
+   accumulation onto the GPU.
 5. Benchmark on a fixed Apple Silicon host before making performance claims.
 
 ## Tooling

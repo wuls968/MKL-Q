@@ -1969,6 +1969,25 @@ def test_mklq_public_healthcheck_checks_metadata_tokens(monkeypatch, tmp_path):
     assert "banned_token_failures" in result["details"]
 
 
+def test_mklq_public_healthcheck_bans_internal_plan_references(monkeypatch,
+                                                               tmp_path):
+    module = _load_public_healthcheck_module()
+    config = _public_healthcheck_config(module, tmp_path)
+    readme = tmp_path / "runtime" / "nvqir" / "mklq" / "README.md"
+    readme.parent.mkdir(parents=True)
+    readme.write_text("See docs/superpowers/plans/private-plan.md\n",
+                      encoding="utf-8")
+
+    monkeypatch.setattr(module, "public_metadata_requirements", lambda: [])
+    monkeypatch.setattr(module, "public_metadata_paths", lambda root: [readme])
+
+    result = module.run_public_metadata_check(config)
+
+    assert result["status"] == "failed"
+    assert any("docs/superpowers/plans/" in failure
+               for failure in result["details"]["banned_token_failures"])
+
+
 def test_mklq_public_healthcheck_can_run_only_named_steps(tmp_path):
     module = _load_public_healthcheck_module()
     base = _public_healthcheck_config(module, tmp_path)
@@ -2023,6 +2042,19 @@ def test_mklq_public_healthcheck_requires_metal_execution_boundary_metadata():
             "metal-execution-boundary.md") in requirements
     assert ("benchmarks/mklq/README.md",
             "Metal Execution Boundary") in requirements
+    assert ("runtime/nvqir/mklq/README.md",
+            "metal-execution-boundary.md") in requirements
+
+
+def test_mklq_public_healthcheck_scans_runtime_mklq_readme():
+    module = _load_public_healthcheck_module()
+
+    scanned_paths = {
+        path.relative_to(Path.cwd()).as_posix()
+        for path in module.public_metadata_paths(Path.cwd())
+    }
+
+    assert "runtime/nvqir/mklq/README.md" in scanned_paths
 
 
 def _workflow_step_block(workflow: str, step_name: str) -> str:
