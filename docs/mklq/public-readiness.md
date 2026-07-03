@@ -4,7 +4,7 @@ This page records the public repository readiness snapshot for MKL-Q. It is a
 source-only repository audit, not a release certification, package
 certification, Apple Silicon CI replacement, or performance certification.
 
-Snapshot date: 2026-07-02.
+Snapshot date: 2026-07-03.
 
 ## Scope
 
@@ -168,8 +168,8 @@ refreshes on 2026-07-02 and focused CRZ distance-sweep evidence retained from
   state for the latest public healthcheck gate, and the ignored correctness
   gate JSON records the latest correctness-gate state;
 - install-prefix build: passed;
-- default public healthcheck: passed with 28/28 steps passed;
-- full public healthcheck: passed with 32/32 steps passed after adding the
+- default public healthcheck: passed with 29/29 steps passed;
+- full public healthcheck: passed with 33/33 steps passed after adding the
   dedicated local macOS install-prefix signature repair step; the repair step
   refreshed and verified 60 local install-prefix `.dylib`, `.so`, and `bin/`
   Mach-O loadables/executables before correctness and public example smoke
@@ -177,7 +177,7 @@ refreshes on 2026-07-02 and focused CRZ distance-sweep evidence retained from
 - one-command correctness gate: passed with 4/4 steps passed, including
   `metal_runtime_counter_probe`;
 - public example smoke gate: passed with 30/30 steps passed;
-- current benchmark harness tests: `177 passed`;
+- current benchmark harness tests: `180 passed`;
 - current `cpu_sampling_counter_probe_parse`: 2 bounded reports, 14 expected,
   14 selected, 0 missing, and 0 failures, including full-register and marginal
   probability-fill counter ctests;
@@ -189,7 +189,7 @@ refreshes on 2026-07-02 and focused CRZ distance-sweep evidence retained from
 - standalone install-prefix Python subset: `37 passed`;
 - `python_target_smoke`: `61 passed`;
 - `nvqpp_smoke`: `2 passed`;
-- current full `target_config_ctest`: `89/89 passed`, including the
+- current full `target_config_ctest`: `93/93 passed`, including the
   hardware-efficient ansatz composite CPU fast-path counter fixture;
 - current tracked `metal_runtime_counter_probe`: 2 bounded reports, 40
   expected, 40 selected, 0 missing, and 0 failures, including the direct
@@ -210,6 +210,11 @@ refreshes on 2026-07-02 and focused CRZ distance-sweep evidence retained from
   `qpp-cpu`/`mklq-cpu` rows, with 6 rows reporting `status == "ok"` and local
   median elapsed ratios of `26.84x`, `52.94x`, and `81.37x` against
   `f2d87a4bf1e0d0163481a560df868292715a660a`.
+- two/three-qubit CPU scaling evidence: passed with 12 q18/q20/q22
+  `qpp-cpu`/`mklq-cpu` rows for `two-qubit-state` and `three-qubit-state`, with
+  12 rows reporting `status == "ok"` and local median elapsed ratios of
+  `47.20x`, `131.99x`, `163.42x`, `24.54x`, `87.34x`, and `90.91x` against
+  `cb688b20c825a970965ffe41ca84757287abf847`.
 
 This evidence is local Apple Silicon evidence. It is useful for source bootstrap
 confidence, but it is not hosted CI, release certification, or cross-machine

@@ -26,6 +26,7 @@ Caveat: these entries are local benchmark evidence from development or release-p
 | local-sampling-scaling-cpu-q18-q22-2026-06-23 | clean_local_benchmark_evidence | Apple M5, 10 logical cores, 16 GiB RAM, macOS 26.5.1 | qpp-cpu, mklq-cpu | sample-full-register, sample-partial-register | 18, 20, 22 | shot_counts=1024, 65536; repeats=2; warmups=1; layers=8; isolate_rows=true | ok=24 | benchmarks/mklq/results/local-sampling-scaling-cpu-q18-q22-2026-06-23.json sha256=d0fc30326ee6 |
 | local-scaling-cpu-hardware-efficient-ansatz-q18-q22-2026-06-30 | clean_local_benchmark_evidence | Apple M5, 10 logical cores, 16 GiB RAM, macOS 26.5.1 | qpp-cpu, mklq-cpu | hardware-efficient-ansatz-state | 18, 20, 22 | shot_counts=1024; repeats=3; warmups=1; layers=8; isolate_rows=true | ok=6 | benchmarks/mklq/results/local-scaling-cpu-hardware-efficient-ansatz-q18-q22-2026-06-30.json sha256=26721c3b56f9 |
 | local-scaling-cpu-multi-control-q18-q22-2026-06-22 | clean_local_benchmark_evidence | Apple M5, 10 logical cores, 16 GiB RAM, macOS 26.5.1 | qpp-cpu, mklq-cpu | multi-control-state | 18, 20, 22 | shot_counts=1024; repeats=3; warmups=1; layers=8; isolate_rows=true | ok=6 | benchmarks/mklq/results/local-scaling-cpu-multi-control-q18-q22-2026-06-22.json sha256=be97c9f00a75 |
+| local-scaling-cpu-two-qubit-three-qubit-q18-q22-2026-07-03-two-three-scaling | clean_local_benchmark_evidence | Apple M5, 10 logical cores, 16 GiB RAM, macOS 26.5.1 | qpp-cpu, mklq-cpu | two-qubit-state, three-qubit-state | 18, 20, 22 | shot_counts=1024; repeats=3; warmups=1; layers=8; isolate_rows=true | ok=12 | benchmarks/mklq/results/local-scaling-cpu-two-qubit-three-qubit-q18-q22-2026-07-03-two-three-scaling.json sha256=95dacd993ab7 |
 | local-y-cy-fastpath-isolated-q20-2026-06-19 | local_tuning_evidence | Apple M5, 10 logical cores, 16 GiB RAM, macOS 26.5.1 | qpp-cpu, mklq-cpu | y-state, cy-state | 20 | shots=1024; repeats=2; warmups=1; layers=8; isolate_rows=true | ok=4 | benchmarks/mklq/results/local-y-cy-fastpath-isolated-q20-2026-06-19.json sha256=93bce3b77fcc |
 
 ## Comparison Signals
@@ -301,6 +302,18 @@ The values below are copied from each summary's bounded `comparison` object. Kee
 | local-scaling-cpu-multi-control-q18-q22-2026-06-22 | `mklq_cpu_elapsed_seconds_median.multi_control_state_q18` | 0.163252 s |
 | local-scaling-cpu-multi-control-q18-q22-2026-06-22 | `mklq_cpu_elapsed_seconds_median.multi_control_state_q20` | 0.277172 s |
 | local-scaling-cpu-multi-control-q18-q22-2026-06-22 | `mklq_cpu_elapsed_seconds_median.multi_control_state_q22` | 0.771644 s |
+| local-scaling-cpu-two-qubit-three-qubit-q18-q22-2026-07-03-two-three-scaling | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_three_qubit_state_q18` | 24.54x |
+| local-scaling-cpu-two-qubit-three-qubit-q18-q22-2026-07-03-two-three-scaling | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_three_qubit_state_q20` | 87.34x |
+| local-scaling-cpu-two-qubit-three-qubit-q18-q22-2026-07-03-two-three-scaling | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_three_qubit_state_q22` | 90.91x |
+| local-scaling-cpu-two-qubit-three-qubit-q18-q22-2026-07-03-two-three-scaling | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_two_qubit_state_q18` | 47.20x |
+| local-scaling-cpu-two-qubit-three-qubit-q18-q22-2026-07-03-two-three-scaling | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_two_qubit_state_q20` | 131.99x |
+| local-scaling-cpu-two-qubit-three-qubit-q18-q22-2026-07-03-two-three-scaling | `clean_worktree_cross_target_ratio.qpp_cpu_over_mklq_cpu_two_qubit_state_q22` | 163.42x |
+| local-scaling-cpu-two-qubit-three-qubit-q18-q22-2026-07-03-two-three-scaling | `mklq_cpu_elapsed_seconds_median.three_qubit_state_q18` | 0.211712 s |
+| local-scaling-cpu-two-qubit-three-qubit-q18-q22-2026-07-03-two-three-scaling | `mklq_cpu_elapsed_seconds_median.three_qubit_state_q20` | 0.255251 s |
+| local-scaling-cpu-two-qubit-three-qubit-q18-q22-2026-07-03-two-three-scaling | `mklq_cpu_elapsed_seconds_median.three_qubit_state_q22` | 0.942877 s |
+| local-scaling-cpu-two-qubit-three-qubit-q18-q22-2026-07-03-two-three-scaling | `mklq_cpu_elapsed_seconds_median.two_qubit_state_q18` | 0.0456607 s |
+| local-scaling-cpu-two-qubit-three-qubit-q18-q22-2026-07-03-two-three-scaling | `mklq_cpu_elapsed_seconds_median.two_qubit_state_q20` | 0.1019 s |
+| local-scaling-cpu-two-qubit-three-qubit-q18-q22-2026-07-03-two-three-scaling | `mklq_cpu_elapsed_seconds_median.two_qubit_state_q22` | 0.351995 s |
 | local-y-cy-fastpath-isolated-q20-2026-06-19 | `same_day_cross_target_ratio.qpp_cpu_over_mklq_cpu_cy_state_q20` | 103.85x |
 | local-y-cy-fastpath-isolated-q20-2026-06-19 | `same_day_cross_target_ratio.qpp_cpu_over_mklq_cpu_y_state_q20` | 167.38x |
 

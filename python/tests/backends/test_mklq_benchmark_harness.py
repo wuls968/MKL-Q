@@ -902,6 +902,54 @@ def test_mklq_cpu_scaling_gate_plan_accepts_ansatz_case(tmp_path):
         "local-scaling-cpu-hardware-efficient-ansatz-q18-q22-2026-06-30")
 
 
+def test_mklq_cpu_scaling_gate_plan_accepts_two_three_qubit_cases(tmp_path):
+    module = _load_cpu_scaling_benchmark_gate_module()
+    config = module.ScalingConfig(
+        repo_root=tmp_path,
+        pythonpath="/tmp/cudaq-runtime",
+        stamp="2026-07-03-two-three-scaling",
+        qubits=[18, 20, 22],
+        threads=10,
+        repeats=3,
+        warmups=1,
+        layers=8,
+        shots=1024,
+        results_dir=tmp_path / "results",
+        reports_dir=tmp_path / "reports",
+        evidence_output=tmp_path / "benchmark-evidence.md",
+        targets="qpp-cpu,mklq-cpu",
+        cases="two-qubit-state,three-qubit-state",
+        summary_id=
+        "local-scaling-cpu-two-qubit-three-qubit-q18-q22-2026-07-03-two-three-scaling",
+        evidence_kind="clean_local_benchmark_evidence",
+        ratio_group="clean_worktree_cross_target_ratio",
+        performance_scope="local test only",
+        summary_text="Synthetic two/three-qubit scaling benchmark gate.",
+        runtime_note="synthetic runtime note",
+        allow_dirty=False,
+        skip_benchmark=False,
+        refresh_evidence=True,
+    )
+
+    plan = module.build_plan(config)
+
+    assert plan["paths"]["raw"].endswith(
+        "local-scaling-cpu-two-qubit-three-qubit-q18-q22-2026-07-03-two-three-scaling.json"
+    )
+    assert plan["paths"]["summary"].endswith(
+        "local-scaling-cpu-two-qubit-three-qubit-q18-q22-2026-07-03-two-three-scaling.summary.json"
+    )
+    benchmark_command = plan["commands"]["raw"]
+    assert benchmark_command[benchmark_command.index("--cases") + 1] == (
+        "two-qubit-state,three-qubit-state")
+    assert benchmark_command[benchmark_command.index("--qubits") + 1] == (
+        "18,20,22")
+    summary_command = plan["commands"]["summary"]
+    assert summary_command[summary_command.index("--summary-id") + 1] == (
+        "local-scaling-cpu-two-qubit-three-qubit-q18-q22-2026-07-03-two-three-scaling"
+    )
+
+
 def test_mklq_sampling_scaling_gate_plan_uses_multi_qubit_shot_evidence(
         tmp_path):
     module = _load_sampling_scaling_benchmark_gate_module()
@@ -1160,6 +1208,7 @@ def test_mklq_public_healthcheck_plan_lists_escalating_gates(tmp_path):
         "multi_control_evidence_guard",
         "cpu_scaling_evidence_guard",
         "ansatz_scaling_evidence_guard",
+        "two_three_scaling_evidence_guard",
         "sampling_scaling_evidence_guard",
         "sampling_profile_evidence_guard",
         "metal_evidence_guard",
@@ -1205,6 +1254,7 @@ def test_mklq_public_healthcheck_plans_crz_distance_guard(tmp_path):
     assert "multi_control_evidence_guard" in steps
     assert "cpu_scaling_evidence_guard" in steps
     assert "ansatz_scaling_evidence_guard" in steps
+    assert "two_three_scaling_evidence_guard" in steps
     assert "sampling_scaling_evidence_guard" in steps
     assert steps.index("performance_evidence_guard") < steps.index(
         "crz_distance_evidence_guard")
@@ -1215,6 +1265,8 @@ def test_mklq_public_healthcheck_plans_crz_distance_guard(tmp_path):
     assert steps.index("cpu_scaling_evidence_guard") < steps.index(
         "ansatz_scaling_evidence_guard")
     assert steps.index("ansatz_scaling_evidence_guard") < steps.index(
+        "two_three_scaling_evidence_guard")
+    assert steps.index("two_three_scaling_evidence_guard") < steps.index(
         "sampling_scaling_evidence_guard")
     assert steps.index("sampling_scaling_evidence_guard") < steps.index(
         "sampling_profile_evidence_guard")
@@ -1642,6 +1694,36 @@ def test_mklq_public_healthcheck_runs_ansatz_scaling_guard(monkeypatch,
         "hardware_efficient_ansatz_state_q18",
         "hardware_efficient_ansatz_state_q20",
         "hardware_efficient_ansatz_state_q22",
+    ]
+
+
+def test_mklq_public_healthcheck_runs_two_three_scaling_guard(monkeypatch,
+                                                              tmp_path):
+    module = _load_public_healthcheck_module()
+    config = _public_healthcheck_config(module, tmp_path)
+    seen = {}
+
+    def fake_run_command(config, command, env_overlay=None):
+        seen["command"] = command
+        return {"returncode": 0, "command": command}
+
+    monkeypatch.setattr(module, "run_command", fake_run_command)
+
+    result = module.run_two_three_scaling_evidence_check(config)
+
+    assert result["status"] == "passed"
+    command = seen["command"]
+    assert command[1].endswith("check_performance_evidence.py")
+    assert command[command.index("--summary-id") + 1] == (
+        module.TWO_THREE_SCALING_SUMMARY_ID)
+    required = command[command.index("--required-ratios") + 1].split(",")
+    assert required == [
+        "two_qubit_state_q18",
+        "two_qubit_state_q20",
+        "two_qubit_state_q22",
+        "three_qubit_state_q18",
+        "three_qubit_state_q20",
+        "three_qubit_state_q22",
     ]
 
 
@@ -7788,6 +7870,86 @@ def test_mklq_benchmark_summary_records_ansatz_scaling_evidence():
     assert ratios[
         "qpp_cpu_over_mklq_cpu_hardware_efficient_ansatz_state_q22"
     ] == pytest.approx(81.37462044979031)
+
+
+def test_mklq_benchmark_summary_records_two_three_scaling_evidence():
+    repo_root = Path(__file__).resolve().parents[3]
+    summary_path = (
+        repo_root / "benchmarks" / "mklq" / "reports" /
+        "local-scaling-cpu-two-qubit-three-qubit-q18-q22-2026-07-03-two-three-scaling.summary.json"
+    )
+
+    summary = json.loads(summary_path.read_text(encoding="utf-8"))
+
+    assert summary["schema_version"] == "mklq-benchmark-summary-v1"
+    assert summary["evidence_kind"] == "clean_local_benchmark_evidence"
+    assert summary["summary_id"] == (
+        "local-scaling-cpu-two-qubit-three-qubit-q18-q22-2026-07-03-two-three-scaling"
+    )
+    assert summary["git"]["commit"] == (
+        "cb688b20c825a970965ffe41ca84757287abf847")
+    assert summary["git"]["dirty"] is False
+    assert summary["interpretation"]["clean_worktree"] is True
+    assert summary["interpretation"]["scaling_axis"] == "qubits"
+    assert summary["interpretation"]["scaling_qubits"] == [18, 20, 22]
+    assert summary["raw_results"][0]["sha256"] == (
+        "95dacd993ab733dff776683e4ca6ac06fbd414ae3005f8f855d23a4f59858ee2")
+    assert summary["raw_results"][0]["status_rows"] == {"ok": 12}
+    assert summary["raw_results"][0]["tracked"] is False
+    assert summary["config"]["targets"] == ["qpp-cpu", "mklq-cpu"]
+    assert summary["config"]["cases"] == [
+        "two-qubit-state",
+        "three-qubit-state",
+    ]
+    assert summary["config"]["qubits"] == [18, 20, 22]
+    assert summary["config"]["repeats"] == 3
+    assert summary["config"]["warmups"] == 1
+    assert summary["config"]["layers"] == 8
+
+    rows = {
+        (row["target"], row["case"], row["qubits"]): row
+        for row in summary["rows"]
+    }
+    assert len(rows) == 12
+    expected_mklq = {
+        ("two-qubit-state", 18): (0.04566066700499505, 163, 0, 3569.812065648726),
+        ("two-qubit-state", 20): (0.10190029203658924, 182, 0, 1786.0596506892193),
+        ("two-qubit-state", 22): (0.3519946669694036, 201, 0, 571.0313787722002),
+        ("three-qubit-state", 18): (0.21171208401210606, 164, 128, 604.5946814858274),
+        ("three-qubit-state", 20): (0.25525129097513855, 184, 144, 564.1499380860157),
+        ("three-qubit-state", 22): (0.9428773749968968, 204, 160, 169.69332836152378),
+    }
+    for (case, qubits), (elapsed, gate_count, three_qubit_count,
+                         throughput) in expected_mklq.items():
+        row = rows[("mklq-cpu", case, qubits)]
+        assert row["elapsed_seconds_median"] == pytest.approx(elapsed)
+        assert row["gate_count"] == gate_count
+        if case == "two-qubit-state":
+            assert row[
+                "two_qubit_gate_state_throughput_per_second"
+            ] == pytest.approx(throughput)
+        else:
+            assert row["three_qubit_gate_count"] == three_qubit_count
+            assert row[
+                "three_qubit_gate_state_throughput_per_second"
+            ] == pytest.approx(throughput)
+
+    ratios = summary["comparison"]["clean_worktree_cross_target_ratio"]
+    assert ratios["qpp_cpu_over_mklq_cpu_two_qubit_state_q18"] == pytest.approx(
+        47.197516491311404)
+    assert ratios["qpp_cpu_over_mklq_cpu_two_qubit_state_q20"] == pytest.approx(
+        131.99226279141058)
+    assert ratios["qpp_cpu_over_mklq_cpu_two_qubit_state_q22"] == pytest.approx(
+        163.41930675900275)
+    assert ratios[
+        "qpp_cpu_over_mklq_cpu_three_qubit_state_q18"
+    ] == pytest.approx(24.536732002262006)
+    assert ratios[
+        "qpp_cpu_over_mklq_cpu_three_qubit_state_q20"
+    ] == pytest.approx(87.33979969256421)
+    assert ratios[
+        "qpp_cpu_over_mklq_cpu_three_qubit_state_q22"
+    ] == pytest.approx(90.91154571848728)
 
 
 def test_mklq_benchmark_summary_records_sanitized_sampling_evidence():

@@ -16,7 +16,7 @@ boundary and evidence limits.
 ## Current Evidence Snapshot
 
 Latest local correctness refresh: 2026-07-02. Latest public healthcheck
-refresh: 2026-07-02.
+refresh: 2026-07-03.
 
 The install-prefix build, one-command correctness gate, public example smoke
 gate, default public healthcheck, and standalone install-prefix Python subset
@@ -38,6 +38,10 @@ and three-qubit custom gate rows into the clean local CPU benchmark evidence
 gate. Older clean summaries remain tracked as historical evidence for the
 earlier single-control, QFT-like, seeded Clifford, and hardware-efficient ansatz
 gates.
+The focused two-qubit/SWAP and three-qubit CPU scaling summary was refreshed
+separately against `cb688b20c825a970965ffe41ca84757287abf847`, covering
+q18/q20/q22 `two-qubit-state` and `three-qubit-state` rows with a dedicated
+public healthcheck guard.
 
 The current refresh includes the earlier Metal counter-evidence work:
 resident built-in Rx/Ry/Rz, controlled-Rx/Ry/Rz, phase-family S/T/Sdg/Tdg,
@@ -65,6 +69,8 @@ Raw wrapper output was written to ignored local paths
 `benchmarks/mklq/results/public-healthcheck-2026-07-01.json`,
 `benchmarks/mklq/results/public-healthcheck-after-full-doc-refresh-2026-07-02.json`,
 `benchmarks/mklq/results/public-healthcheck-full-main-2026-07-02.json`,
+`benchmarks/mklq/results/public-healthcheck-two-three-scaling-evidence-2026-07-03.json`,
+`benchmarks/mklq/results/public-healthcheck-full-two-three-scaling-evidence-2026-07-03.json`,
 `benchmarks/mklq/results/public-healthcheck-full-2026-06-22.json`,
 `benchmarks/mklq/results/public-healthcheck-full-2026-06-23.json`,
 `benchmarks/mklq/results/public-healthcheck-full-2026-06-24.json`,
@@ -79,15 +85,19 @@ Raw wrapper output was written to ignored local paths
 `benchmarks/mklq/results/local-metal-runtime-counter-probe-2026-06-28.counter.json`,
 `benchmarks/mklq/results/local-metal-runtime-counter-probe-2026-07-02.counter.json`,
 `benchmarks/mklq/results/local-sampling-scaling-cpu-q18-q22-2026-06-23.json`,
+`benchmarks/mklq/results/local-scaling-cpu-two-qubit-three-qubit-q18-q22-2026-07-03-two-three-scaling.json`,
 `benchmarks/mklq/results/example-smoke-2026-06-23.json`,
 `benchmarks/mklq/results/example-smoke-2026-07-02.json`, and
 `benchmarks/mklq/results/macos-install-signature-repair-2026-07-02.json`;
 these raw payloads are not tracked as public evidence.
 
+Latest default 2026-07-03 result: `29/29` steps passed.
+latest full 2026-07-03 result is `33/33` steps passed.
+
 - Install-prefix build: passed.
-- Default public healthcheck: passed on 2026-07-02, with 28 steps passed and
+- Default public healthcheck: passed on 2026-07-03, with 29 steps passed and
   0 failed.
-- Latest full public healthcheck: passed on 2026-07-02, with 32 steps passed
+- Latest full public healthcheck: passed on 2026-07-03, with 33 steps passed
   and 0 failed after adding the dedicated macOS install-prefix signature repair
   step. The signature repair step refreshed and verified 60 local install-prefix
   `.dylib` and `.so` loadables before the correctness and public example smoke
@@ -95,7 +105,7 @@ these raw payloads are not tracked as public evidence.
 - One-command correctness gate: passed with 4 steps passed, 0 failed, and 0
   skipped, including the Metal runtime counter probe.
 - Public example smoke gate: passed, with 30 steps passed and 0 failed.
-- Current `benchmark_harness_tests`: `177 passed`.
+- Current `benchmark_harness_tests`: `180 passed`.
 - Current `cpu_gate_counter_probe_parse`: 3 bounded reports, 37 expected,
   37 selected, 0 missing, and 0 failures, including single-control X/CNOT,
   per-gate single-control H/Y/Rx/Ry direct pair fixtures, single-control Rz
@@ -107,7 +117,7 @@ these raw payloads are not tracked as public evidence.
 - Standalone install-prefix Python subset: `37 passed`.
 - `python_target_smoke`: `61 passed`.
 - `nvqpp_smoke`: `2 passed`.
-- Current `target_config_ctest`: `89/89 passed`, including the
+- Current `target_config_ctest`: `93/93 passed`, including the
   `HardwareEfficientAnsatzCompositeUsesDedicatedFastPaths` CPU counter fixture
   that checks the hardware-efficient ansatz gate mix uses the expected
   rotation, CNOT, CRZ, CZ, CRX, and SWAP fast paths.
@@ -127,6 +137,11 @@ these raw payloads are not tracked as public evidence.
 - Focused hardware-efficient ansatz CPU scaling evidence: passed, with 6
   q18/q20/q22 rows reporting `status == "ok"` and tracked `qpp-cpu` over
   `mklq-cpu` median elapsed ratios of `26.84x`, `52.94x`, and `81.37x`.
+- Focused two/three-qubit CPU scaling evidence: passed, with 12 q18/q20/q22
+  `two-qubit-state` and `three-qubit-state` rows reporting `status == "ok"`.
+  The tracked `qpp-cpu` over `mklq-cpu` median elapsed ratios are `47.20x`,
+  `131.99x`, and `163.42x` for `two-qubit-state`, and `24.54x`, `87.34x`,
+  and `90.91x` for `three-qubit-state`.
 - Focused sampling scaling evidence: passed, with 24 q18/q20/q22
   full-register and partial-register sampling rows reporting `status == "ok"`.
   The tracked `qpp-cpu` over `mklq-cpu` median elapsed ratios range from
@@ -167,7 +182,7 @@ ctest --test-dir build-python \
   --output-on-failure
 ```
 
-Result in the latest standalone correctness-gate refresh: `89/89 passed`.
+Result in the latest standalone correctness-gate refresh: `93/93 passed`.
 
 ```bash
 PYTHONPATH=/Users/a0000/Documents/MKL-Q/build-python/python \
@@ -208,13 +223,13 @@ python3 benchmarks/mklq/run_correctness_gate.py \
   --build-dir build-python
 ```
 
-Latest local result: passed on 2026-07-02 as part of the full public
+Latest local result: passed on 2026-07-03 as part of the full public
 healthcheck wrapper after local install-prefix signature repair. It reported 4
 wrapper steps passed, 0 failed, and 0 skipped. The step-level results were:
 
 - `python_target_smoke`: `61 passed`.
 - `nvqpp_smoke`: `2 passed`.
-- `target_config_ctest`: `89/89 passed`, including the hardware-efficient
+- `target_config_ctest`: `93/93 passed`, including the hardware-efficient
   ansatz composite CPU fast-path counter fixture.
 - `metal_runtime_counter_probe`: 20 expected, 20 selected, 0 missing, and 20
   independently executed passing counter ctests, including the resident
@@ -344,6 +359,19 @@ python3 benchmarks/mklq/run_cpu_scaling_benchmark.py \
   --runtime-note "The CUDA-Q Python runtime and source provenance are recorded from the raw benchmark report generated by run_cpu_scaling_benchmark.py for hardware-efficient ansatz rows."
 ```
 
+Run the focused CPU qubit-scaling evidence gate for the two-qubit/SWAP and
+three-qubit custom state-vector update paths with:
+
+```bash
+python3 benchmarks/mklq/run_cpu_scaling_benchmark.py \
+  --pythonpath "${HOME}/.cudaq-mklq" \
+  --stamp 2026-07-03-two-three-scaling \
+  --cases two-qubit-state,three-qubit-state \
+  --summary-text "Clean-worktree local scaling run comparing qpp-cpu and mklq-cpu for q18/q20/q22 SWAP/two-qubit and three-qubit custom state-vector updates." \
+  --performance-scope "local Apple M5 q18-q22 two-qubit and three-qubit CPU target scaling comparison only; not a cross-machine release benchmark" \
+  --runtime-note "The CUDA-Q Python runtime and source provenance are recorded from the raw benchmark report generated by run_cpu_scaling_benchmark.py for two-qubit and three-qubit rows."
+```
+
 Run the focused CPU sampling-scaling evidence gate for full-register and
 partial-register sampling with:
 
@@ -380,6 +408,7 @@ Current tracked summaries include:
 - `local-multi-control-cpu-q20-2026-06-22.summary.json`
 - `local-scaling-cpu-multi-control-q18-q22-2026-06-22.summary.json`
 - `local-scaling-cpu-hardware-efficient-ansatz-q18-q22-2026-06-30.summary.json`
+- `local-scaling-cpu-two-qubit-three-qubit-q18-q22-2026-07-03-two-three-scaling.summary.json`
 - `local-sampling-scaling-cpu-q18-q22-2026-06-23.summary.json`
 
 The latest clean-worktree local benchmark summary was refreshed against
@@ -427,6 +456,14 @@ current local MKL-Q build to `/Users/a0000/.cudaq-mklq`. It compares q18/q20/q22
 `repeats=3`, `warmups=1`, `layers=8`, and isolated rows. The public
 healthcheck now includes a dedicated `ansatz_scaling_evidence_guard` for this
 summary.
+
+The focused two/three-qubit CPU scaling summary was generated against
+`cb688b20c825a970965ffe41ca84757287abf847` on 2026-07-03 after installing the
+current local MKL-Q build to `/Users/a0000/.cudaq-mklq`. It compares q18/q20/q22
+`qpp-cpu` and `mklq-cpu` on `two-qubit-state` and `three-qubit-state` with
+`repeats=3`, `warmups=1`, `layers=8`, and isolated rows. All 12 rows completed
+with `status == "ok"`. The public healthcheck now includes a dedicated
+`two_three_scaling_evidence_guard` for this summary.
 
 The focused sampling scaling summary was generated against
 `0cb821897fc158c9755173da70953444099a1e64` on 2026-06-23 after installing the
