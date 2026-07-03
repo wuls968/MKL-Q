@@ -177,7 +177,7 @@ refreshes on 2026-07-02 and focused CRZ distance-sweep evidence retained from
 - one-command correctness gate: passed with 4/4 steps passed, including
   `metal_runtime_counter_probe`;
 - public example smoke gate: passed with 30/30 steps passed;
-- current benchmark harness tests: `180 passed`;
+- current benchmark harness tests: `181 passed`;
 - current `cpu_sampling_counter_probe_parse`: 2 bounded reports, 14 expected,
   14 selected, 0 missing, and 0 failures, including full-register and marginal
   probability-fill counter ctests;
@@ -191,12 +191,13 @@ refreshes on 2026-07-02 and focused CRZ distance-sweep evidence retained from
 - `nvqpp_smoke`: `2 passed`;
 - current full `target_config_ctest`: `93/93 passed`, including the
   hardware-efficient ansatz composite CPU fast-path counter fixture;
-- current tracked `metal_runtime_counter_probe`: 2 bounded reports, 40
-  expected, 40 selected, 0 missing, and 0 failures, including the direct
-  resident three-target runtime fixture, resident built-in Rx/Ry/Rz,
-  controlled-Rx/Ry/Rz, phase-family S/T/Sdg/Tdg, and multi-control
-  single-qubit fixtures, plus the simulator resident three-target gate fixture
-  and unsupported gate fallback/reupload boundary fixture.
+- current tracked `metal_runtime_counter_probe`: 3 bounded reports, 79
+  expected, 79 selected, 0 missing, and 0 failures. The latest tracked report
+  runs 39 counter ctests independently, including direct runtime single-,
+  two-, and three-qubit gate fixtures, full-register and marginal probability
+  fixtures, resident built-in Rx/Ry/Rz and phase-family fixtures, sampling
+  fixtures, measurement/collapse/reset fixtures, unsupported-gate
+  fallback/reupload fixtures, and resident error-boundary fixtures.
 - clean CPU benchmark gate: passed with 32 q20 `qpp-cpu`/`mklq-cpu` rows,
   including `two-qubit-state`, `three-qubit-state`, `qft-like-state`,
   `seeded-clifford-state`, and `hardware-efficient-ansatz-state`, with 32 rows

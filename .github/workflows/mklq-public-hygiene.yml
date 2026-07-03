@@ -92,6 +92,7 @@ jobs:
           test -f benchmarks/mklq/reports/local-cpu-sampling-counter-probe-2026-06-24.cpu-counter.json
           test -f benchmarks/mklq/reports/local-metal-runtime-counter-probe-2026-06-23.counter.json
           test -f benchmarks/mklq/reports/local-metal-runtime-counter-probe-2026-06-24.counter.json
+          test -f benchmarks/mklq/reports/local-metal-runtime-counter-probe-2026-07-03.counter.json
           grep -q 'examples/mklq' README.md
           grep -q 'mklq-cpu' examples/mklq/README.md
           grep -q 'mklq-metal' examples/mklq/README.md
