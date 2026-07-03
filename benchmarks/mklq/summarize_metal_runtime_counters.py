@@ -24,12 +24,16 @@ CATEGORY_DESCRIPTIONS = {
     "resident_gate": "Resident Metal gate/update counter tests",
     "probability_sampling": "Resident probability fill and sampling counter tests",
     "measurement_reset": "Measurement, collapse, and reset counter tests",
+    "error_boundary": "Resident Metal error and poisoned-state boundary tests",
+    "synchronization_boundary": "Resident state synchronization boundary tests",
     "fallback_boundary": "Unsupported-gate fallback and reupload boundary tests",
     "runtime_device": "Runtime/device boundary counter tests",
     "other": "Unclassified runtime counter tests",
 }
 
 CATEGORY_RULES = (
+    ("error_boundary", ("Poisons", "Throws", "Fails", "Failure")),
+    ("synchronization_boundary", ("Synchronizes", "Synchronization")),
     ("fallback_boundary", ("Unsupported", "Fallback", "Reupload")),
     ("measurement_reset", ("Measure", "Measurement", "Collapse", "Reset")),
     ("probability_sampling",

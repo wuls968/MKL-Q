@@ -2663,6 +2663,8 @@ def _runtime_counter_summary_fixture():
         "mklq_metal_MKLQMetalTester.SimulatorSamplesResidentDenseStateWithoutReadback",
         "mklq_metal_MKLQMetalTester.SimulatorMeasuresAndResetsResidentStateWithoutReadback",
         "mklq_metal_MKLQMetalTester.SimulatorReuploadsResidentStateAfterUnsupportedGateFallback",
+        "mklq_metal_MKLQMetalTester.SimulatorSynchronizesResidentStateBeforeUnsupportedGate",
+        "mklq_metal_MKLQMetalTester.SimulatorPoisonsResidentStateWhenSingleGateFails",
     ]
     return {
         "schema_version": "mklq-metal-runtime-counter-probe-v1",
@@ -2704,10 +2706,10 @@ def test_mklq_metal_runtime_counter_summary_groups_counter_coverage(tmp_path):
     assert summary["summary"] == {
         "status": "passed",
         "report_count": 1,
-        "expected": 4,
-        "selected": 4,
+        "expected": 6,
+        "selected": 6,
         "missing": 0,
-        "passed": 4,
+        "passed": 6,
         "failed": 0,
     }
     assert summary["boundary"]["runtime_counter_evidence"] is True
@@ -2721,6 +2723,8 @@ def test_mklq_metal_runtime_counter_summary_groups_counter_coverage(tmp_path):
     assert categories["probability_sampling"]["passed"] == 1
     assert categories["measurement_reset"]["passed"] == 1
     assert categories["fallback_boundary"]["passed"] == 1
+    assert categories["synchronization_boundary"]["passed"] == 1
+    assert categories["error_boundary"]["passed"] == 1
 
 
 def test_mklq_metal_runtime_counter_summary_renders_markdown(tmp_path):
@@ -2732,7 +2736,9 @@ def test_mklq_metal_runtime_counter_summary_renders_markdown(tmp_path):
     markdown = module.render_markdown(module.build_summary([report]))
 
     assert "# MKL-Q Metal Runtime Counter Summary" in markdown
+    assert "error_boundary" in markdown
     assert "fallback_boundary" in markdown
+    assert "synchronization_boundary" in markdown
     assert "runtime counter evidence" in markdown
     assert "not release sign-off" in markdown
     assert "not proof that every operation stayed on Metal" in markdown
