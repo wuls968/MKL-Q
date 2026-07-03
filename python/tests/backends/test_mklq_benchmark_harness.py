@@ -1978,6 +1978,60 @@ def test_mklq_public_healthcheck_requires_metal_guard_in_pr_template():
             "check_metal_evidence.py") in requirements
 
 
+def test_mklq_public_healthcheck_requires_metal_execution_boundary_metadata():
+    module = _load_public_healthcheck_module()
+
+    requirements = set(module.public_metadata_requirements())
+
+    assert ("docs/mklq/metal-execution-boundary.md",
+            "mklq-metal execution boundary") in requirements
+    assert ("docs/mklq/metal-execution-boundary.md",
+            "resident Metal state") in requirements
+    assert ("docs/mklq/metal-execution-boundary.md",
+            "CPU-oracle fallback") in requirements
+    assert ("docs/mklq/metal-execution-boundary.md",
+            "not proof that every operation stayed on Metal") in requirements
+    assert ("README.md", "metal-execution-boundary.md") in requirements
+    assert ("docs/mklq/known-limitations.md",
+            "metal-execution-boundary.md") in requirements
+    assert ("docs/mklq/testing-matrix.md",
+            "metal-execution-boundary.md") in requirements
+    assert ("benchmarks/mklq/README.md",
+            "Metal Execution Boundary") in requirements
+
+
+def test_mklq_public_hygiene_workflow_checks_metal_execution_boundary_doc():
+    workflow = Path(".github/workflows/mklq-public-hygiene.yml").read_text(
+        encoding="utf-8")
+
+    assert "test -f docs/mklq/metal-execution-boundary.md" in workflow
+    assert (
+        "grep -q 'mklq-metal execution boundary' docs/mklq/metal-execution-boundary.md"
+        in workflow)
+    assert (
+        "grep -q 'resident Metal state' docs/mklq/metal-execution-boundary.md"
+        in workflow)
+    assert (
+        "grep -q 'CPU-oracle fallback' docs/mklq/metal-execution-boundary.md"
+        in workflow)
+    assert (
+        "grep -q 'not proof that every operation stayed on Metal' docs/mklq/metal-execution-boundary.md"
+        in workflow)
+
+
+def test_mklq_metal_execution_boundary_doc_keeps_workflow_tokens_single_line():
+    lines = Path("docs/mklq/metal-execution-boundary.md").read_text(
+        encoding="utf-8").splitlines()
+
+    for token in [
+            "mklq-metal execution boundary",
+            "resident Metal state",
+            "CPU-oracle fallback",
+            "not proof that every operation stayed on Metal",
+    ]:
+        assert any(token in line for line in lines), token
+
+
 def test_mklq_public_healthcheck_checks_example_sources(tmp_path):
     module = _load_public_healthcheck_module()
     config = _public_healthcheck_config(module, tmp_path)

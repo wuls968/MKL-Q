@@ -140,6 +140,8 @@ boundary are tracked in
 [`docs/mklq/apple-silicon-ci.md`](docs/mklq/apple-silicon-ci.md).
 The current public repository readiness snapshot is tracked in
 [`docs/mklq/public-readiness.md`](docs/mklq/public-readiness.md).
+The experimental `mklq-metal` execution and CPU fallback boundary is tracked in
+[`docs/mklq/metal-execution-boundary.md`](docs/mklq/metal-execution-boundary.md).
 
 Sanitized local benchmark evidence is kept under `benchmarks/mklq/reports/`.
 The public benchmark evidence index is summarized in
