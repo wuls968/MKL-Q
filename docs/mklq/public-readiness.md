@@ -189,7 +189,7 @@ refreshes on 2026-07-02 and focused CRZ distance-sweep evidence retained from
 - standalone install-prefix Python subset: `37 passed`;
 - `python_target_smoke`: `61 passed`;
 - `nvqpp_smoke`: `2 passed`;
-- current full `target_config_ctest`: `89/89 passed`, including the
+- current full `target_config_ctest`: `93/93 passed`, including the
   hardware-efficient ansatz composite CPU fast-path counter fixture;
 - current tracked `metal_runtime_counter_probe`: 2 bounded reports, 40
   expected, 40 selected, 0 missing, and 0 failures, including the direct
