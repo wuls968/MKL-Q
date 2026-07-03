@@ -19,7 +19,7 @@ CHECK_SCHEMA_VERSION = "mklq-performance-evidence-check-v1"
 SUMMARY_SCHEMA_VERSION = "mklq-benchmark-summary-v1"
 DEFAULT_EVIDENCE_KIND = "clean_local_benchmark_evidence"
 DEFAULT_REPORT_PATTERN = "local-clean-cpu-*.summary.json"
-DEFAULT_SUMMARY_ID = "local-clean-cpu-q20-2026-07-03"
+DEFAULT_SUMMARY_ID = "local-clean-cpu-q20-2026-07-03-two-three"
 DEFAULT_SUMMARY_IDS = (DEFAULT_SUMMARY_ID,)
 DEFAULT_RATIO_GROUP = "clean_worktree_cross_target_ratio"
 DEFAULT_CANDIDATE_ELAPSED_GROUP = "mklq_cpu_elapsed_seconds_median"
@@ -33,6 +33,8 @@ DEFAULT_REQUIRED_RATIOS = (
     "cry_state_q20",
     "crz_state_q20",
     "cz_state_q20",
+    "two_qubit_state_q20",
+    "three_qubit_state_q20",
     "qft_like_state_q20",
     "seeded_clifford_state_q20",
     "hardware_efficient_ansatz_state_q20",

@@ -674,6 +674,9 @@ def test_mklq_summary_generator_rejects_dirty_by_default(tmp_path):
 
 def test_mklq_clean_cpu_gate_plan_uses_fixed_environment(tmp_path):
     module = _load_clean_benchmark_gate_module()
+    assert module.DEFAULT_GATE_CASES == (
+        "y-state,ch-state,cy-state,crx-state,cry-state,crz-state,cz-state,"
+        "two-qubit-state,three-qubit-state")
     config = module.GateConfig(
         repo_root=tmp_path,
         pythonpath="/tmp/cudaq-runtime",
@@ -689,7 +692,9 @@ def test_mklq_clean_cpu_gate_plan_uses_fixed_environment(tmp_path):
         reports_dir=tmp_path / "reports",
         evidence_output=tmp_path / "benchmark-evidence.md",
         targets="qpp-cpu,mklq-cpu",
-        gate_cases="y-state,ch-state,cy-state,crx-state,cry-state,crz-state,cz-state",
+        gate_cases=(
+            "y-state,ch-state,cy-state,crx-state,cry-state,crz-state,"
+            "cz-state,two-qubit-state,three-qubit-state"),
         composite_cases=
         "qft-like-state,seeded-clifford-state,hardware-efficient-ansatz-state",
         sampling_cases="sample-full-register,sample-partial-register",
@@ -714,7 +719,8 @@ def test_mklq_clean_cpu_gate_plan_uses_fixed_environment(tmp_path):
         "PYTHONPATH": "/tmp/cudaq-runtime",
     }
     assert plan["paths"]["gate_raw"].endswith(
-        "local-clean-cpu-gate-y-ch-cy-crx-cry-crz-cz-q20-2026-06-21.json")
+        "local-clean-cpu-gate-y-ch-cy-crx-cry-crz-cz-two-qubit-three-qubit"
+        "-q20-2026-06-21.json")
     assert plan["paths"]["composite_raw"].endswith(
         "local-clean-cpu-composite-qft-like-seeded-clifford-hardware-efficient-ansatz-q20-2026-06-21.json"
     )
@@ -725,7 +731,8 @@ def test_mklq_clean_cpu_gate_plan_uses_fixed_environment(tmp_path):
     gate_command = plan["commands"]["gate_raw"]
     assert "--isolate-rows" in gate_command
     assert gate_command[gate_command.index("--cases") + 1] == (
-        "y-state,ch-state,cy-state,crx-state,cry-state,crz-state,cz-state")
+        "y-state,ch-state,cy-state,crx-state,cry-state,crz-state,cz-state,"
+        "two-qubit-state,three-qubit-state")
     assert gate_command[gate_command.index("--targets") + 1] == (
         "qpp-cpu,mklq-cpu")
     composite_command = plan["commands"]["composite_raw"]
@@ -1440,6 +1447,8 @@ def test_mklq_public_healthcheck_runs_public_claim_guard(monkeypatch,
 def test_mklq_public_healthcheck_runs_latest_performance_guard(monkeypatch,
                                                                tmp_path):
     module = _load_public_healthcheck_module()
+    assert module.CLEAN_CPU_SUMMARY_ID == (
+        "local-clean-cpu-q20-2026-07-03-two-three")
     config = _public_healthcheck_config(module, tmp_path)
     seen = {}
 
@@ -2107,11 +2116,14 @@ def _performance_summary(module,
 
 def test_mklq_performance_evidence_guard_accepts_clean_cpu_summary():
     module = _load_performance_evidence_module()
-    assert module.DEFAULT_SUMMARY_ID == "local-clean-cpu-q20-2026-07-03"
+    assert module.DEFAULT_SUMMARY_ID == (
+        "local-clean-cpu-q20-2026-07-03-two-three")
     assert "ch_state_q20" in module.DEFAULT_REQUIRED_RATIOS
     assert "crx_state_q20" in module.DEFAULT_REQUIRED_RATIOS
     assert "cry_state_q20" in module.DEFAULT_REQUIRED_RATIOS
     assert "crz_state_q20" in module.DEFAULT_REQUIRED_RATIOS
+    assert "two_qubit_state_q20" in module.DEFAULT_REQUIRED_RATIOS
+    assert "three_qubit_state_q20" in module.DEFAULT_REQUIRED_RATIOS
     assert "qft_like_state_q20" in module.DEFAULT_REQUIRED_RATIOS
     assert "seeded_clifford_state_q20" in module.DEFAULT_REQUIRED_RATIOS
     assert "hardware_efficient_ansatz_state_q20" in (
