@@ -4208,6 +4208,64 @@ def test_mklq_public_readiness_audit_builds_passing_report(monkeypatch,
     assert any(call[:3] == ["gh", "repo", "view"] for call in calls)
 
 
+def test_mklq_public_readiness_audit_retries_live_command(monkeypatch,
+                                                          tmp_path):
+    module = _load_public_readiness_audit_module()
+    calls = []
+
+    def fake_check_output(command, cwd, text, stderr):
+        calls.append(command)
+        if len(calls) == 1:
+            raise subprocess.CalledProcessError(1, command, output="temporary")
+        return "ok\n"
+
+    monkeypatch.setattr(module.subprocess, "check_output", fake_check_output)
+    monkeypatch.setattr(module.time, "sleep", lambda seconds: None)
+
+    result = module.command_output(
+        tmp_path, ["gh", "api", "repos/wuls968/MKL-Q/branches/main/protection"])
+
+    assert result == "ok"
+    assert len(calls) == 2
+
+
+def test_mklq_public_readiness_audit_retries_remote_git_command(monkeypatch,
+                                                                tmp_path):
+    module = _load_public_readiness_audit_module()
+    calls = []
+
+    def fake_check_output(command, cwd, text, stderr):
+        calls.append(command)
+        if len(calls) == 1:
+            raise subprocess.CalledProcessError(128, command, output="fatal")
+        return "abc123\trefs/heads/main\n"
+
+    monkeypatch.setattr(module.subprocess, "check_output", fake_check_output)
+    monkeypatch.setattr(module.time, "sleep", lambda seconds: None)
+
+    result = module.command_output(tmp_path, ["git", "ls-remote", "origin"])
+
+    assert result == "abc123\trefs/heads/main"
+    assert len(calls) == 2
+
+
+def test_mklq_public_readiness_audit_does_not_retry_local_command(monkeypatch,
+                                                                  tmp_path):
+    module = _load_public_readiness_audit_module()
+    calls = []
+
+    def fake_check_output(command, cwd, text, stderr):
+        calls.append(command)
+        raise subprocess.CalledProcessError(1, command, output="fatal")
+
+    monkeypatch.setattr(module.subprocess, "check_output", fake_check_output)
+
+    with pytest.raises(subprocess.CalledProcessError):
+        module.command_output(tmp_path, ["git", "status", "--short", "--branch"])
+
+    assert len(calls) == 1
+
+
 def test_mklq_public_readiness_audit_rejects_missing_doc_boundary(tmp_path):
     module = _load_public_readiness_audit_module()
     _write_readiness_local_files(tmp_path)
