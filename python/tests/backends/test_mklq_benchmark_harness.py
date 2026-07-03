@@ -2019,6 +2019,19 @@ def test_mklq_public_hygiene_workflow_checks_metal_execution_boundary_doc():
         in workflow)
 
 
+def test_mklq_metal_execution_boundary_doc_keeps_workflow_tokens_single_line():
+    lines = Path("docs/mklq/metal-execution-boundary.md").read_text(
+        encoding="utf-8").splitlines()
+
+    for token in [
+            "mklq-metal execution boundary",
+            "resident Metal state",
+            "CPU-oracle fallback",
+            "not proof that every operation stayed on Metal",
+    ]:
+        assert any(token in line for line in lines), token
+
+
 def test_mklq_public_healthcheck_checks_example_sources(tmp_path):
     module = _load_public_healthcheck_module()
     config = _public_healthcheck_config(module, tmp_path)

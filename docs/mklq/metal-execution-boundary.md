@@ -2,8 +2,8 @@
 
 This page defines the public execution boundary for the experimental
 `mklq-metal` target. It is a maintenance contract for MKL-Q docs, tests, and
-benchmark evidence. It is not release sign-off, not timing evidence, and not
-proof that every operation stayed on Metal.
+benchmark evidence. It is not release sign-off or timing evidence.
+This page is not proof that every operation stayed on Metal.
 
 ## Purpose
 
