@@ -522,13 +522,23 @@ python3 benchmarks/mklq/summarize_metal_runtime_counters.py \
 ```
 
 The generated summary groups counter tests into resident gate,
-probability/sampling, measurement/reset, and unsupported-gate fallback
-categories. It preserves the same boundary as the raw probe report: runtime
-counter evidence only, not release sign-off, not timing evidence, and not proof
-that every operation stayed on Metal.
+probability/sampling, measurement/reset, unsupported-gate fallback,
+synchronization, error-boundary, and runtime/device categories. It preserves
+the same boundary as the raw probe report: runtime counter evidence only, not
+release sign-off, not timing evidence, and not proof that every operation
+stayed on Metal.
 When multiple bounded reports are tracked, aggregate counts are summed across
 reports. Repeated daily probes intentionally count the same selected counter
 tests once per report.
+
+## Metal Execution Boundary
+
+Use [`docs/mklq/metal-execution-boundary.md`](../../docs/mklq/metal-execution-boundary.md)
+when public wording needs to explain what `mklq-metal` resident Metal state
+does and does not prove. That page is the human-readable boundary for
+CPU-oracle fallback, synchronization, host-side sampling, error handling, and
+the explicit non-claim that the current counter evidence is not proof that
+every operation stayed on Metal.
 
 ## Metal Runtime Counter Docs Guard
 

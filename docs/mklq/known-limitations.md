@@ -52,6 +52,9 @@ or distributed simulator.
 single-target, two-target, and three-target gate updates in a resident fp32
 Metal state buffer. It also has resident probability-fill,
 marginal-probability, measurement, and reset paths for supported cases.
+The detailed public execution boundary, including synchronization points and
+CPU fallback behavior, is tracked in
+[`metal-execution-boundary.md`](metal-execution-boundary.md).
 
 Unsupported or not-yet-profitable paths can synchronize back to the MKL-Q CPU
 oracle. That fallback is intentional at this stage. A passing `mklq-metal` test

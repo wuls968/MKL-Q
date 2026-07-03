@@ -49,6 +49,7 @@ jobs:
           test -f docs/mklq/cpu-gate-counters.md
           test -f docs/mklq/cpu-sampling-counters.md
           test -f docs/mklq/metal-runtime-counters.md
+          test -f docs/mklq/metal-execution-boundary.md
           test -f .github/branch-protection-main.json
           test -f .github/workflows/mklq-apple-silicon-ci.yml
           test -f .github/pull_request_template.md
@@ -207,6 +208,13 @@ jobs:
           grep -q 'not release sign-off' docs/mklq/cpu-sampling-counters.md
           grep -q 'runtime counter evidence' docs/mklq/metal-runtime-counters.md
           grep -q 'not release sign-off' docs/mklq/metal-runtime-counters.md
+          grep -q 'metal-execution-boundary.md' README.md
+          grep -q 'metal-execution-boundary.md' docs/mklq/known-limitations.md
+          grep -q 'metal-execution-boundary.md' docs/mklq/testing-matrix.md
+          grep -q 'mklq-metal execution boundary' docs/mklq/metal-execution-boundary.md
+          grep -q 'resident Metal state' docs/mklq/metal-execution-boundary.md
+          grep -q 'CPU-oracle fallback' docs/mklq/metal-execution-boundary.md
+          grep -q 'not proof that every operation stayed on Metal' docs/mklq/metal-execution-boundary.md
           grep -q 'allow_force_pushes' .github/branch-protection-main.json
           grep -q 'allow_deletions' .github/branch-protection-main.json
           grep -q 'Compatibility Boundary' .github/pull_request_template.md
@@ -233,6 +241,7 @@ jobs:
           grep -q 'Metal Runtime Counter Probe' benchmarks/mklq/README.md
           grep -q 'Metal Runtime Counter Summary' benchmarks/mklq/README.md
           grep -q 'Metal Runtime Counter Docs Guard' benchmarks/mklq/README.md
+          grep -q 'Metal Execution Boundary' benchmarks/mklq/README.md
           grep -q 'run_cpu_scaling_benchmark.py' docs/mklq/validation.md
           python3 - <<'PY'
           from pathlib import Path
