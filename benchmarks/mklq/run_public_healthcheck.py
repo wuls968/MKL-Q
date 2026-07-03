@@ -114,6 +114,17 @@ ANSATZ_SCALING_REQUIRED_RATIOS = (
     "hardware_efficient_ansatz_state_q20",
     "hardware_efficient_ansatz_state_q22",
 )
+TWO_THREE_SCALING_SUMMARY_ID = (
+    "local-scaling-cpu-two-qubit-three-qubit-q18-q22-2026-07-03-two-three-scaling"
+)
+TWO_THREE_SCALING_REQUIRED_RATIOS = (
+    "two_qubit_state_q18",
+    "two_qubit_state_q20",
+    "two_qubit_state_q22",
+    "three_qubit_state_q18",
+    "three_qubit_state_q20",
+    "three_qubit_state_q22",
+)
 SAMPLING_SCALING_SUMMARY_ID = (
     "local-sampling-scaling-cpu-q18-q22-2026-06-23")
 SAMPLING_PROFILE_SUMMARY_ID = (
@@ -681,6 +692,28 @@ def run_ansatz_scaling_evidence_check(
     result = run_command(config, command)
     if result["returncode"] != 0:
         return failed("ansatz scaling evidence guard failed", result)
+    return passed(result)
+
+
+def run_two_three_scaling_evidence_check(
+        config: HealthcheckConfig) -> dict[str, Any]:
+    script = config.repo_root / "benchmarks" / "mklq" / (
+        "check_performance_evidence.py")
+    command = [
+        config.python_executable,
+        str(script),
+        "--reports",
+        "benchmarks/mklq/reports",
+        "--pattern",
+        "*.summary.json",
+        "--summary-id",
+        TWO_THREE_SCALING_SUMMARY_ID,
+        "--required-ratios",
+        ",".join(TWO_THREE_SCALING_REQUIRED_RATIOS),
+    ]
+    result = run_command(config, command)
+    if result["returncode"] != 0:
+        return failed("two/three-qubit scaling evidence guard failed", result)
     return passed(result)
 
 
@@ -1433,6 +1466,9 @@ def build_steps(config: HealthcheckConfig) -> list[Step]:
         Step("ansatz_scaling_evidence_guard",
              "Check accepted hardware-efficient ansatz CPU scaling evidence.",
              run_ansatz_scaling_evidence_check),
+        Step("two_three_scaling_evidence_guard",
+             "Check accepted two/three-qubit CPU scaling evidence ratios.",
+             run_two_three_scaling_evidence_check),
         Step("sampling_scaling_evidence_guard",
              "Check accepted CPU sampling-scaling benchmark evidence ratios.",
              run_sampling_scaling_evidence_check),
