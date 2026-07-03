@@ -33,10 +33,10 @@ The full public healthcheck was refreshed again on 2026-07-02 on clean
 install-prefix build, local signature repair, correctness gate, and public
 examples still pass together.
 The clean CPU benchmark summary was refreshed separately against
-`23d34ab226c3e4d7a47f15af3292bf81ce25987b` after adding the
-hardware-efficient ansatz composite row to the clean evidence gate. The older
-2026-06-21 clean summary remains tracked as historical evidence for the earlier
-QFT-like and seeded Clifford composite gate.
+`e6843424cec9c636a76b71bb1c12a035401c2d00` after promoting the single-control
+H/Y/Rx/Ry fast-path work into the clean local CPU benchmark evidence gate. Older
+clean summaries remain tracked as historical evidence for the earlier
+QFT-like, seeded Clifford, and hardware-efficient ansatz gates.
 
 The current refresh includes the earlier Metal counter-evidence work:
 resident built-in Rx/Ry/Rz, controlled-Rx/Ry/Rz, phase-family S/T/Sdg/Tdg,
@@ -113,9 +113,9 @@ these raw payloads are not tracked as public evidence.
 - Current tracked `metal_runtime_counter_probe`: 2 bounded reports, 40
   expected, 40 selected, 0 missing, and 0 failures; each report runs 20
   counter ctests independently.
-- Clean CPU benchmark gate: passed, with 20 q20 `qpp-cpu`/`mklq-cpu` rows and
-  20 rows reporting `status == "ok"`, including
-  `hardware-efficient-ansatz-state`.
+- Clean CPU benchmark gate: passed, with 28 q20 `qpp-cpu`/`mklq-cpu` rows and
+  28 rows reporting `status == "ok"`, including `ch-state`, `crx-state`,
+  `cry-state`, `crz-state`, and `hardware-efficient-ansatz-state`.
 - Focused multi-control CPU benchmark evidence: passed, with 2 q20
   `multi-control-state` rows reporting `status == "ok"` and a tracked
   `qpp-cpu` over `mklq-cpu` median elapsed ratio of `45.09x`.
@@ -297,10 +297,10 @@ python3 benchmarks/mklq/run_clean_cpu_benchmark.py \
   --stamp YYYY-MM-DD
 ```
 
-Current default clean CPU runs include `hardware-efficient-ansatz-state` for
-new evidence refreshes. To regenerate the historical 2026-06-21 sanitized
-summary from the already ignored raw JSON, keep the old composite case set
-explicit:
+Current default clean CPU runs include `ch-state`, `crx-state`, `cry-state`,
+`crz-state`, and `hardware-efficient-ansatz-state` for new evidence refreshes.
+To regenerate the historical 2026-06-21 sanitized summary from the already
+ignored raw JSON, keep the old composite case set explicit:
 
 ```bash
 python3 benchmarks/mklq/run_clean_cpu_benchmark.py \
@@ -363,6 +363,7 @@ python3 benchmarks/mklq/run_sampling_scaling_benchmark.py \
 
 Current tracked summaries include:
 
+- `local-clean-cpu-q20-2026-07-03.summary.json`
 - `local-clean-cpu-q20-2026-06-30.summary.json`
 - `local-crz-distance-sweep-cpu-q20-2026-07-01.summary.json`
 - `local-clean-cpu-q20-2026-06-28.summary.json`
@@ -379,12 +380,14 @@ Current tracked summaries include:
 - `local-sampling-scaling-cpu-q18-q22-2026-06-23.summary.json`
 
 The latest clean-worktree local benchmark summary was refreshed against
-`61e5f099f2d3b87feb6c3e7cf27d37f1e1d77c04` on 2026-06-30. The clean summary
-includes `y-state`, `cy-state`, `cz-state`, `qft-like-state`,
-`seeded-clifford-state`, `hardware-efficient-ansatz-state`, full-register
-sampling, and partial-register sampling rows. All 20 q20 rows completed with
-`status == "ok"`, and the local `qpp-cpu` over `mklq-cpu` median elapsed ratio
-for `hardware-efficient-ansatz-state` was `100.99x`.
+`e6843424cec9c636a76b71bb1c12a035401c2d00` on 2026-07-03. The clean summary
+includes `y-state`, `ch-state`, `cy-state`, `crx-state`, `cry-state`,
+`crz-state`, `cz-state`, `qft-like-state`, `seeded-clifford-state`,
+`hardware-efficient-ansatz-state`, full-register sampling, and partial-register
+sampling rows. All 28 q20 rows completed with `status == "ok"`, and the local
+`qpp-cpu` over `mklq-cpu` median elapsed ratios include `36.07x` for
+`ch-state`, `76.43x` for `crx-state`, `78.64x` for `cry-state`, `96.49x` for
+`crz-state`, and `77.80x` for `hardware-efficient-ansatz-state`.
 These files include clean-worktree local benchmark summaries plus older
 dirty-worktree tuning summaries. Interpret each file through its
 `evidence_kind` and `interpretation` fields. Do not treat any local summary as

@@ -554,10 +554,10 @@ python3 benchmarks/mklq/run_clean_cpu_benchmark.py \
   --stamp YYYY-MM-DD
 ```
 
-Current default clean CPU runs include the `y-state`, `cy-state`, `cz-state`,
-`qft-like-state`, `seeded-clifford-state`,
-`hardware-efficient-ansatz-state`, full-register sampling, and
-partial-register sampling cases.
+Current default clean CPU runs include the `y-state`, `ch-state`, `cy-state`,
+`crx-state`, `cry-state`, `crz-state`, `cz-state`, `qft-like-state`,
+`seeded-clifford-state`, `hardware-efficient-ansatz-state`, full-register
+sampling, and partial-register sampling cases.
 
 The gate writes ignored raw JSON under `benchmarks/mklq/results/`, writes the
 sanitized summary under `benchmarks/mklq/reports/`, and refreshes
@@ -625,8 +625,35 @@ The generated public index is tracked at
   at 1024 shots, and 90.39x for `sample-partial-register` at 65536 shots.
   Treat this as local clean-worktree CPU evidence, not as cross-machine
   performance certification.
-- `reports/local-clean-cpu-q20-2026-06-30.summary.json`: tracked sanitized
+- `reports/local-clean-cpu-q20-2026-07-03.summary.json`: tracked sanitized
   summary for ignored raw results
+  `results/local-clean-cpu-gate-y-ch-cy-crx-cry-crz-cz-q20-2026-07-03.json`
+  (`sha256: d116aec76b8fcc5da0445e58ffe9596411cdba57665ce347f724d4ace24a9288`),
+  `results/local-clean-cpu-composite-qft-like-seeded-clifford-hardware-efficient-ansatz-q20-2026-07-03.json`
+  (`sha256: 88d0a2b69681c9fc958c936ba0205cd8b7b85dba12629f420fe73269efe9faea`),
+  and `results/local-clean-cpu-sampling-q20-2026-07-03.json`
+  (`sha256: 9e5f0b0a94ad4326f3059ac18f8f8ae92fe63baf84a7e14155f8f8fc9e81bf98`).
+  This run was collected from a clean worktree at
+  `e6843424cec9c636a76b71bb1c12a035401c2d00` with `qpp-cpu` and
+  `mklq-cpu` rows for `y-state`, `ch-state`, `cy-state`, `crx-state`,
+  `cry-state`, `crz-state`, `cz-state`, `qft-like-state`,
+  `seeded-clifford-state`, `hardware-efficient-ansatz-state`,
+  `sample-full-register`, and `sample-partial-register` at q20 with
+  `OMP_NUM_THREADS=10`, `OMP_PROC_BIND=close`, `OMP_DYNAMIC=false`,
+  `VECLIB_MAXIMUM_THREADS=1`, `repeats=2`, `warmups=1`, and `layers=8` on
+  Apple M5, 10 logical cores, 16 GB RAM, macOS 26.5.1. All 28 rows completed
+  with `status == "ok"`. In this local run, q20 median elapsed ratios for
+  `qpp-cpu` over `mklq-cpu` were 44.90x for `y-state`, 36.07x for `ch-state`,
+  122.20x for `cy-state`, 76.43x for `crx-state`, 78.64x for `cry-state`,
+  96.49x for `crz-state`, 183.33x for `cz-state`, 54.08x for
+  `qft-like-state`, 116.73x for `seeded-clifford-state`, 77.80x for
+  `hardware-efficient-ansatz-state`, 81.62x for `sample-full-register` at
+  1024 shots, 97.38x for `sample-full-register` at 65536 shots, 85.98x for
+  `sample-partial-register` at 1024 shots, and 124.96x for
+  `sample-partial-register` at 65536 shots. Treat this as local clean-worktree
+  CPU evidence, not as cross-machine performance certification.
+- `reports/local-clean-cpu-q20-2026-06-30.summary.json`: historical tracked
+  sanitized summary for ignored raw results
   `results/local-clean-cpu-gate-y-cy-cz-q20-2026-06-30.json`
   (`sha256: 2cacb592d4e37d1c32877fc6303a0d347cfce48768cd2d4cdfce0d1531d83b2b`),
   `results/local-clean-cpu-composite-qft-like-seeded-clifford-hardware-efficient-ansatz-q20-2026-06-30.json`
