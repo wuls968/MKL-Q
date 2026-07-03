@@ -7872,6 +7872,86 @@ def test_mklq_benchmark_summary_records_ansatz_scaling_evidence():
     ] == pytest.approx(81.37462044979031)
 
 
+def test_mklq_benchmark_summary_records_two_three_scaling_evidence():
+    repo_root = Path(__file__).resolve().parents[3]
+    summary_path = (
+        repo_root / "benchmarks" / "mklq" / "reports" /
+        "local-scaling-cpu-two-qubit-three-qubit-q18-q22-2026-07-03-two-three-scaling.summary.json"
+    )
+
+    summary = json.loads(summary_path.read_text(encoding="utf-8"))
+
+    assert summary["schema_version"] == "mklq-benchmark-summary-v1"
+    assert summary["evidence_kind"] == "clean_local_benchmark_evidence"
+    assert summary["summary_id"] == (
+        "local-scaling-cpu-two-qubit-three-qubit-q18-q22-2026-07-03-two-three-scaling"
+    )
+    assert summary["git"]["commit"] == (
+        "cb688b20c825a970965ffe41ca84757287abf847")
+    assert summary["git"]["dirty"] is False
+    assert summary["interpretation"]["clean_worktree"] is True
+    assert summary["interpretation"]["scaling_axis"] == "qubits"
+    assert summary["interpretation"]["scaling_qubits"] == [18, 20, 22]
+    assert summary["raw_results"][0]["sha256"] == (
+        "95dacd993ab733dff776683e4ca6ac06fbd414ae3005f8f855d23a4f59858ee2")
+    assert summary["raw_results"][0]["status_rows"] == {"ok": 12}
+    assert summary["raw_results"][0]["tracked"] is False
+    assert summary["config"]["targets"] == ["qpp-cpu", "mklq-cpu"]
+    assert summary["config"]["cases"] == [
+        "two-qubit-state",
+        "three-qubit-state",
+    ]
+    assert summary["config"]["qubits"] == [18, 20, 22]
+    assert summary["config"]["repeats"] == 3
+    assert summary["config"]["warmups"] == 1
+    assert summary["config"]["layers"] == 8
+
+    rows = {
+        (row["target"], row["case"], row["qubits"]): row
+        for row in summary["rows"]
+    }
+    assert len(rows) == 12
+    expected_mklq = {
+        ("two-qubit-state", 18): (0.04566066700499505, 163, 0, 3569.812065648726),
+        ("two-qubit-state", 20): (0.10190029203658924, 182, 0, 1786.0596506892193),
+        ("two-qubit-state", 22): (0.3519946669694036, 201, 0, 571.0313787722002),
+        ("three-qubit-state", 18): (0.21171208401210606, 164, 128, 604.5946814858274),
+        ("three-qubit-state", 20): (0.25525129097513855, 184, 144, 564.1499380860157),
+        ("three-qubit-state", 22): (0.9428773749968968, 204, 160, 169.69332836152378),
+    }
+    for (case, qubits), (elapsed, gate_count, three_qubit_count,
+                         throughput) in expected_mklq.items():
+        row = rows[("mklq-cpu", case, qubits)]
+        assert row["elapsed_seconds_median"] == pytest.approx(elapsed)
+        assert row["gate_count"] == gate_count
+        if case == "two-qubit-state":
+            assert row[
+                "two_qubit_gate_state_throughput_per_second"
+            ] == pytest.approx(throughput)
+        else:
+            assert row["three_qubit_gate_count"] == three_qubit_count
+            assert row[
+                "three_qubit_gate_state_throughput_per_second"
+            ] == pytest.approx(throughput)
+
+    ratios = summary["comparison"]["clean_worktree_cross_target_ratio"]
+    assert ratios["qpp_cpu_over_mklq_cpu_two_qubit_state_q18"] == pytest.approx(
+        47.197516491311404)
+    assert ratios["qpp_cpu_over_mklq_cpu_two_qubit_state_q20"] == pytest.approx(
+        131.99226279141058)
+    assert ratios["qpp_cpu_over_mklq_cpu_two_qubit_state_q22"] == pytest.approx(
+        163.41930675900275)
+    assert ratios[
+        "qpp_cpu_over_mklq_cpu_three_qubit_state_q18"
+    ] == pytest.approx(24.536732002262006)
+    assert ratios[
+        "qpp_cpu_over_mklq_cpu_three_qubit_state_q20"
+    ] == pytest.approx(87.33979969256421)
+    assert ratios[
+        "qpp_cpu_over_mklq_cpu_three_qubit_state_q22"
+    ] == pytest.approx(90.91154571848728)
+
+
 def test_mklq_benchmark_summary_records_sanitized_sampling_evidence():
     repo_root = Path(__file__).resolve().parents[3]
     summary_path = (
