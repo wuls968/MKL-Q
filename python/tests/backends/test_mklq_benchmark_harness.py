@@ -2776,6 +2776,10 @@ def _cpu_gate_counter_summary_fixture():
     tests = [
         "mklq_cpu_MKLQCpuTester.XFastPathAppliesUncontrolledSingleQubitGate",
         "mklq_cpu_MKLQCpuTester.CnotFastPathAppliesControlledXGate",
+        "mklq_cpu_MKLQCpuTester.SingleControlBuiltInHadamardGateUsesDedicatedFastPath",
+        "mklq_cpu_MKLQCpuTester.SingleControlBuiltInYGateUsesDedicatedFastPath",
+        "mklq_cpu_MKLQCpuTester.SingleControlBuiltInRxGateUsesDedicatedFastPath",
+        "mklq_cpu_MKLQCpuTester.SingleControlBuiltInRyGateUsesDedicatedFastPath",
         "mklq_cpu_MKLQCpuTester.SingleControlRzUsesDedicatedPhaseFastPath",
         "mklq_cpu_MKLQCpuTester.HardwareEfficientAnsatzCompositeUsesDedicatedFastPaths",
         "mklq_cpu_MKLQCpuTester.RowSparseThreeQubitCustomOperationUsesDedicatedFastPath",
@@ -2820,14 +2824,14 @@ def test_mklq_cpu_gate_counter_summary_groups_fast_path_coverage(tmp_path):
 
     assert summary["schema_version"] == "mklq-cpu-gate-counter-summary-v1"
     assert summary["summary"]["status"] == "passed"
-    assert summary["summary"]["selected"] == 5
+    assert summary["summary"]["selected"] == 9
     assert summary["boundary"]["gate_fast_path_counter_evidence"] is True
     categories = {
         category["category"]: category
         for category in summary["categories"]
     }
     assert categories["single_control_rz_phase"]["passed"] == 1
-    assert categories["controlled_single_qubit_fast_path"]["passed"] == 1
+    assert categories["controlled_single_qubit_fast_path"]["passed"] == 5
     assert categories["composite_fast_path"]["passed"] == 1
     assert categories["three_qubit_fast_path"]["passed"] == 1
 
