@@ -189,15 +189,16 @@ completed local gates, and focused CRZ distance-sweep evidence retained from
   direct phase fast-path fixture, and hardware-efficient ansatz composite
   fast-path fixture;
 - standalone install-prefix Python subset: `37 passed`;
-- `python_target_smoke`: `61 passed`;
+- `python_target_smoke`: `70 passed`;
 - `nvqpp_smoke`: `2 passed`;
-- current full `target_config_ctest`: `93/93 passed`, including the
-  hardware-efficient ansatz composite CPU fast-path counter fixture;
-- current tracked `metal_runtime_counter_probe`: 8 bounded reports, 293
-  expected, 293 selected, 0 missing, and 0 failures, including resident gate,
-  probability/sampling, deterministic sampling bypass, host-side sampling
-  telemetry, native sampling phase timing, measurement/reset, fallback, and
-  error-boundary fixtures.
+- current full `target_config_ctest`: `101/101 passed`, including the
+  hardware-efficient ansatz composite CPU fast-path counter fixture and the
+  resident full-register Metal sampling telemetry fixtures;
+- current tracked `metal_runtime_counter_probe`: 9 bounded reports, 340
+  expected, 340 selected, 0 missing, and 0 failures, including resident gate,
+  probability/sampling, deterministic sampling bypass, full-register and
+  partial-register host-side sampling telemetry, native sampling phase timing,
+  measurement/reset, fallback, and error-boundary fixtures.
 - clean CPU benchmark gate: passed with 32 q20 `qpp-cpu`/`mklq-cpu` rows,
   including `two-qubit-state`, `three-qubit-state`, `qft-like-state`,
   `seeded-clifford-state`, and `hardware-efficient-ansatz-state`, with 32 rows

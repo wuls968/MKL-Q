@@ -11,11 +11,11 @@ Aggregate counts are summed across tracked reports; repeated daily probes intent
 | Field | Value |
 | --- | --- |
 | `status` | passed |
-| `report_count` | 8 |
-| `expected` | 293 |
-| `selected` | 293 |
+| `report_count` | 9 |
+| `expected` | 340 |
+| `selected` | 340 |
 | `missing` | 0 |
-| `passed` | 293 |
+| `passed` | 340 |
 | `failed` | 0 |
 
 ## Evidence Boundary
@@ -31,13 +31,13 @@ Aggregate counts are summed across tracked reports; repeated daily probes intent
 
 | Category | Passed | Failed | Other | Description |
 | --- | ---: | ---: | ---: | --- |
-| error_boundary | 36 | 0 | 0 | Resident Metal error and poisoned-state boundary tests |
-| fallback_boundary | 8 | 0 | 0 | Unsupported-gate fallback and reupload boundary tests |
-| measurement_reset | 24 | 0 | 0 | Measurement, collapse, and reset counter tests |
-| probability_sampling | 89 | 0 | 0 | Resident probability fill and sampling counter tests |
-| resident_gate | 118 | 0 | 0 | Resident Metal gate/update counter tests |
-| runtime_device | 6 | 0 | 0 | Runtime/device boundary counter tests |
-| synchronization_boundary | 12 | 0 | 0 | Resident state synchronization boundary tests |
+| error_boundary | 42 | 0 | 0 | Resident Metal error and poisoned-state boundary tests |
+| fallback_boundary | 9 | 0 | 0 | Unsupported-gate fallback and reupload boundary tests |
+| measurement_reset | 27 | 0 | 0 | Measurement, collapse, and reset counter tests |
+| probability_sampling | 107 | 0 | 0 | Resident probability fill and sampling counter tests |
+| resident_gate | 134 | 0 | 0 | Resident Metal gate/update counter tests |
+| runtime_device | 7 | 0 | 0 | Runtime/device boundary counter tests |
+| synchronization_boundary | 14 | 0 | 0 | Resident state synchronization boundary tests |
 
 ## Counter Tests
 
@@ -64,6 +64,8 @@ Aggregate counts are summed across tracked reports; repeated daily probes intent
 | probability_sampling | `mklq_metal_MKLQMetalTester.SimulatorSamplesResidentDenseStateWithoutReadback` |
 | probability_sampling | `mklq_metal_MKLQMetalTester.SimulatorSamplesResidentDeterministicPartialRegisterCountsOnlyWithoutDrawLoop` |
 | probability_sampling | `mklq_metal_MKLQMetalTester.SimulatorSamplesResidentDeterministicPartialRegisterSequentialWithoutDrawLoop` |
+| probability_sampling | `mklq_metal_MKLQMetalTester.SimulatorSamplesResidentFullRegisterWithHostCountsOnlyDrawTelemetry` |
+| probability_sampling | `mklq_metal_MKLQMetalTester.SimulatorSamplesResidentFullRegisterWithHostSequentialDrawTelemetry` |
 | probability_sampling | `mklq_metal_MKLQMetalTester.SimulatorSamplesResidentPartialRegisterReportsNativePhaseTiming` |
 | probability_sampling | `mklq_metal_MKLQMetalTester.SimulatorSamplesResidentPartialRegisterWithHostCountsOnlyDrawTelemetry` |
 | probability_sampling | `mklq_metal_MKLQMetalTester.SimulatorSamplesResidentPartialRegisterWithHostSequentialDrawTelemetry` |
@@ -98,6 +100,7 @@ Aggregate counts are summed across tracked reports; repeated daily probes intent
 | benchmarks/mklq/reports/local-metal-runtime-counter-probe-2026-07-03.counter.json | 2026-07-03T12:17:01.069186+00:00 | passed | 39 | 39 | 0 | 39 | 0 |
 | benchmarks/mklq/reports/local-metal-runtime-counter-probe-2026-07-04-deterministic-sampling-bypass.counter.json | 2026-07-04T08:57:00.265143+00:00 | passed | 44 | 44 | 0 | 44 | 0 |
 | benchmarks/mklq/reports/local-metal-runtime-counter-probe-2026-07-04-deterministic-sequential-bypass.counter.json | 2026-07-04T09:26:24.359338+00:00 | passed | 45 | 45 | 0 | 45 | 0 |
+| benchmarks/mklq/reports/local-metal-runtime-counter-probe-2026-07-04-full-register-sampling-telemetry.counter.json | 2026-07-04T10:38:50.750436+00:00 | passed | 47 | 47 | 0 | 47 | 0 |
 | benchmarks/mklq/reports/local-metal-runtime-counter-probe-2026-07-04-host-sampling-telemetry.counter.json | 2026-07-04T07:52:15.268720+00:00 | passed | 42 | 42 | 0 | 42 | 0 |
 | benchmarks/mklq/reports/local-metal-runtime-counter-probe-2026-07-04-phase-timing.counter.json | 2026-07-04T08:27:40.049861+00:00 | passed | 43 | 43 | 0 | 43 | 0 |
 | benchmarks/mklq/reports/local-metal-runtime-counter-probe-2026-07-04.counter.json | 2026-07-04T07:22:11.941840+00:00 | passed | 40 | 40 | 0 | 40 | 0 |

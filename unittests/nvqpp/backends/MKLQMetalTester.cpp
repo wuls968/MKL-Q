@@ -1150,6 +1150,97 @@ CUDAQ_TEST(MKLQMetalTester,
 }
 
 CUDAQ_TEST(MKLQMetalTester,
+           SimulatorSamplesResidentFullRegisterWithHostSequentialDrawTelemetry) {
+  constexpr std::size_t qubitCount = 7;
+  constexpr std::size_t dimension = 1ULL << qubitCount;
+  constexpr int shots = 32;
+  constexpr double invSqrt2 = 0.70710678118654752440;
+  const std::vector<std::complex<double>> hGate{
+      {invSqrt2, 0.0}, {invSqrt2, 0.0}, {invSqrt2, 0.0}, {-invSqrt2, 0.0}};
+
+  MklqMetalCircuitSimulatorTester sim;
+  std::vector<std::complex<double>> state(dimension, {0.0, 0.0});
+  state[0] = {1.0, 0.0};
+  sim.setStateForTest(std::move(state));
+
+  std::vector<std::size_t> qubits;
+  qubits.reserve(qubitCount);
+  for (std::size_t qubit = 0; qubit < qubitCount; ++qubit) {
+    qubits.push_back(qubit);
+    sim.applySingleQubitGateForTest(hGate, {}, qubit);
+  }
+
+  const auto counts = sim.sampleQubitsForTest(qubits, shots);
+
+  std::size_t totalShots = 0;
+  for (const auto &[bits, count] : counts.counts)
+    totalShots += count;
+  EXPECT_EQ(totalShots, shots);
+  EXPECT_EQ(counts.sequentialData.size(), shots);
+  EXPECT_EQ(sim.singleQubitApplicationsForTest(),
+            sim.metalRuntimeAvailableForTest() ? qubitCount : 0);
+  EXPECT_EQ(sim.residentStateUploadsForTest(),
+            sim.metalRuntimeAvailableForTest() ? 1 : 0);
+  EXPECT_EQ(sim.residentStateDownloadsForTest(), 0);
+  EXPECT_EQ(sim.marginalProbabilityApplicationsForTest(), 0);
+  EXPECT_EQ(sim.probabilityFillApplicationsForTest(),
+            sim.metalRuntimeAvailableForTest() ? 1 : 0);
+  EXPECT_EQ(sim.sequentialSampleDrawBatchesForTest(), 1);
+  EXPECT_EQ(sim.countsOnlySampleDrawBatchesForTest(), 0);
+  EXPECT_EQ(sim.sampleExpectationReductionsForTest(), 1);
+  EXPECT_GT(sim.sampleProbabilityFillSecondsForTest(), 0.0);
+  EXPECT_GT(sim.sampleDrawAndCountSecondsForTest(), 0.0);
+  EXPECT_GT(sim.sampleExpectationReductionSecondsForTest(), 0.0);
+}
+
+CUDAQ_TEST(MKLQMetalTester,
+           SimulatorSamplesResidentFullRegisterWithHostCountsOnlyDrawTelemetry) {
+  constexpr std::size_t qubitCount = 7;
+  constexpr std::size_t dimension = 1ULL << qubitCount;
+  constexpr int shots = 32;
+  constexpr double invSqrt2 = 0.70710678118654752440;
+  const std::vector<std::complex<double>> hGate{
+      {invSqrt2, 0.0}, {invSqrt2, 0.0}, {invSqrt2, 0.0}, {-invSqrt2, 0.0}};
+
+  MklqMetalCircuitSimulatorTester sim;
+  std::vector<std::complex<double>> state(dimension, {0.0, 0.0});
+  state[0] = {1.0, 0.0};
+  sim.setStateForTest(std::move(state));
+
+  std::vector<std::size_t> qubits;
+  qubits.reserve(qubitCount);
+  for (std::size_t qubit = 0; qubit < qubitCount; ++qubit) {
+    qubits.push_back(qubit);
+    sim.applySingleQubitGateForTest(hGate, {}, qubit);
+  }
+
+  const auto counts =
+      sim.sampleQubitsWithoutSequentialDataForTest(qubits, shots);
+
+  std::size_t totalShots = 0;
+  for (const auto &[bits, count] : counts.counts)
+    totalShots += count;
+  EXPECT_EQ(totalShots, shots);
+  EXPECT_TRUE(counts.sequentialData.empty());
+  EXPECT_EQ(sim.singleQubitApplicationsForTest(),
+            sim.metalRuntimeAvailableForTest() ? qubitCount : 0);
+  EXPECT_EQ(sim.residentStateUploadsForTest(),
+            sim.metalRuntimeAvailableForTest() ? 1 : 0);
+  EXPECT_EQ(sim.residentStateDownloadsForTest(), 0);
+  EXPECT_EQ(sim.marginalProbabilityApplicationsForTest(), 0);
+  EXPECT_EQ(sim.probabilityFillApplicationsForTest(),
+            sim.metalRuntimeAvailableForTest() ? 1 : 0);
+  EXPECT_EQ(sim.countsOnlySampleDrawBatchesForTest(), 1);
+  EXPECT_EQ(sim.sequentialSampleDrawBatchesForTest(), 0);
+  EXPECT_EQ(sim.sampleExpectationReductionsForTest(), 1);
+  EXPECT_EQ(sim.denseDrawCountBuffersForTest(), 1);
+  EXPECT_EQ(sim.sparseDrawCountMapsForTest(), 0);
+  EXPECT_GT(sim.sampleProbabilityFillSecondsForTest(), 0.0);
+  EXPECT_GT(sim.sampleDrawAndCountSecondsForTest(), 0.0);
+  EXPECT_GT(sim.sampleExpectationReductionSecondsForTest(), 0.0);
+}
+
+CUDAQ_TEST(MKLQMetalTester,
            SimulatorSamplesLargeResidentPartialRegisterThroughFullProbability) {
   constexpr std::size_t qubitCount = 16;
   constexpr std::size_t dimension = 1ULL << qubitCount;
