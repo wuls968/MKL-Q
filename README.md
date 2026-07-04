@@ -169,8 +169,10 @@ not-release-ready evidence boundary:
 python3 benchmarks/mklq/check_metal_evidence.py
 ```
 
-To verify the historical tracked experimental Metal stochastic sampling
-summaries that document the former host-side draw/count boundary:
+To verify the current tracked experimental Metal stochastic sampling summaries
+that document selected full-register Metal sample-count accumulation after
+host-generated draws while keeping partial-register stochastic counts
+host-side:
 
 ```bash
 python3 benchmarks/mklq/check_metal_sampling_boundary_evidence.py

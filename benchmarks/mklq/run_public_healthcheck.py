@@ -131,8 +131,8 @@ SAMPLING_SCALING_SUMMARY_ID = (
 SAMPLING_PROFILE_SUMMARY_ID = (
     "local-sampling-profile-breakdown-cpu-q20-q22-2026-06-23")
 METAL_SAMPLING_BOUNDARY_SUMMARY_IDS = (
-    "local-counts-only-sampling-shot-scaling-q20-2026-06-19",
-    "local-metal-sampling-boundary-q22-2026-07-04",
+    "local-metal-count-accumulation-sampling-q20-2026-07-04",
+    "local-metal-count-accumulation-sampling-q22-2026-07-04",
 )
 CLEAN_CPU_SUMMARY_ID = "local-clean-cpu-q20-2026-07-03-two-three"
 SAMPLING_SCALING_REQUIRED_RATIOS = (
