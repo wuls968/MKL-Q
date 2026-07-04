@@ -56,6 +56,7 @@ COUNTER_TEST_SUFFIXES = (
     "SimulatorSamplesResidentPartialRegisterWithHostSequentialDrawTelemetry",
     "SimulatorSamplesResidentPartialRegisterWithHostCountsOnlyDrawTelemetry",
     "SimulatorSamplesResidentDeterministicPartialRegisterCountsOnlyWithoutDrawLoop",
+    "SimulatorSamplesResidentDeterministicPartialRegisterSequentialWithoutDrawLoop",
     "SimulatorSamplesResidentPartialRegisterReportsNativePhaseTiming",
     "SimulatorSamplesDeterministicSparseStateWithOneBitStringConversion",
     "SimulatorSynchronizesResidentStateBeforeUnsupportedGate",

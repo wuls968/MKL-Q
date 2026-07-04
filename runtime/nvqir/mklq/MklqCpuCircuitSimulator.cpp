@@ -1535,13 +1535,13 @@ protected:
     return deterministicOutcome;
   }
 
-  bool tryAppendDeterministicCountsOnlySampleOutcome(
+  bool tryAppendDeterministicSampleOutcome(
       cudaq::ExecutionResult &counts, std::span<const double> probabilities,
-      int shots, std::size_t bitCount) const {
+      int shots, std::size_t bitCount, bool includeSequentialData) const {
     const auto outcome = deterministicSampleOutcome(probabilities);
     if (!outcome)
       return false;
-    appendSampleOutcomeCount(counts, *outcome, bitCount, false,
+    appendSampleOutcomeCount(counts, *outcome, bitCount, includeSequentialData,
                              static_cast<std::size_t>(shots));
     return true;
   }
@@ -1789,10 +1789,6 @@ protected:
     validateProbabilityWeights(probabilities, "sparse sampler");
 
 #if defined(MKLQ_ENABLE_TEST_ACCESSORS)
-    if (includeSequentialData)
-      ++sequentialSampleDrawBatches;
-    else
-      ++countsOnlySampleDrawBatches;
     ++sparseFullRegisterScanHits;
 #endif
 
@@ -1803,6 +1799,13 @@ protected:
       setExpectationFromSampleCounts(counts, shots);
       return true;
     }
+
+#if defined(MKLQ_ENABLE_TEST_ACCESSORS)
+    if (includeSequentialData)
+      ++sequentialSampleDrawBatches;
+    else
+      ++countsOnlySampleDrawBatches;
+#endif
 
     std::discrete_distribution<std::size_t> distribution(probabilities.begin(),
                                                          probabilities.end());
@@ -1841,12 +1844,13 @@ protected:
         fillFullRegisterProbabilities(probabilities);
       }
       validateProbabilityWeights(probabilities, "full-register sampler");
+      if (tryAppendDeterministicSampleOutcome(
+              counts, probabilities, shots, qubits.size(),
+              includeSequentialData)) {
+        setExpectationFromSampleCounts(counts, shots);
+        return counts;
+      }
       if (!includeSequentialData) {
-        if (tryAppendDeterministicCountsOnlySampleOutcome(
-                counts, probabilities, shots, qubits.size())) {
-          setExpectationFromSampleCounts(counts, shots);
-          return counts;
-        }
         drawAndAppendSampleOutcomeCounts(counts, probabilities, shots,
                                          qubits.size());
         setExpectationFromSampleCounts(counts, shots);
@@ -1884,12 +1888,13 @@ protected:
     validateProbabilityWeights(probabilities, "marginal sampler");
 
     cudaq::ExecutionResult counts;
+    if (tryAppendDeterministicSampleOutcome(counts, probabilities, shots,
+                                            qubits.size(),
+                                            includeSequentialData)) {
+      setExpectationFromSampleCounts(counts, shots);
+      return counts;
+    }
     if (!includeSequentialData) {
-      if (tryAppendDeterministicCountsOnlySampleOutcome(
-              counts, probabilities, shots, qubits.size())) {
-        setExpectationFromSampleCounts(counts, shots);
-        return counts;
-      }
       drawAndAppendSampleOutcomeCounts(counts, probabilities, shots,
                                        qubits.size());
       setExpectationFromSampleCounts(counts, shots);

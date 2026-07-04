@@ -440,7 +440,7 @@ CUDAQ_TEST(MKLQCpuTester, SparseFullRegisterScanHitReportsNativePhases) {
   EXPECT_EQ(sim.sparseFullRegisterScanMissesForTest(), 0);
   EXPECT_EQ(sim.fullRegisterProbabilityFillsForTest(), 0);
   EXPECT_EQ(sim.marginalProbabilityFillsForTest(), 0);
-  EXPECT_EQ(sim.countsOnlySampleDrawBatchesForTest(), 1);
+  EXPECT_EQ(sim.countsOnlySampleDrawBatchesForTest(), 0);
   EXPECT_EQ(sim.sequentialSampleDrawBatchesForTest(), 0);
   EXPECT_EQ(sim.sampleExpectationReductionsForTest(), 1);
   EXPECT_EQ(sim.denseDrawCountBuffersForTest(), 0);
