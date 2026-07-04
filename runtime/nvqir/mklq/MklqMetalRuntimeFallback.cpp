@@ -94,6 +94,12 @@ bool MetalStateVectorExecutor::fillResidentMarginalProbabilities(
   return false;
 }
 
+bool MetalStateVectorExecutor::accumulateSampleCounts(
+    const double *, std::size_t, const double *, std::size_t, std::uint32_t *,
+    std::size_t) {
+  return false;
+}
+
 bool MetalStateVectorExecutor::computeResidentQubitProbability(std::size_t,
                                                                double *) {
   return false;
@@ -135,6 +141,10 @@ MetalStateVectorExecutor::measurementProbabilityReductionApplications() const {
 }
 
 std::size_t MetalStateVectorExecutor::measurementCollapseApplications() const {
+  return 0;
+}
+
+std::size_t MetalStateVectorExecutor::sampleCountAccumulations() const {
   return 0;
 }
 

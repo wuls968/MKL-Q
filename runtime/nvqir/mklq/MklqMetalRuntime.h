@@ -10,6 +10,7 @@
 
 #include <complex>
 #include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <string>
 
@@ -77,6 +78,11 @@ public:
                                          std::size_t qubitCount,
                                          double *probabilities,
                                          std::size_t probabilityCount);
+  bool accumulateSampleCounts(const double *probabilities,
+                              std::size_t probabilityCount,
+                              const double *draws, std::size_t drawCount,
+                              std::uint32_t *counts,
+                              std::size_t countBufferSize);
   bool computeResidentQubitProbability(std::size_t qubit,
                                        double *probabilityOne);
   bool collapseResidentQubit(std::size_t qubit, bool result,
@@ -90,6 +96,7 @@ public:
   std::size_t measurementProbabilityApplications() const;
   std::size_t measurementProbabilityReductionApplications() const;
   std::size_t measurementCollapseApplications() const;
+  std::size_t sampleCountAccumulations() const;
   std::size_t residentStateUploads() const;
   std::size_t residentStateDownloads() const;
 

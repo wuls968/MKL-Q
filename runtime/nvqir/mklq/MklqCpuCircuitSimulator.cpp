@@ -20,6 +20,7 @@
 #include <cmath>
 #include <complex>
 #include <cstddef>
+#include <cstdint>
 #include <limits>
 #include <numeric>
 #include <optional>
@@ -1619,6 +1620,52 @@ protected:
                               bitCount);
   }
 
+#if defined(MKLQ_ENABLE_METAL_RUNTIME)
+  bool tryDrawAndAppendMetalSampleOutcomeCounts(
+      cudaq::ExecutionResult &counts, const std::vector<double> &probabilities,
+      int shots, std::size_t bitCount) {
+    if (!metalExecutor.available() || probabilities.empty() ||
+        probabilities.size() > denseDrawCountOutcomeLimit || shots < 1 ||
+        static_cast<std::uint64_t>(shots) >
+            std::numeric_limits<std::uint32_t>::max())
+      return false;
+
+    const double totalWeight =
+        std::accumulate(probabilities.begin(), probabilities.end(), 0.0);
+    if (!(totalWeight > 0.0))
+      return false;
+
+#if defined(MKLQ_ENABLE_TEST_ACCESSORS)
+    const auto sampleDrawStart = std::chrono::steady_clock::now();
+#endif
+    std::uniform_real_distribution<double> distribution(0.0, totalWeight);
+    std::vector<double> draws(static_cast<std::size_t>(shots), 0.0);
+    for (double &draw : draws)
+      draw = distribution(randomEngine);
+
+    std::vector<std::uint32_t> drawCounts(probabilities.size(), 0);
+    if (!metalExecutor.accumulateSampleCounts(
+            probabilities.data(), probabilities.size(), draws.data(),
+            draws.size(), drawCounts.data(), drawCounts.size()))
+      return false;
+
+    for (std::size_t outcome = 0; outcome < drawCounts.size(); ++outcome) {
+      const auto count = drawCounts[outcome];
+      if (count == 0)
+        continue;
+      appendSampleOutcomeCount(counts, outcome, bitCount, false,
+                               static_cast<std::size_t>(count));
+    }
+#if defined(MKLQ_ENABLE_TEST_ACCESSORS)
+    sampleDrawAndCountSeconds +=
+        std::chrono::duration<double>(std::chrono::steady_clock::now() -
+                                      sampleDrawStart)
+            .count();
+#endif
+    return true;
+  }
+#endif
+
   void setExpectationFromSampleCounts(cudaq::ExecutionResult &counts,
                                       int shots) const {
 #if defined(MKLQ_ENABLE_TEST_ACCESSORS)
@@ -1851,6 +1898,13 @@ protected:
         return counts;
       }
       if (!includeSequentialData) {
+#if defined(MKLQ_ENABLE_METAL_RUNTIME)
+        if (tryDrawAndAppendMetalSampleOutcomeCounts(counts, probabilities,
+                                                     shots, qubits.size())) {
+          setExpectationFromSampleCounts(counts, shots);
+          return counts;
+        }
+#endif
         drawAndAppendSampleOutcomeCounts(counts, probabilities, shots,
                                          qubits.size());
         setExpectationFromSampleCounts(counts, shots);
