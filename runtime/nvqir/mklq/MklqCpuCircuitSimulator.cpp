@@ -22,6 +22,7 @@
 #include <cstddef>
 #include <limits>
 #include <numeric>
+#include <optional>
 #include <ostream>
 #include <random>
 #include <span>
@@ -1521,6 +1522,30 @@ protected:
       appendSampleOutcomeCount(counts, outcome, bitCount, false, count);
   }
 
+  std::optional<std::size_t>
+  deterministicSampleOutcome(std::span<const double> probabilities) const {
+    std::optional<std::size_t> deterministicOutcome;
+    for (std::size_t outcome = 0; outcome < probabilities.size(); ++outcome) {
+      if (probabilities[outcome] <= zeroTolerance)
+        continue;
+      if (deterministicOutcome)
+        return std::nullopt;
+      deterministicOutcome = outcome;
+    }
+    return deterministicOutcome;
+  }
+
+  bool tryAppendDeterministicCountsOnlySampleOutcome(
+      cudaq::ExecutionResult &counts, std::span<const double> probabilities,
+      int shots, std::size_t bitCount) const {
+    const auto outcome = deterministicSampleOutcome(probabilities);
+    if (!outcome)
+      return false;
+    appendSampleOutcomeCount(counts, *outcome, bitCount, false,
+                             static_cast<std::size_t>(shots));
+    return true;
+  }
+
   std::vector<std::size_t>
   drawDenseOutcomeCounts(const std::vector<double> &probabilities, int shots) {
 #if defined(MKLQ_ENABLE_TEST_ACCESSORS)
@@ -1817,6 +1842,11 @@ protected:
       }
       validateProbabilityWeights(probabilities, "full-register sampler");
       if (!includeSequentialData) {
+        if (tryAppendDeterministicCountsOnlySampleOutcome(
+                counts, probabilities, shots, qubits.size())) {
+          setExpectationFromSampleCounts(counts, shots);
+          return counts;
+        }
         drawAndAppendSampleOutcomeCounts(counts, probabilities, shots,
                                          qubits.size());
         setExpectationFromSampleCounts(counts, shots);
@@ -1855,6 +1885,11 @@ protected:
 
     cudaq::ExecutionResult counts;
     if (!includeSequentialData) {
+      if (tryAppendDeterministicCountsOnlySampleOutcome(
+              counts, probabilities, shots, qubits.size())) {
+        setExpectationFromSampleCounts(counts, shots);
+        return counts;
+      }
       drawAndAppendSampleOutcomeCounts(counts, probabilities, shots,
                                        qubits.size());
       setExpectationFromSampleCounts(counts, shots);

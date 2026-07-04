@@ -149,11 +149,12 @@ target-marker output.
   CRZ, CZ, CRX, and SWAP path selection.
   Sampling has a fast path for full-register measurements in natural qubit
   order, including a sparse-outcome path for basis/GHZ-like states.
-  Counts-only dense sampling (`includeSequentialData=false`) aggregates drawn
-  outcome counts before converting bit strings, using a bounded dense counter
-  buffer for small outcome spaces and a sparse map for larger ones. Standard
-  non-explicit `cudaq.sample` execution now routes through this counts-only
-  path, including deprecated named-register remapping, while
+  Counts-only dense sampling (`includeSequentialData=false`) materializes
+  deterministic one-outcome distributions directly and otherwise aggregates
+  drawn outcome counts before converting bit strings, using a bounded dense
+  counter buffer for small outcome spaces and a sparse map for larger ones.
+  Standard non-explicit `cudaq.sample` execution now routes through this
+  counts-only path, including deprecated named-register remapping, while
   explicit-measurement sampling still records per-shot data. Public
   `sample_result::sequential_data()` access remains compatible by expanding
   counts on demand when a counts-only backend result omitted stored sequential
@@ -170,9 +171,10 @@ target-marker output.
   marginal partial-sum work is no smaller than a full probability fill, it
   computes resident full-register probabilities once and folds them to
   marginal outcome probabilities on the host without first downloading the
-  state vector. It still performs sample draw/count accumulation host-side; the
-  current local shot-scaling gate does not justify GPU-side count accumulation
-  yet.
+  state vector. Stochastic sample draw/count accumulation remains host-side;
+  deterministic one-outcome counts-only distributions can bypass that draw
+  loop after resident probability work. The current local shot-scaling gate
+  does not justify general GPU-side count accumulation yet.
   Resident measure/reset can compute the measured qubit probability with a
   dedicated measured-qubit Metal reduction kernel, then collapse the selected
   branch with a Metal kernel without first downloading the state. The host only
