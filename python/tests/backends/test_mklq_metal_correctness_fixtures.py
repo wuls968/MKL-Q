@@ -34,6 +34,57 @@ def _state_for_target(target, kernel):
         cudaq.reset_target()
 
 
+def _counts_for_target(target, kernel, shots):
+    cudaq.set_target(target)
+    try:
+        if hasattr(cudaq, "set_random_seed"):
+            cudaq.set_random_seed(23)
+        return {bits: count for bits, count in cudaq.sample(
+            kernel, shots_count=shots).items()}
+    finally:
+        cudaq.reset_target()
+
+
+def _assert_counts_are_close_to_probabilities(counts, expected, shots):
+    observed_total = sum(counts.values())
+    assert observed_total == shots, (
+        f"expected {shots} shots, observed {observed_total}; counts={counts}")
+
+    unexpected = sorted(bits for bits, count in counts.items()
+                        if count and expected.get(bits, 0.0) == 0.0)
+    assert not unexpected, (
+        f"unexpected non-zero sample outcomes {unexpected}; "
+        f"expected support={sorted(expected)} counts={counts}")
+
+    for bits, probability in expected.items():
+        observed = counts.get(bits, 0)
+        expected_count = shots * probability
+        variance = shots * probability * (1.0 - probability)
+        tolerance = max(8.0, 6.0 * np.sqrt(variance))
+        assert abs(observed - expected_count) <= tolerance, (
+            f"outcome {bits}: observed {observed}, expected "
+            f"{expected_count:.2f} +/- {tolerance:.2f}; "
+            f"probability={probability:.8f}, counts={counts}")
+
+
+def _marginal_probabilities_from_state(state, measured_qubits):
+    measured_qubits = tuple(sorted(measured_qubits))
+    probabilities = {
+        format(outcome, f"0{len(measured_qubits)}b")[::-1]: 0.0
+        for outcome in range(1 << len(measured_qubits))
+    }
+
+    for basis, amplitude in enumerate(state):
+        outcome = 0
+        for bit, qubit in enumerate(measured_qubits):
+            if basis & (1 << qubit):
+                outcome |= 1 << bit
+        probabilities[format(outcome, f"0{len(measured_qubits)}b")[::-1]] += (
+            float(np.abs(amplitude)**2))
+
+    return probabilities
+
+
 def _assert_metal_matches_qpp(kernel):
     reference = _state_for_target("qpp-cpu", kernel)
     actual = _state_for_target("mklq-metal", kernel)
@@ -173,6 +224,42 @@ def _deterministic_sample_kernel():
     return kernel
 
 
+def _partial_register_bit_order_kernel(measurement_order):
+    kernel = cudaq.make_kernel()
+    qubits = kernel.qalloc(4)
+    kernel.x(qubits[0])
+    kernel.x(qubits[2])
+    for index in measurement_order:
+        kernel.mz(qubits[index])
+    return kernel
+
+
+def _apply_sampling_distribution_circuit(kernel, qubits):
+    kernel.h(qubits[0])
+    kernel.ry(0.73, qubits[1])
+    kernel.cx(qubits[0], qubits[2])
+    kernel.x(qubits[3])
+    kernel.ry(-0.41, qubits[4])
+    kernel.crz(0.19, qubits[1], qubits[4])
+
+
+def _sampling_distribution_state_kernel():
+    kernel = cudaq.make_kernel()
+    qubits = kernel.qalloc(5)
+    _apply_sampling_distribution_circuit(kernel, qubits)
+
+    return kernel
+
+
+def _sampling_distribution_sample_kernel(measurement_order):
+    kernel = cudaq.make_kernel()
+    qubits = kernel.qalloc(5)
+    _apply_sampling_distribution_circuit(kernel, qubits)
+    for index in measurement_order:
+        kernel.mz(qubits[index])
+    return kernel
+
+
 @cudaq.kernel
 def _resident_measurement_feedback() -> bool:
     qubits = cudaq.qvector(2)
@@ -227,6 +314,29 @@ def test_mklq_metal_deterministic_sampling_uses_supported_gate_set():
         cudaq.reset_target()
 
     assert dict(counts.items()) == {"111": 64}
+
+
+@pytest.mark.parametrize("measurement_order",
+                         ([0, 2, 3], [3, 2, 0], [2, 0, 3]))
+def test_mklq_metal_partial_register_sampling_uses_natural_bit_order(
+        measurement_order):
+    counts = _counts_for_target(
+        "mklq-metal", _partial_register_bit_order_kernel(measurement_order),
+        shots=64)
+
+    assert counts == {"110": 64}
+
+
+def test_mklq_metal_partial_register_sampling_matches_qpp_marginal_oracle():
+    measured_qubits = (4, 0, 2)
+    shots = 4096
+    state = _state_for_target("qpp-cpu", _sampling_distribution_state_kernel())
+    expected = _marginal_probabilities_from_state(state, measured_qubits)
+    counts = _counts_for_target(
+        "mklq-metal", _sampling_distribution_sample_kernel(measured_qubits),
+        shots=shots)
+
+    _assert_counts_are_close_to_probabilities(counts, expected, shots)
 
 
 def test_mklq_metal_resident_measurement_feedback_collapses_state():
