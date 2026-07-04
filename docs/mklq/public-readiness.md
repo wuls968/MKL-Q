@@ -179,7 +179,7 @@ completed local gates, and focused CRZ distance-sweep evidence retained from
 - one-command correctness gate: passed with 4/4 steps passed, including
   `metal_runtime_counter_probe`;
 - public example smoke gate: passed with 30/30 steps passed;
-- current benchmark harness tests: `199 passed`;
+- current benchmark harness tests: `203 passed`;
 - current `cpu_sampling_counter_probe_parse`: 3 bounded reports, 21 expected,
   21 selected, 0 missing, and 0 failures, including full-register and marginal
   probability-fill counter ctests;

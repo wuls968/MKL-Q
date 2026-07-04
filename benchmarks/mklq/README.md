@@ -507,9 +507,10 @@ python3 benchmarks/mklq/check_metal_sampling_boundary_evidence.py
 The guard does not run benchmarks. It checks the tracked q20 and q22
 counts-only shot-scaling summaries for full-register and partial-register
 `mklq-metal` sampling rows at 256, 1024, 8192, and 65536 shots, verifies
-ignored raw payload boundaries, requires explicit historical host-side
-draw/count wording, and rejects claims of Metal RNG, GPU sampler, broad
-on-device count accumulation, release readiness, or all-Metal execution.
+ignored raw payload boundaries, requires explicit selected full-register Metal
+sample-count accumulation after host-generated draws plus partial-register
+host-side draw/count wording, and rejects claims of Metal RNG, GPU sampler,
+broad device-side sampler coverage, release readiness, or all-Metal execution.
 
 ## Metal Runtime Counter Probe
 
@@ -854,9 +855,8 @@ The generated public index is tracked at
   0.01916737499414012 s for `sample-full-register` and 0.016119854502903763 s
   for `sample-partial-register`; `mklq-metal` median elapsed time was
   0.04015256251295796 s and 0.03547552099917084 s for the same cases.
-  `check_metal_sampling_boundary_evidence.py` treats this summary as one
-  tracked static guard input for the historical stochastic `mklq-metal`
-  host-side sample draw/count boundary.
+  This remains historical static evidence for the earlier stochastic
+  `mklq-metal` host-side sample draw/count boundary.
 - `reports/local-metal-sampling-boundary-q22-2026-07-04.summary.json`:
   tracked sanitized summary for the ignored raw result
   `results/local-metal-sampling-boundary-q22-2026-07-04.json`
@@ -871,7 +871,35 @@ The generated public index is tracked at
   path, not as clean-release provenance, cross-machine certification, or proof
   of an on-device sampler. The q22 high-shot versus low-shot median elapsed
   ratios were 1.588x for full-register sampling and 1.113x for
-  partial-register sampling, under the current static guard threshold of 2.0.
+  partial-register sampling, under the static guard threshold of 2.0 used for
+  that historical boundary.
+- `reports/local-metal-count-accumulation-sampling-q20-2026-07-04.summary.json`:
+  tracked sanitized summary for the ignored raw result
+  `results/local-metal-count-accumulation-sampling-q20-2026-07-04.json`
+  (`sha256: 751c59993fc4590b9729cc321ae1f328c0655b421b79ff596ddbaaf590b1bf8e`).
+  Isolated `mklq-metal` rows for `sample-full-register` and
+  `sample-partial-register` at q20 with shot counts
+  `256,1024,8192,65536`, `repeats=2`, `warmups=1`, and `layers=8` on Apple
+  M5, 10 logical cores, 16 GB RAM, macOS 26.5.1. All 8 rows completed with
+  `status == "ok"` from a clean worktree. Treat this as local tuning evidence
+  for the selected full-register Metal sample-count accumulation path after
+  host-generated draws, with partial-register stochastic counts still
+  host-side. The q20 high-shot versus low-shot median elapsed ratios were
+  0.988x for full-register sampling and 0.560x for partial-register sampling.
+- `reports/local-metal-count-accumulation-sampling-q22-2026-07-04.summary.json`:
+  tracked sanitized summary for the ignored raw result
+  `results/local-metal-count-accumulation-sampling-q22-2026-07-04.json`
+  (`sha256: 0a270eda1a9725b5cddf27a292363fdb495770494c77b746b950eba17a4c0d33`).
+  Isolated `mklq-metal` rows for `sample-full-register` and
+  `sample-partial-register` at q22 with shot counts
+  `256,1024,8192,65536`, `repeats=2`, `warmups=1`, and `layers=8` on Apple
+  M5, 10 logical cores, 16 GB RAM, macOS 26.5.1. All 8 rows completed with
+  `status == "ok"` from a clean worktree. Treat this as local tuning evidence
+  for the same selected full-register Metal sample-count accumulation boundary,
+  not as release readiness, cross-machine certification, or proof of a Metal
+  RNG/device-side sampler. The q22 high-shot versus low-shot median elapsed
+  ratios were 0.914x for full-register sampling and 0.943x for
+  partial-register sampling.
 - `reports/local-y-cy-fastpath-isolated-q20-2026-06-19.summary.json`:
   tracked sanitized summary for the ignored raw result
   `results/local-y-cy-fastpath-isolated-q20-2026-06-19.json`

@@ -83,6 +83,12 @@ shot-scaling summary. The next 2026-07-04 evidence refresh adds tracked q22
 `mklq-metal` counts-only shot-scaling rows for the same full-register and
 partial-register sampling boundary; it remains local tuning evidence and does
 not claim an on-device sampler.
+The next 2026-07-04 Metal sampling evidence refresh replaces the default
+sampling-boundary guard inputs with clean-worktree q20 and q22
+`mklq-metal` summaries for the selected full-register Metal sample-count
+accumulation path after host-generated draws, while still requiring
+partial-register stochastic counts-only sampling to state host-side draw/count
+accumulation.
 A previous 2026-07-04 validation pass also reran the full
 install/build/signature-repair/correctness/example gate on the current MKL-Q
 branch after adding the local macOS install-prefix signature repair step.
@@ -146,6 +152,8 @@ Raw wrapper output was written to ignored local paths
 `benchmarks/mklq/results/local-sampling-scaling-cpu-q18-q22-2026-06-23.json`,
 `benchmarks/mklq/results/local-scaling-cpu-two-qubit-three-qubit-q18-q22-2026-07-03-two-three-scaling.json`,
 `benchmarks/mklq/results/local-metal-sampling-boundary-q22-2026-07-04.json`,
+`benchmarks/mklq/results/local-metal-count-accumulation-sampling-q20-2026-07-04.json`,
+`benchmarks/mklq/results/local-metal-count-accumulation-sampling-q22-2026-07-04.json`,
 `benchmarks/mklq/results/example-smoke-2026-06-23.json`,
 `benchmarks/mklq/results/example-smoke-2026-07-02.json`,
 `benchmarks/mklq/results/macos-install-signature-repair-2026-07-02.json`, and
@@ -168,7 +176,7 @@ Full public healthcheck planned step count: `34/34` steps.
 - One-command correctness gate: passed with 4 steps passed, 0 failed, and 0
   skipped, including the Metal runtime counter probe.
 - Public example smoke gate: passed, with 30 steps passed and 0 failed.
-- Current `benchmark_harness_tests`: `199 passed`.
+- Current `benchmark_harness_tests`: `203 passed`.
 - Current `cpu_gate_counter_probe_parse`: 3 bounded reports, 37 expected,
   37 selected, 0 missing, and 0 failures, including single-control X/CNOT,
   per-gate single-control H/Y/Rx/Ry direct pair fixtures, single-control Rz
@@ -491,6 +499,8 @@ Current tracked summaries include:
 - `local-metal-y-cy-resident-isolated-q20-2026-06-19.summary.json`
 - `local-counts-only-sampling-shot-scaling-q20-2026-06-19.summary.json`
 - `local-metal-sampling-boundary-q22-2026-07-04.summary.json`
+- `local-metal-count-accumulation-sampling-q20-2026-07-04.summary.json`
+- `local-metal-count-accumulation-sampling-q22-2026-07-04.summary.json`
 - `local-multi-control-cpu-q20-2026-06-22.summary.json`
 - `local-scaling-cpu-multi-control-q18-q22-2026-06-22.summary.json`
 - `local-scaling-cpu-hardware-efficient-ansatz-q18-q22-2026-06-30.summary.json`

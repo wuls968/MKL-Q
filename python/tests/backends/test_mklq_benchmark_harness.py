@@ -1886,7 +1886,8 @@ def _metal_sampling_boundary_summary_fixture(module,
                                              qubits=20,
                                              omit_row=None,
                                              elapsed_override=None,
-                                             metal_scope=None):
+                                             metal_scope=None,
+                                             extra_interpretation=None):
     rows = []
     for case in ("sample-full-register", "sample-partial-register"):
         for shots in module.DEFAULT_REQUIRED_SHOTS:
@@ -1907,6 +1908,21 @@ def _metal_sampling_boundary_summary_fixture(module,
                 "elapsed_seconds_median": elapsed,
                 "estimated_state_bytes": 16777216,
             })
+    interpretation = {
+        "do_not_treat_as_clean_release_provenance": True,
+        "raw_json_files_are_ignored": True,
+        "performance_claim_scope":
+            "local Apple M5 tuning evidence only; standard sample "
+            "counts-only rows are not release or cross-machine certification",
+        "metal_path_scope": metal_scope or (
+            "mixed-path Metal probability fill with host-side sample "
+            "draw/count accumulation"),
+        "sequential_data_accessor_not_invoked": True,
+        "standard_sample_counts_only_path": True,
+    }
+    if extra_interpretation:
+        interpretation.update(extra_interpretation)
+
     return {
         "schema_version": "mklq-benchmark-summary-v1",
         "summary_id": module.DEFAULT_SUMMARY_ID,
@@ -1929,18 +1945,7 @@ def _metal_sampling_boundary_summary_fixture(module,
             "tracked": False,
         }],
         "rows": rows,
-        "interpretation": {
-            "do_not_treat_as_clean_release_provenance": True,
-            "raw_json_files_are_ignored": True,
-            "performance_claim_scope":
-                "local Apple M5 tuning evidence only; standard sample "
-                "counts-only rows are not release or cross-machine certification",
-            "metal_path_scope": metal_scope or (
-                "mixed-path Metal probability fill with host-side sample "
-                "draw/count accumulation"),
-            "sequential_data_accessor_not_invoked": True,
-            "standard_sample_counts_only_path": True,
-        },
+        "interpretation": interpretation,
     }
 
 
@@ -2032,6 +2037,61 @@ def test_mklq_metal_sampling_boundary_guard_rejects_gpu_sampler_claim():
     assert result["status"] == "failed"
     failures = "\n".join(result["failures"])
     assert "forbidden sampling claim" in failures
+
+
+def test_mklq_metal_sampling_boundary_guard_requires_partial_host_boundary():
+    module = _load_metal_sampling_boundary_evidence_module()
+
+    result = module.check_summary(
+        _metal_sampling_boundary_summary_fixture(
+            module,
+            metal_scope=(
+                "mixed-path Metal probability fill with selected "
+                "full-register counts-only Metal sample-count accumulation "
+                "after host-generated draws"),
+            extra_interpretation={
+                "full_register_counts_accumulation":
+                    "selected Metal sample-count accumulation after "
+                    "host-generated draws",
+                "partial_register_counts_accumulation":
+                    "selected Metal sample-count accumulation",
+            },
+        ),
+        required_rows=module.DEFAULT_REQUIRED_ROWS,
+        max_high_to_low_ratio=module.DEFAULT_MAX_HIGH_TO_LOW_RATIO,
+    )
+
+    assert result["status"] == "failed"
+    assert any("partial-register" in failure for failure in result["failures"])
+
+
+def test_mklq_metal_sampling_boundary_guard_accepts_selected_count_accumulation(
+):
+    module = _load_metal_sampling_boundary_evidence_module()
+
+    result = module.check_summary(
+        _metal_sampling_boundary_summary_fixture(
+            module,
+            metal_scope=(
+                "mixed-path Metal probability fill with selected "
+                "full-register counts-only Metal sample-count accumulation "
+                "after host-generated draws; partial-register stochastic "
+                "counts-only sampling remains host-side draw/count "
+                "accumulation"),
+            extra_interpretation={
+                "full_register_counts_accumulation":
+                    "selected Metal sample-count accumulation after "
+                    "host-generated draws",
+                "partial_register_counts_accumulation":
+                    "host-side draw/count accumulation",
+            },
+        ),
+        required_rows=module.DEFAULT_REQUIRED_ROWS,
+        max_high_to_low_ratio=module.DEFAULT_MAX_HIGH_TO_LOW_RATIO,
+    )
+
+    assert result["status"] == "passed"
+    assert result["failures"] == []
 
 
 def test_mklq_public_claim_guard_accepts_negated_boundary_text():
@@ -6336,7 +6396,7 @@ def test_mklq_benchmark_dry_run_records_metal_path_metadata(tmp_path):
         "--targets",
         "mklq-metal",
         "--cases",
-        "y-state,cy-state,three-qubit-state,qft-like-state,hardware-efficient-ansatz-state,crz-distance-state,sample-full-register",
+        "y-state,cy-state,three-qubit-state,qft-like-state,hardware-efficient-ansatz-state,crz-distance-state,sample-full-register,sample-partial-register",
         "--qubits",
         "4",
         "--output",
@@ -6367,7 +6427,15 @@ def test_mklq_benchmark_dry_run_records_metal_path_metadata(tmp_path):
     assert rows["crz-distance-state"]["metrics"]["metal_path_label"] == (
         "mklq_metal_resident_controlled_gate_state_host_readback")
     assert rows["sample-full-register"]["metrics"]["metal_path_label"] == (
-        "mklq_metal_mixed_sampling_host_counts")
+        "mklq_metal_full_register_sample_count_accumulation")
+    assert rows["sample-full-register"]["metrics"]["metal_path_scope"] == (
+        "mixed-path Metal probability fill with selected full-register "
+        "counts-only Metal sample-count accumulation after host-generated "
+        "draws")
+    assert rows["sample-partial-register"]["metrics"]["metal_path_label"] == (
+        "mklq_metal_partial_register_host_counts")
+    assert "host-side sample draw/count" in rows[
+        "sample-partial-register"]["metrics"]["metal_path_scope"]
     for row in rows.values():
         metrics = row["metrics"]
         assert metrics["metal_path_label_source"] == (
@@ -8498,6 +8566,71 @@ def test_mklq_benchmark_summary_records_counts_only_sampling_shot_scaling():
         "sample_path"] == "mklq_metal_mixed_path_host_counts"
     assert summary["interpretation"]["standard_sample_counts_only_path"]
     assert summary["interpretation"]["do_not_treat_as_clean_release_provenance"]
+
+
+def test_mklq_benchmark_summary_records_metal_count_accumulation_sampling():
+    repo_root = Path(__file__).resolve().parents[3]
+    summary_path = (
+        repo_root / "benchmarks" / "mklq" / "reports" /
+        "local-metal-count-accumulation-sampling-q20-2026-07-04.summary.json")
+
+    summary = json.loads(summary_path.read_text(encoding="utf-8"))
+
+    assert summary["schema_version"] == "mklq-benchmark-summary-v1"
+    assert summary["evidence_kind"] == "local_tuning_evidence"
+    assert summary["summary_id"] == (
+        "local-metal-count-accumulation-sampling-q20-2026-07-04")
+    assert summary["raw_results"][0]["path"] == (
+        "benchmarks/mklq/results/"
+        "local-metal-count-accumulation-sampling-q20-2026-07-04.json")
+    assert summary["raw_results"][0]["sha256"] == (
+        "751c59993fc4590b9729cc321ae1f328c0655b421b79ff596ddbaaf590b1bf8e")
+    assert summary["raw_results"][0]["status_rows"] == {"ok": 8}
+    assert summary["interpretation"]["clean_worktree"] is True
+    assert summary["git"]["dirty"] is False
+    assert summary["config"]["targets"] == ["mklq-metal"]
+    assert summary["config"]["cases"] == [
+        "sample-full-register", "sample-partial-register"
+    ]
+    assert summary["config"]["qubits"] == [20]
+    assert summary["config"]["shot_counts"] == [256, 1024, 8192, 65536]
+
+    rows = {
+        (row["case"], row["shots"]): row
+        for row in summary["rows"]
+    }
+    assert len(rows) == 8
+    assert rows[("sample-full-register", 65536)]["metal_path_label"] == (
+        "mklq_metal_full_register_sample_count_accumulation")
+    assert "host-generated draws" in rows[
+        ("sample-full-register", 65536)]["metal_path_scope"]
+    assert rows[("sample-partial-register", 65536)]["metal_path_label"] == (
+        "mklq_metal_partial_register_host_counts")
+    assert "host-side sample draw/count" in rows[
+        ("sample-partial-register", 65536)]["metal_path_scope"]
+    assert summary["interpretation"]["full_register_counts_accumulation"] == (
+        "selected Metal sample-count accumulation after host-generated draws")
+    assert summary["interpretation"]["partial_register_counts_accumulation"] == (
+        "host-side draw/count accumulation")
+    assert summary["interpretation"][
+        "do_not_treat_as_clean_release_provenance"]
+
+
+def test_mklq_benchmark_summary_records_metal_count_accumulation_q22():
+    repo_root = Path(__file__).resolve().parents[3]
+    summary_path = (
+        repo_root / "benchmarks" / "mklq" / "reports" /
+        "local-metal-count-accumulation-sampling-q22-2026-07-04.summary.json")
+
+    summary = json.loads(summary_path.read_text(encoding="utf-8"))
+
+    assert summary["summary_id"] == (
+        "local-metal-count-accumulation-sampling-q22-2026-07-04")
+    assert summary["raw_results"][0]["sha256"] == (
+        "0a270eda1a9725b5cddf27a292363fdb495770494c77b746b950eba17a4c0d33")
+    assert summary["raw_results"][0]["status_rows"] == {"ok": 8}
+    assert summary["config"]["targets"] == ["mklq-metal"]
+    assert summary["config"]["qubits"] == [22]
 
 
 def test_mklq_benchmark_summary_records_y_cy_fastpath_evidence():

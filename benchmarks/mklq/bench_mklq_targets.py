@@ -56,9 +56,12 @@ METAL_THREE_QUBIT_SCOPE = (
 METAL_COMPOSITE_SCOPE = (
     "experimental mklq-metal mixed-path composite state-vector update followed "
     "by host readback for cudaq.get_state")
-METAL_SAMPLING_SCOPE = (
-    "mixed-path Metal probability fill with historical host-side sample "
-    "draw/count accumulation boundary")
+METAL_FULL_REGISTER_SAMPLING_SCOPE = (
+    "mixed-path Metal probability fill with selected full-register counts-only "
+    "Metal sample-count accumulation after host-generated draws")
+METAL_PARTIAL_REGISTER_SAMPLING_SCOPE = (
+    "mixed-path Metal probability fill with partial-register host-side sample "
+    "draw/count accumulation")
 METAL_SPARSE_SAMPLING_SCOPE = (
     "mixed-path sparse or deterministic sampling with host-side count "
     "accumulation")
@@ -125,10 +128,11 @@ METAL_PATH_CASES = {
                      METAL_SPARSE_SAMPLING_SCOPE),
     "sample-ghz": ("mklq_metal_sparse_sampling_host_counts",
                    METAL_SPARSE_SAMPLING_SCOPE),
-    "sample-full-register": ("mklq_metal_mixed_sampling_host_counts",
-                             METAL_SAMPLING_SCOPE),
-    "sample-partial-register": ("mklq_metal_mixed_sampling_host_counts",
-                                METAL_SAMPLING_SCOPE),
+    "sample-full-register":
+        ("mklq_metal_full_register_sample_count_accumulation",
+         METAL_FULL_REGISTER_SAMPLING_SCOPE),
+    "sample-partial-register": ("mklq_metal_partial_register_host_counts",
+                                METAL_PARTIAL_REGISTER_SAMPLING_SCOPE),
 }
 
 

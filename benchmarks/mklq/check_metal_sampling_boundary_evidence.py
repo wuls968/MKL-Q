@@ -19,8 +19,8 @@ CHECK_SCHEMA_VERSION = "mklq-metal-sampling-boundary-evidence-check-v1"
 SUMMARY_SCHEMA_VERSION = "mklq-benchmark-summary-v1"
 DEFAULT_EVIDENCE_KIND = "local_tuning_evidence"
 DEFAULT_REPORT_PATTERN = "*.summary.json"
-DEFAULT_SUMMARY_ID = "local-counts-only-sampling-shot-scaling-q20-2026-06-19"
-Q22_SUMMARY_ID = "local-metal-sampling-boundary-q22-2026-07-04"
+DEFAULT_SUMMARY_ID = "local-metal-count-accumulation-sampling-q20-2026-07-04"
+Q22_SUMMARY_ID = "local-metal-count-accumulation-sampling-q22-2026-07-04"
 DEFAULT_SUMMARY_IDS = (DEFAULT_SUMMARY_ID, Q22_SUMMARY_ID)
 METAL_TARGET = "mklq-metal"
 DEFAULT_REQUIRED_QUBITS = (20, 22)
@@ -110,6 +110,19 @@ def forbidden_claim_failures(values: dict[str, str]) -> list[str]:
     return failures
 
 
+def states_host_draw_count_boundary(value: str) -> bool:
+    normalized = value.lower()
+    return ("host-side" in normalized and
+            ("draw/count" in normalized or
+             ("draw" in normalized and "count" in normalized)))
+
+
+def states_selected_metal_count_accumulation(value: str) -> bool:
+    normalized = value.lower()
+    return ("metal" in normalized and "sample-count" in normalized and
+            "host-generated draw" in normalized)
+
+
 def list_summaries(reports: Path, pattern: str,
                    summary_ids: set[str]) -> list[Path]:
     paths = sorted(reports.glob(pattern))
@@ -194,18 +207,40 @@ def check_interpretation(interpretation: Any) -> list[str]:
 
     metal_scope = str(interpretation.get("metal_path_scope", ""))
     normalized_scope = metal_scope.lower()
-    if "host-side" not in normalized_scope:
-        failures.append("metal path scope does not state host-side sampling")
-    if ("draw/count" not in normalized_scope
-            and not ("draw" in normalized_scope and "count" in normalized_scope)):
-        failures.append("metal path scope does not state draw/count accumulation")
     if "mixed-path" not in normalized_scope:
         failures.append("metal path scope does not state mixed-path execution")
+
+    full_register_counts = str(
+        interpretation.get("full_register_counts_accumulation", ""))
+    partial_register_counts = str(
+        interpretation.get("partial_register_counts_accumulation", ""))
+    has_selected_metal_counts = (
+        states_selected_metal_count_accumulation(metal_scope) or
+        states_selected_metal_count_accumulation(full_register_counts))
+    has_host_counts_boundary = states_host_draw_count_boundary(metal_scope)
+
+    if has_selected_metal_counts:
+        if not states_host_draw_count_boundary(partial_register_counts):
+            failures.append(
+                "partial-register counts accumulation boundary must state "
+                "host-side draw/count accumulation")
+        if not states_selected_metal_count_accumulation(full_register_counts):
+            failures.append(
+                "full-register counts accumulation boundary must state "
+                "selected Metal sample-count accumulation after host-generated "
+                "draws")
+    elif not has_host_counts_boundary:
+        failures.append(
+            "metal path scope does not state host-side draw/count accumulation")
 
     failures.extend(
         forbidden_claim_failures({
             "interpretation.performance_claim_scope": performance_scope,
             "interpretation.metal_path_scope": metal_scope,
+            "interpretation.full_register_counts_accumulation":
+                full_register_counts,
+            "interpretation.partial_register_counts_accumulation":
+                partial_register_counts,
             "interpretation.scope": str(interpretation.get("scope", "")),
             "interpretation.summary": str(interpretation.get("summary", "")),
         }))
