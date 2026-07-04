@@ -1251,6 +1251,49 @@ CUDAQ_TEST(MKLQMetalTester,
   constexpr std::size_t qubitCount = 7;
   constexpr std::size_t dimension = 1ULL << qubitCount;
   constexpr int shots = 16;
+  constexpr double invSqrt2 = 0.70710678118654752440;
+  const std::vector<std::complex<double>> xGate{{0.0, 0.0},
+                                                {1.0, 0.0},
+                                                {1.0, 0.0},
+                                                {0.0, 0.0}};
+  const std::vector<std::complex<double>> hGate{
+      {invSqrt2, 0.0}, {invSqrt2, 0.0}, {invSqrt2, 0.0}, {-invSqrt2, 0.0}};
+
+  MklqMetalCircuitSimulatorTester sim;
+  std::vector<std::complex<double>> state(dimension, {0.0, 0.0});
+  state[0] = {1.0, 0.0};
+  sim.setStateForTest(std::move(state));
+  sim.applySingleQubitGateForTest(xGate, {}, 0);
+  sim.applySingleQubitGateForTest(xGate, {}, 4);
+  sim.applySingleQubitGateForTest(hGate, {}, 2);
+
+  const auto counts = sim.sampleQubitsForTest({4, 0, 2}, shots);
+
+  std::size_t totalShots = 0;
+  for (const auto &[bits, count] : counts.counts)
+    totalShots += count;
+  EXPECT_EQ(totalShots, shots);
+  EXPECT_FALSE(counts.counts.empty());
+  EXPECT_EQ(counts.sequentialData.size(), shots);
+  EXPECT_EQ(sim.singleQubitApplicationsForTest(),
+            sim.metalRuntimeAvailableForTest() ? 3 : 0);
+  EXPECT_EQ(sim.residentStateUploadsForTest(),
+            sim.metalRuntimeAvailableForTest() ? 1 : 0);
+  EXPECT_EQ(sim.residentStateDownloadsForTest(), 0);
+  EXPECT_EQ(sim.marginalProbabilityApplicationsForTest(),
+            sim.metalRuntimeAvailableForTest() ? 1 : 0);
+  EXPECT_EQ(sim.probabilityFillApplicationsForTest(), 0);
+  EXPECT_EQ(sim.sequentialSampleDrawBatchesForTest(), 1);
+  EXPECT_EQ(sim.countsOnlySampleDrawBatchesForTest(), 0);
+  EXPECT_EQ(sim.sampleExpectationReductionsForTest(), 1);
+}
+
+CUDAQ_TEST(
+    MKLQMetalTester,
+    SimulatorSamplesResidentDeterministicPartialRegisterSequentialWithoutDrawLoop) {
+  constexpr std::size_t qubitCount = 7;
+  constexpr std::size_t dimension = 1ULL << qubitCount;
+  constexpr int shots = 4096;
   const std::vector<std::complex<double>> xGate{{0.0, 0.0},
                                                 {1.0, 0.0},
                                                 {1.0, 0.0},
@@ -1268,7 +1311,9 @@ CUDAQ_TEST(MKLQMetalTester,
   ASSERT_EQ(counts.counts.size(), 1);
   ASSERT_TRUE(counts.counts.contains("110"));
   EXPECT_EQ(counts.counts.at("110"), shots);
-  EXPECT_EQ(counts.sequentialData.size(), shots);
+  ASSERT_EQ(counts.sequentialData.size(), shots);
+  for (const auto &bits : counts.sequentialData)
+    EXPECT_EQ(bits, "110");
   EXPECT_EQ(sim.singleQubitApplicationsForTest(),
             sim.metalRuntimeAvailableForTest() ? 2 : 0);
   EXPECT_EQ(sim.residentStateUploadsForTest(),
@@ -1277,9 +1322,10 @@ CUDAQ_TEST(MKLQMetalTester,
   EXPECT_EQ(sim.marginalProbabilityApplicationsForTest(),
             sim.metalRuntimeAvailableForTest() ? 1 : 0);
   EXPECT_EQ(sim.probabilityFillApplicationsForTest(), 0);
-  EXPECT_EQ(sim.sequentialSampleDrawBatchesForTest(), 1);
+  EXPECT_EQ(sim.sequentialSampleDrawBatchesForTest(), 0);
   EXPECT_EQ(sim.countsOnlySampleDrawBatchesForTest(), 0);
   EXPECT_EQ(sim.sampleExpectationReductionsForTest(), 1);
+  EXPECT_EQ(sim.bitStringConversionsForTest(), 1);
 }
 
 CUDAQ_TEST(MKLQMetalTester,
@@ -1424,6 +1470,8 @@ CUDAQ_TEST(MKLQMetalTester,
   EXPECT_EQ(counts.counts.at("101"), shots);
   EXPECT_EQ(counts.sequentialData.size(), shots);
   EXPECT_EQ(sim.bitStringConversionsForTest(), 1);
+  EXPECT_EQ(sim.sequentialSampleDrawBatchesForTest(), 0);
+  EXPECT_EQ(sim.countsOnlySampleDrawBatchesForTest(), 0);
   EXPECT_EQ(sim.probabilityFillApplicationsForTest(), 0);
   EXPECT_EQ(sim.residentStateDownloadsForTest(), 0);
 }

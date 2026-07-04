@@ -21,8 +21,8 @@ dedicated measured-qubit Metal reduction kernel with a small host partial-sum
 finish; branch collapse uses a Metal kernel. Unsupported paths fall back to the
 MKL-Q fp64 CPU oracle after synchronizing host state, and sample draw/count
 accumulation remains host-side for stochastic distributions. Deterministic
-one-outcome counts-only distributions can bypass the draw loop after
-probability work.
+one-outcome sequential and counts-only distributions can bypass the draw loop
+after probability work.
 Treat `mklq-metal` benchmark rows as mixed-path evidence, not full Metal GPU
 backend performance.
 New benchmark rows for `mklq-metal` include conservative `metal_path_label`,
@@ -1020,9 +1020,9 @@ records their hashes and bounded metrics.
   accepted low-risk step was host-side counts-only aggregation for
   `includeSequentialData=false`, using bounded dense counters for small outcome
   spaces and sparse maps for larger outcome spaces. A later bounded counter
-  fixture adds deterministic one-outcome counts-only draw-loop bypass after
-  probability work; this is still not Metal RNG or general GPU count
-  accumulation.
+  fixtures add deterministic one-outcome sequential and counts-only draw-loop
+  bypasses after probability work; this is still not Metal RNG or general GPU
+  count accumulation.
 - `results/local-sample-basis-isolated-q15-q20-2026-06-18.json`:
   isolated `qpp-cpu`, `mklq-cpu`, and `mklq-metal` rows for deterministic
   `sample-basis` at q15-q20 with `OMP_NUM_THREADS=10`, `shots=1024`,

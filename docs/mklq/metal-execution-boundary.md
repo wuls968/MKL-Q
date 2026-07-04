@@ -27,7 +27,7 @@ Current counter evidence tracks these resident Metal state routes:
 | Full-register probability fill | Counter tests grouped under `probability_sampling` | The probability vector is host-visible output by design. |
 | Marginal probability fill | Counter tests grouped under `probability_sampling` | Marginal output is host-visible by design. |
 | Requested-order partial-register sampling | Counter tests grouped under `probability_sampling` | The selected route proves resident marginal-probability work before host-side draw/count accumulation. |
-| Deterministic counts-only sampling bypass | Counter tests grouped under `probability_sampling` | One-outcome counts-only distributions can materialize counts directly after resident probability work; this is not a general on-device sampler. |
+| Deterministic sampling bypass | Counter tests grouped under `probability_sampling` | One-outcome sequential and counts-only distributions can materialize results directly after resident probability work; this is not a general on-device sampler. |
 | Host-side sampling draw telemetry | Counter tests grouped under `probability_sampling` | Sequential and counts-only draw batches are explicitly counted as host-side work after resident probability work. |
 | Native sampling phase timing telemetry | Counter tests grouped under `probability_sampling` | Test-accessor timing accumulators separate probability fill, host draw/count, and expectation-reduction phases for selected fixtures; this is not release timing evidence. |
 | Measurement, collapse, and reset | Counter tests grouped under `measurement_reset` | Measurement results and sampled counts cross the host boundary. |
@@ -68,10 +68,11 @@ was Metal-native.
 ## Sampling Boundary
 
 Probability fills can be resident Metal work, but public sampling evidence does
-not claim an end-to-end on-device sampler. Current counter evidence tracks a
-deterministic counts-only shortcut that materializes a single non-zero outcome
-directly after resident probability work, and it separately tracks selected
-non-deterministic sequential and counts-only draw batches as host-side work.
+not claim an end-to-end on-device sampler. Current counter evidence tracks
+deterministic sequential and counts-only shortcuts that materialize a single
+non-zero outcome directly after resident probability work, and it separately
+tracks selected non-deterministic sequential and counts-only draw batches as
+host-side work.
 Stochastic sample draw and count accumulation therefore remain host-side for
 the current `mklq-metal` boundary unless a future counter test and benchmark
 gate explicitly prove an on-device sampler.

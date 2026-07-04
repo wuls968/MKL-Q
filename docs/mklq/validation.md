@@ -64,6 +64,10 @@ host draw/count, and expectation-reduction sampling phases. The next
 2026-07-04 Metal counter refresh adds a deterministic counts-only sampling
 bypass fixture that materializes a one-outcome partial-register distribution
 without entering the host draw loop after resident marginal probability work.
+The next 2026-07-04 Metal counter refresh extends the same deterministic
+one-outcome bypass to explicit sequential sampling and tightens deterministic
+sparse full-register telemetry so only real stochastic draw loops increment
+draw-batch counters.
 It also reran
 the full install/build/signature-repair/correctness/example gate on the current
 MKL-Q branch after adding the local macOS install-prefix signature repair step.
@@ -75,10 +79,10 @@ covers per-gate single-control H/Y/Rx/Ry direct target/control pair fixtures,
 on top of the 2026-07-02 single-control X/CNOT direct pair refresh and the
 earlier single-control Rz direct phase path. The current tracked CPU
 sampling/probability counter
-evidence includes two bounded reports, each with explicit full-register and
+evidence includes three bounded reports, each with explicit full-register and
 marginal probability-fill counter ctests alongside the existing sampling phase
 counter ctests. The current tracked Metal runtime counter evidence includes
-seven bounded reports. Counter-summary aggregate counts are summed
+eight bounded reports. Counter-summary aggregate counts are summed
 across tracked reports, so repeated daily probes intentionally count the same
 selected tests once per report.
 
@@ -97,6 +101,7 @@ Raw wrapper output was written to ignored local paths
 `benchmarks/mklq/results/public-healthcheck-metal-sampling-phase-timing-2026-07-04.json`,
 `benchmarks/mklq/results/public-healthcheck-deterministic-sampling-bypass-2026-07-04.json`,
 `benchmarks/mklq/results/public-healthcheck-deterministic-sampling-bypass-final-2026-07-04.json`,
+`benchmarks/mklq/results/public-healthcheck-deterministic-sequential-bypass-2026-07-04.json`,
 `benchmarks/mklq/results/public-healthcheck-full-2026-06-22.json`,
 `benchmarks/mklq/results/public-healthcheck-full-2026-06-23.json`,
 `benchmarks/mklq/results/public-healthcheck-full-2026-06-24.json`,
@@ -112,6 +117,7 @@ Raw wrapper output was written to ignored local paths
 `benchmarks/mklq/results/local-correctness-gate-metal-host-sampling-telemetry-2026-07-04.json`,
 `benchmarks/mklq/results/local-correctness-gate-metal-sampling-phase-timing-2026-07-04.json`,
 `benchmarks/mklq/results/local-correctness-gate-deterministic-sampling-bypass-2026-07-04.json`,
+`benchmarks/mklq/results/local-correctness-gate-deterministic-sequential-bypass-2026-07-04.json`,
 `benchmarks/mklq/results/local-metal-runtime-counter-probe-2026-06-22.counter.json`,
 `benchmarks/mklq/results/local-metal-runtime-counter-probe-2026-06-23.counter.json`,
 `benchmarks/mklq/results/local-metal-runtime-counter-probe-2026-06-24.counter.json`,
@@ -150,23 +156,23 @@ latest full 2026-07-03 result is `33/33` steps passed.
   per-gate single-control H/Y/Rx/Ry direct pair fixtures, single-control Rz
   direct phase fast-path fixture, and hardware-efficient ansatz composite
   fast-path fixture.
-- Current `cpu_sampling_counter_probe_parse`: 2 bounded reports, 14 expected,
-  14 selected, 0 missing, and 0 failures; each report includes full-register
+- Current `cpu_sampling_counter_probe_parse`: 3 bounded reports, 21 expected,
+  21 selected, 0 missing, and 0 failures; each report includes full-register
   and marginal probability-fill counter ctests.
 - Standalone install-prefix Python subset: `37 passed`.
 - `python_target_smoke`: `70 passed`.
 - `nvqpp_smoke`: `2 passed`.
-- Current `target_config_ctest`: `98/98 passed`, including the
+- Current `target_config_ctest`: `99/99 passed`, including the
   `HardwareEfficientAnsatzCompositeUsesDedicatedFastPaths` CPU counter fixture
   that checks the hardware-efficient ansatz gate mix uses the expected
   rotation, CNOT, CRZ, CZ, CRX, and SWAP fast paths.
-- Current tracked `metal_runtime_counter_probe`: 7 bounded reports, 248
-  expected, 248 selected, 0 missing, and 0 failures. The latest tracked report
-  runs 44 counter ctests independently, including the requested-order
+- Current tracked `metal_runtime_counter_probe`: 8 bounded reports, 293
+  expected, 293 selected, 0 missing, and 0 failures. The latest tracked report
+  runs 45 counter ctests independently, including the requested-order
   partial-register sampling marginal-probability fixture, deterministic
-  counts-only draw-loop bypass, host-side sequential/counts-only draw
-  telemetry, and native sampling phase timing accumulators; the older reports
-  remain historical 20-, 20-, 39-, 40-, 42-, and 43-test evidence.
+  sequential/counts-only draw-loop bypasses, host-side sequential/counts-only
+  draw telemetry, and native sampling phase timing accumulators; the older
+  reports remain historical 20-, 20-, 39-, 40-, 42-, 43-, and 44-test evidence.
 - Clean CPU benchmark gate: passed, with 32 q20 `qpp-cpu`/`mklq-cpu` rows and
   32 rows reporting `status == "ok"`, including `two-qubit-state`,
   `three-qubit-state`, and `hardware-efficient-ansatz-state`.
@@ -271,21 +277,21 @@ controlled phase, CPU sampling oracle, experimental `mklq-metal`
 partial-register bit-order plus qpp-cpu marginal sampling oracle fixtures, the
 requested-order Metal sampling counter oracle fixture, and host-side Metal
 sampling draw telemetry plus native sampling phase timing telemetry and the
-deterministic counts-only sampling bypass fixture. It reported 4 wrapper steps
-passed, 0 failed, and 0 skipped.
+deterministic sequential/counts-only sampling bypass fixtures. It reported 4
+wrapper steps passed, 0 failed, and 0 skipped.
 The step-level results were:
 
 - `python_target_smoke`: `70 passed`.
 - `nvqpp_smoke`: `2 passed`.
-- `target_config_ctest`: `98/98 passed`, including the hardware-efficient
+- `target_config_ctest`: `99/99 passed`, including the hardware-efficient
   ansatz composite CPU fast-path counter fixture.
-- `metal_runtime_counter_probe`: 44 expected, 44 selected, 0 missing, and 44
+- `metal_runtime_counter_probe`: 45 expected, 45 selected, 0 missing, and 45
   independently executed passing counter ctests, including direct runtime
   single-, two-, and three-qubit gate fixtures, full-register and marginal
   probability fixtures, built-in Rx/Ry/Rz and phase-family fixtures, sampling
   fixtures including requested-order partial-register sampling through the
-  resident marginal probability route, deterministic counts-only draw-loop
-  bypass, host-side sequential/counts-only draw telemetry, and native
+  resident marginal probability route, deterministic sequential/counts-only
+  draw-loop bypasses, host-side sequential/counts-only draw telemetry, and native
   probability-fill/draw/expectation phase timing,
   measurement/collapse/reset fixtures, unsupported-gate fallback/reupload
   fixtures, and resident error-boundary fixtures.

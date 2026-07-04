@@ -11,11 +11,11 @@ Aggregate counts are summed across tracked reports; repeated daily probes intent
 | Field | Value |
 | --- | --- |
 | `status` | passed |
-| `report_count` | 2 |
-| `expected` | 14 |
-| `selected` | 14 |
+| `report_count` | 3 |
+| `expected` | 21 |
+| `selected` | 21 |
 | `missing` | 0 |
-| `passed` | 14 |
+| `passed` | 21 |
 | `failed` | 0 |
 
 ## Evidence Boundary
@@ -34,12 +34,12 @@ Aggregate counts are summed across tracked reports; repeated daily probes intent
 
 | Category | Passed | Failed | Other | Description |
 | --- | ---: | ---: | ---: | --- |
-| counts_only_full_register | 2 | 0 | 0 | Counts-only full-register sampling phase counter tests |
-| counts_only_partial_register | 2 | 0 | 0 | Counts-only partial-register sampling phase counter tests |
-| probability_fill | 4 | 0 | 0 | Full-register and marginal probability-fill counter tests |
-| sequential_full_register | 2 | 0 | 0 | Sequential full-register sampling phase counter tests |
-| sparse_full_register_scan_hit | 2 | 0 | 0 | Sparse full-register scan hit phase counter tests |
-| sparse_full_register_scan_miss | 2 | 0 | 0 | Sparse full-register scan miss and fallback phase counter tests |
+| counts_only_full_register | 3 | 0 | 0 | Counts-only full-register sampling phase counter tests |
+| counts_only_partial_register | 3 | 0 | 0 | Counts-only partial-register sampling phase counter tests |
+| probability_fill | 6 | 0 | 0 | Full-register and marginal probability-fill counter tests |
+| sequential_full_register | 3 | 0 | 0 | Sequential full-register sampling phase counter tests |
+| sparse_full_register_scan_hit | 3 | 0 | 0 | Sparse full-register scan hit phase counter tests |
+| sparse_full_register_scan_miss | 3 | 0 | 0 | Sparse full-register scan miss and fallback phase counter tests |
 
 ## Counter Tests
 
@@ -59,6 +59,7 @@ Aggregate counts are summed across tracked reports; repeated daily probes intent
 | --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
 | benchmarks/mklq/reports/local-cpu-sampling-counter-probe-2026-06-23.cpu-counter.json | 2026-06-23T07:38:00.016818+00:00 | passed | 7 | 7 | 0 | 7 | 0 |
 | benchmarks/mklq/reports/local-cpu-sampling-counter-probe-2026-06-24.cpu-counter.json | 2026-06-24T04:48:29.028396+00:00 | passed | 7 | 7 | 0 | 7 | 0 |
+| benchmarks/mklq/reports/local-cpu-sampling-counter-probe-2026-07-04-deterministic-sequential-bypass.cpu-counter.json | 2026-07-04T09:40:03.778493+00:00 | passed | 7 | 7 | 0 | 7 | 0 |
 
 Regenerate with:
 
