@@ -48,6 +48,7 @@ python3 benchmarks/mklq/run_public_readiness_audit.py
 python3 benchmarks/mklq/run_self_hosted_ci_audit.py
 python3 benchmarks/mklq/check_performance_evidence.py
 python3 benchmarks/mklq/check_metal_evidence.py
+python3 benchmarks/mklq/check_metal_sampling_boundary_evidence.py
 python3 benchmarks/mklq/run_public_healthcheck.py
 ```
 
@@ -73,6 +74,8 @@ Expected state:
   clean CPU evidence or public performance wording.
 - `check_metal_evidence.py` passes before changing tracked `mklq-metal`
   evidence or experimental Metal wording.
+- `check_metal_sampling_boundary_evidence.py` passes before changing tracked
+  `mklq-metal` stochastic sampling evidence or host-side sampler wording.
 - `run_public_healthcheck.py` passes in default mode before routine public
   metadata or benchmark-tooling pushes.
 
@@ -148,7 +151,7 @@ change touches shared behavior.
 | `nvq++` or target config | `test_mklq_nvqpp_smoke.py`, TargetConfig `ctest`, target YAML checks |
 | Backend runtime behavior | `cmake --build build-python --target install -j 6` and one-command correctness gate |
 | Benchmark tooling | Benchmark helper `py_compile`, harness tests, summary JSON parse, Metal runtime counter probe parse including complete expected counter-test coverage |
-| Benchmark evidence | Correctness gate first, clean-worktree benchmark run, sanitized summaries only, `check_performance_evidence.py`, `check_metal_evidence.py` when Metal summaries are touched |
+| Benchmark evidence | Correctness gate first, clean-worktree benchmark run, sanitized summaries only, `check_performance_evidence.py`, `check_metal_evidence.py` when Metal summaries are touched, `check_metal_sampling_boundary_evidence.py` when Metal stochastic sampling boundaries are touched |
 | Public health check tooling | `test_mklq_benchmark_harness.py`, `python3 benchmarks/mklq/run_public_healthcheck.py` |
 | Upstream sync | `upstream-sync.md` post-merge gates |
 | Release artifact proposal | `release-policy.md`, public release checklist, correctness gate, packaging-specific fresh-environment tests |

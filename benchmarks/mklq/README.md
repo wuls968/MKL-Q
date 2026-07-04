@@ -407,10 +407,11 @@ upstream sync audit, the self-hosted Apple Silicon CI audit, sanitized
 benchmark summary JSON, the static clean CPU performance evidence guards,
 including focused CRZ distance, multi-control, q18-q22 CPU scaling, and
 q18-q22 sampling scaling evidence, the static experimental Metal evidence
-boundary guard, bounded CPU sampling phase counter evidence, bounded Metal
-runtime counter probe JSON, helper syntax, local markdown links, regenerated
-benchmark-evidence plus CPU and Metal counter docs consistency, and the
-benchmark harness tests. It writes an ignored JSON report under
+boundary guard, the Metal stochastic sampling host-boundary evidence guard,
+bounded CPU sampling phase counter evidence, bounded Metal runtime counter
+probe JSON, helper syntax, local markdown links, regenerated benchmark-evidence
+plus CPU and Metal counter docs consistency, and the benchmark harness tests.
+It writes an ignored JSON report under
 `benchmarks/mklq/results/`.
 
 Before describing a commit as public-ready, run the heavier local gate:
@@ -490,6 +491,23 @@ local tuning evidence, keep raw payloads under ignored
 `benchmarks/mklq/results/` paths, include successful `mklq-metal` rows, and
 state the mixed-path/resident/host-readback boundary instead of implying
 default status, release status, or all-Metal execution.
+
+## Metal Sampling Boundary Evidence Guard
+
+Use the static Metal sampling boundary guard when a change touches tracked
+`mklq-metal` stochastic sampling summaries or public wording about sample
+draw/count placement:
+
+```bash
+python3 benchmarks/mklq/check_metal_sampling_boundary_evidence.py
+```
+
+The guard does not run benchmarks. It checks the tracked q20 counts-only shot
+scaling summary for full-register and partial-register `mklq-metal` sampling
+rows at 256, 1024, 8192, and 65536 shots, verifies ignored raw payload
+boundaries, requires explicit host-side draw/count wording, and rejects Metal
+RNG, GPU sampler, GPU-side count accumulation, release-ready, or all-Metal
+claims.
 
 ## Metal Runtime Counter Probe
 
@@ -829,6 +847,9 @@ The generated public index is tracked at
   0.01916737499414012 s for `sample-full-register` and 0.016119854502903763 s
   for `sample-partial-register`; `mklq-metal` median elapsed time was
   0.04015256251295796 s and 0.03547552099917084 s for the same cases.
+  `check_metal_sampling_boundary_evidence.py` treats this summary as the
+  tracked static guard for the current stochastic `mklq-metal` host-side
+  sample draw/count boundary.
 - `reports/local-y-cy-fastpath-isolated-q20-2026-06-19.summary.json`:
   tracked sanitized summary for the ignored raw result
   `results/local-y-cy-fastpath-isolated-q20-2026-06-19.json`

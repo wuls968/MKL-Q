@@ -40,6 +40,7 @@ BENCHMARK_HELPERS = (
     "benchmarks/mklq/check_cpu_gate_counter_docs.py",
     "benchmarks/mklq/check_cpu_sampling_counter_docs.py",
     "benchmarks/mklq/check_metal_evidence.py",
+    "benchmarks/mklq/check_metal_sampling_boundary_evidence.py",
     "benchmarks/mklq/check_metal_runtime_counter_docs.py",
     "benchmarks/mklq/check_performance_evidence.py",
     "benchmarks/mklq/check_public_claims.py",
@@ -129,6 +130,8 @@ SAMPLING_SCALING_SUMMARY_ID = (
     "local-sampling-scaling-cpu-q18-q22-2026-06-23")
 SAMPLING_PROFILE_SUMMARY_ID = (
     "local-sampling-profile-breakdown-cpu-q20-q22-2026-06-23")
+METAL_SAMPLING_BOUNDARY_SUMMARY_ID = (
+    "local-counts-only-sampling-shot-scaling-q20-2026-06-19")
 CLEAN_CPU_SUMMARY_ID = "local-clean-cpu-q20-2026-07-03-two-three"
 SAMPLING_SCALING_REQUIRED_RATIOS = (
     "sample_full_register_q18_1024_shots",
@@ -354,6 +357,8 @@ def public_metadata_requirements() -> list[tuple[str, str]]:
         ("docs/mklq/public-release-checklist.md", "run_public_release_checklist_audit.py"),
         ("docs/mklq/public-release-checklist.md", "check_performance_evidence.py"),
         ("docs/mklq/public-release-checklist.md", "check_metal_evidence.py"),
+        ("docs/mklq/public-release-checklist.md",
+         "check_metal_sampling_boundary_evidence.py"),
         ("docs/mklq/public-release-checklist.md", "check_cpu_gate_counter_docs.py"),
         ("docs/mklq/public-release-checklist.md", "run_preflight_audit.py"),
         ("docs/mklq/public-release-checklist.md", "run_upstream_sync_audit.py"),
@@ -366,6 +371,8 @@ def public_metadata_requirements() -> list[tuple[str, str]]:
         ("docs/mklq/developer-workflow.md", "mklq-apple-silicon-ci.yml"),
         ("docs/mklq/developer-workflow.md", "check_performance_evidence.py"),
         ("docs/mklq/developer-workflow.md", "check_metal_evidence.py"),
+        ("docs/mklq/developer-workflow.md",
+         "check_metal_sampling_boundary_evidence.py"),
         ("docs/mklq/developer-workflow.md", "check_public_claims.py"),
         ("docs/mklq/developer-workflow.md", "check_sampling_profile_evidence.py"),
         ("docs/mklq/developer-workflow.md", "check_cpu_gate_counter_docs.py"),
@@ -386,6 +393,8 @@ def public_metadata_requirements() -> list[tuple[str, str]]:
         ("docs/mklq/maintainer-runbook.md", "Routine Health Check"),
         ("docs/mklq/maintainer-runbook.md", "check_performance_evidence.py"),
         ("docs/mklq/maintainer-runbook.md", "check_metal_evidence.py"),
+        ("docs/mklq/maintainer-runbook.md",
+         "check_metal_sampling_boundary_evidence.py"),
         ("docs/mklq/maintainer-runbook.md", "run_preflight_audit.py"),
         ("docs/mklq/issue-labels.md", "Label Taxonomy"),
         ("docs/mklq/issue-labels.md", "bug"),
@@ -409,6 +418,10 @@ def public_metadata_requirements() -> list[tuple[str, str]]:
         ("benchmarks/mklq/README.md", "check_public_claims.py"),
         ("benchmarks/mklq/README.md", "Performance Evidence Guard"),
         ("benchmarks/mklq/README.md", "Metal Evidence Guard"),
+        ("benchmarks/mklq/README.md",
+         "Metal Sampling Boundary Evidence Guard"),
+        ("benchmarks/mklq/README.md",
+         "check_metal_sampling_boundary_evidence.py"),
         ("benchmarks/mklq/README.md", "CPU Gate Counter Probe"),
         ("benchmarks/mklq/README.md", "CPU Gate Counter Summary"),
         ("benchmarks/mklq/README.md", "CPU Gate Counter Docs Guard"),
@@ -432,9 +445,13 @@ def public_metadata_requirements() -> list[tuple[str, str]]:
         ("benchmarks/mklq/README.md", "Metal Runtime Counter Docs Guard"),
         ("benchmarks/mklq/README.md", "Metal Execution Boundary"),
         ("docs/mklq/metal-runtime-counters.md", "runtime counter evidence"),
+        ("docs/mklq/metal-execution-boundary.md",
+         "check_metal_sampling_boundary_evidence.py"),
         ("docs/mklq/testing-matrix.md", "check_performance_evidence.py"),
         ("docs/mklq/testing-matrix.md", "check_public_claims.py"),
         ("docs/mklq/testing-matrix.md", "check_metal_evidence.py"),
+        ("docs/mklq/testing-matrix.md",
+         "check_metal_sampling_boundary_evidence.py"),
         ("docs/mklq/testing-matrix.md", "run_cpu_gate_counter_probe.py"),
         ("docs/mklq/testing-matrix.md", "check_cpu_gate_counter_docs.py"),
         ("docs/mklq/testing-matrix.md", "summarize_cpu_gate_counters.py"),
@@ -457,6 +474,8 @@ def public_metadata_requirements() -> list[tuple[str, str]]:
         (".github/pull_request_template.md", "Benchmark Evidence"),
         (".github/pull_request_template.md", "check_performance_evidence.py"),
         (".github/pull_request_template.md", "check_metal_evidence.py"),
+        (".github/pull_request_template.md",
+         "check_metal_sampling_boundary_evidence.py"),
         (".github/labels.yml", "backend:cpu"),
         (".github/labels.yml", "backend:metal"),
         (".github/labels.yml", "bug"),
@@ -788,6 +807,26 @@ def run_metal_evidence_check(config: HealthcheckConfig) -> dict[str, Any]:
     result = run_command(config, command)
     if result["returncode"] != 0:
         return failed("Metal evidence guard failed", result)
+    return passed(result)
+
+
+def run_metal_sampling_boundary_evidence_check(
+        config: HealthcheckConfig) -> dict[str, Any]:
+    script = config.repo_root / "benchmarks" / "mklq" / (
+        "check_metal_sampling_boundary_evidence.py")
+    command = [
+        config.python_executable,
+        str(script),
+        "--reports",
+        "benchmarks/mklq/reports",
+        "--pattern",
+        "*.summary.json",
+        "--summary-id",
+        METAL_SAMPLING_BOUNDARY_SUMMARY_ID,
+    ]
+    result = run_command(config, command)
+    if result["returncode"] != 0:
+        return failed("Metal sampling boundary evidence guard failed", result)
     return passed(result)
 
 
@@ -1267,7 +1306,8 @@ def public_snapshot_step_counts(config: HealthcheckConfig) -> dict[str, int]:
                        full=False,
                        include_harness_tests=True,
                        refresh_clean_cpu_benchmark=False,
-                       plan_only=True)
+                       plan_only=True,
+                       only_steps=())
     full = replace(baseline, full=True)
     return {
         "default": len(build_steps(baseline)),
@@ -1495,6 +1535,9 @@ def build_steps(config: HealthcheckConfig) -> list[Step]:
         Step("metal_evidence_guard",
              "Check experimental Metal benchmark evidence boundaries.",
              run_metal_evidence_check),
+        Step("metal_sampling_boundary_evidence_guard",
+             "Check Metal stochastic sampling host-boundary evidence.",
+             run_metal_sampling_boundary_evidence_check),
         Step("cpu_gate_counter_probe_parse",
              "Parse bounded CPU gate fast-path counter evidence.",
              run_cpu_gate_counter_probe_parse),
