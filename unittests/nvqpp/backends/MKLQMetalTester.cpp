@@ -1448,8 +1448,9 @@ CUDAQ_TEST(
   EXPECT_EQ(sim.bitStringConversionsForTest(), 1);
 }
 
-CUDAQ_TEST(MKLQMetalTester,
-           SimulatorSamplesResidentPartialRegisterWithHostCountsOnlyDrawTelemetry) {
+CUDAQ_TEST(
+    MKLQMetalTester,
+    SimulatorSamplesResidentPartialRegisterCountsOnlyWithMetalAccumulation) {
   constexpr std::size_t qubitCount = 7;
   constexpr std::size_t dimension = 1ULL << qubitCount;
   constexpr int shots = 16;
@@ -1486,10 +1487,14 @@ CUDAQ_TEST(MKLQMetalTester,
   EXPECT_EQ(sim.marginalProbabilityApplicationsForTest(),
             sim.metalRuntimeAvailableForTest() ? 1 : 0);
   EXPECT_EQ(sim.probabilityFillApplicationsForTest(), 0);
-  EXPECT_EQ(sim.countsOnlySampleDrawBatchesForTest(), 1);
+  EXPECT_EQ(sim.sampleCountAccumulationsForTest(),
+            sim.metalRuntimeAvailableForTest() ? 1 : 0);
+  EXPECT_EQ(sim.countsOnlySampleDrawBatchesForTest(),
+            sim.metalRuntimeAvailableForTest() ? 0 : 1);
   EXPECT_EQ(sim.sequentialSampleDrawBatchesForTest(), 0);
   EXPECT_EQ(sim.sampleExpectationReductionsForTest(), 1);
-  EXPECT_EQ(sim.denseDrawCountBuffersForTest(), 1);
+  EXPECT_EQ(sim.denseDrawCountBuffersForTest(),
+            sim.metalRuntimeAvailableForTest() ? 0 : 1);
   EXPECT_EQ(sim.sparseDrawCountMapsForTest(), 0);
 }
 
@@ -1566,7 +1571,10 @@ CUDAQ_TEST(MKLQMetalTester,
   EXPECT_EQ(sim.marginalProbabilityApplicationsForTest(),
             sim.metalRuntimeAvailableForTest() ? 1 : 0);
   EXPECT_EQ(sim.probabilityFillApplicationsForTest(), 0);
-  EXPECT_EQ(sim.countsOnlySampleDrawBatchesForTest(), 1);
+  EXPECT_EQ(sim.sampleCountAccumulationsForTest(),
+            sim.metalRuntimeAvailableForTest() ? 1 : 0);
+  EXPECT_EQ(sim.countsOnlySampleDrawBatchesForTest(),
+            sim.metalRuntimeAvailableForTest() ? 0 : 1);
   EXPECT_EQ(sim.sequentialSampleDrawBatchesForTest(), 0);
   EXPECT_EQ(sim.sampleExpectationReductionsForTest(), 1);
   EXPECT_GT(sim.sampleProbabilityFillSecondsForTest(), 0.0);

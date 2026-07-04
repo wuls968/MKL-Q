@@ -220,10 +220,13 @@ def check_interpretation(interpretation: Any) -> list[str]:
     has_host_counts_boundary = states_host_draw_count_boundary(metal_scope)
 
     if has_selected_metal_counts:
-        if not states_host_draw_count_boundary(partial_register_counts):
+        if not (states_host_draw_count_boundary(partial_register_counts) or
+                states_selected_metal_count_accumulation(
+                    partial_register_counts)):
             failures.append(
                 "partial-register counts accumulation boundary must state "
-                "host-side draw/count accumulation")
+                "host-side draw/count accumulation or selected Metal "
+                "sample-count accumulation after host-generated draws")
         if not states_selected_metal_count_accumulation(full_register_counts):
             failures.append(
                 "full-register counts accumulation boundary must state "

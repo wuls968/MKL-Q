@@ -74,9 +74,13 @@ confirming resident full-register probability fill without host state download
 while still counting host-side draw/count batches.
 The next 2026-07-04 Metal runtime refresh moves the selected full-register
 counts-only draw/count aggregation boundary forward: host-generated draws are
-now accumulated into outcome counts by a Metal sample-count kernel, while
-sequential sampling and partial-register stochastic counts-only sampling remain
-host-side.
+accumulated into outcome counts by a Metal sample-count kernel, while
+sequential sampling and partial-register stochastic counts-only sampling still
+used the host path in that report.
+The next 2026-07-04 Metal runtime refresh extends that selected counts-only
+sample-count accumulation path to partial-register sampling after resident
+marginal probability work; random draws are still host-generated, and
+sequential stochastic sampling remains host-side.
 The follow-up 2026-07-04 public-healthcheck refresh adds a static Metal
 stochastic sampling boundary guard for the tracked q20 counts-only
 shot-scaling summary. The next 2026-07-04 evidence refresh adds tracked q22
@@ -86,9 +90,10 @@ not claim an on-device sampler.
 The next 2026-07-04 Metal sampling evidence refresh replaces the default
 sampling-boundary guard inputs with clean-worktree q20 and q22
 `mklq-metal` summaries for the selected full-register Metal sample-count
-accumulation path after host-generated draws, while still requiring
-partial-register stochastic counts-only sampling to state host-side draw/count
-accumulation.
+accumulation path after host-generated draws. The same guard now permits
+newer selected partial-register Metal sample-count accumulation wording after
+host-generated draws while preserving the older partial-register host-side
+summary boundary.
 A previous 2026-07-04 validation pass also reran the full
 install/build/signature-repair/correctness/example gate on the current MKL-Q
 branch after adding the local macOS install-prefix signature repair step.
@@ -194,17 +199,16 @@ Full public healthcheck planned step count: `34/34` steps.
   rotation, CNOT, CRZ, CZ, CRX, and SWAP fast paths, plus the resident
   full-register Metal sampling telemetry and selected sample-count accumulation
   fixtures.
-- Current tracked `metal_runtime_counter_probe`: 10 bounded reports, 388
-  expected, 388 selected, 0 missing, and 0 failures. The latest tracked report
+- Current tracked `metal_runtime_counter_probe`: 11 bounded reports, 436
+  expected, 436 selected, 0 missing, and 0 failures. The latest tracked report
   runs 48 counter ctests independently, including the direct Metal
-  sample-count accumulation kernel fixture, selected full-register counts-only
-  Metal sample-count accumulation after host-generated draws, resident
-  full-register sequential host draw telemetry, requested-order
-  partial-register sampling marginal-probability coverage, deterministic
-  sequential/counts-only draw-loop bypasses, partial-register host-side
-  sequential/counts-only draw telemetry, and native sampling phase timing
-  accumulators; the older reports remain historical 20-, 20-, 39-, 40-, 42-,
-  43-, 44-, 45-, and 47-test evidence.
+  sample-count accumulation kernel fixture, selected full-register and
+  partial-register counts-only Metal sample-count accumulation after
+  host-generated draws, resident sequential host draw telemetry,
+  requested-order partial-register sampling marginal-probability coverage,
+  deterministic sequential/counts-only draw-loop bypasses, and native sampling
+  phase timing accumulators; the older reports remain historical 20-, 20-,
+  39-, 40-, 42-, 43-, 44-, 45-, 47-, and 48-test evidence.
 - Clean CPU benchmark gate: passed, with 32 q20 `qpp-cpu`/`mklq-cpu` rows and
   32 rows reporting `status == "ok"`, including `two-qubit-state`,
   `three-qubit-state`, and `hardware-efficient-ansatz-state`.
@@ -325,9 +329,8 @@ The step-level results were:
   probability fixtures, built-in Rx/Ry/Rz and phase-family fixtures, sampling
   fixtures including requested-order partial-register sampling through the
   resident marginal probability route, deterministic sequential/counts-only
-  draw-loop bypasses, selected full-register counts-only Metal sample-count
-  accumulation, full-register sequential host draw telemetry, partial-register
-  host-side sequential/counts-only draw telemetry, and native
+  draw-loop bypasses, selected full-register and partial-register counts-only
+  Metal sample-count accumulation, sequential host draw telemetry, and native
   probability-fill/draw/expectation phase timing,
   measurement/collapse/reset fixtures, unsupported-gate fallback/reupload
   fixtures, and resident error-boundary fixtures.

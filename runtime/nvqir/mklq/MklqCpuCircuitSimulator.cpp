@@ -1949,6 +1949,13 @@ protected:
       return counts;
     }
     if (!includeSequentialData) {
+#if defined(MKLQ_ENABLE_METAL_RUNTIME)
+      if (tryDrawAndAppendMetalSampleOutcomeCounts(counts, probabilities,
+                                                   shots, qubits.size())) {
+        setExpectationFromSampleCounts(counts, shots);
+        return counts;
+      }
+#endif
       drawAndAppendSampleOutcomeCounts(counts, probabilities, shots,
                                        qubits.size());
       setExpectationFromSampleCounts(counts, shots);

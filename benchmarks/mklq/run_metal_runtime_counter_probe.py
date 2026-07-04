@@ -55,7 +55,7 @@ COUNTER_TEST_SUFFIXES = (
     "SimulatorSamplesSmallResidentPartialRegisterThroughMarginalProbability",
     "SimulatorSamplesRequestedOrderPartialRegisterThroughMarginalProbability",
     "SimulatorSamplesResidentPartialRegisterWithHostSequentialDrawTelemetry",
-    "SimulatorSamplesResidentPartialRegisterWithHostCountsOnlyDrawTelemetry",
+    "SimulatorSamplesResidentPartialRegisterCountsOnlyWithMetalAccumulation",
     "SimulatorSamplesResidentFullRegisterWithHostSequentialDrawTelemetry",
     "SimulatorSamplesResidentFullRegisterCountsOnlyWithMetalAccumulation",
     "SimulatorSamplesResidentDeterministicPartialRegisterCountsOnlyWithoutDrawLoop",

@@ -36,7 +36,7 @@ APPLE_SILICON_TARGETS = ("qpp-cpu", "mklq-cpu", "mklq-metal")
 PORTABLE_DEFAULT_TARGETS = ("qpp-cpu",)
 TARGET_NOTES = {
     "mklq-metal":
-        "Experimental mixed-path target: mklq_metal uses resident fp32 Metal single-target/two-target/three-target/probability-fill kernels, cost-gated resident full-register and marginal probability kernels for sampling, selected full-register counts-only Metal sample-count accumulation after host-generated draws, a measured-qubit probability-reduction kernel, and a resident measurement-collapse path with MKL-Q fp64 CPU-oracle fallback for unsupported paths; sequential and partial-register stochastic draw/count accumulation remain host-side, not full Metal GPU backend evidence.",
+        "Experimental mixed-path target: mklq_metal uses resident fp32 Metal single-target/two-target/three-target/probability-fill kernels, cost-gated resident full-register and marginal probability kernels for sampling, selected full-register and partial-register counts-only Metal sample-count accumulation after host-generated draws, a measured-qubit probability-reduction kernel, and a resident measurement-collapse path with MKL-Q fp64 CPU-oracle fallback for unsupported paths; sequential stochastic draw/count accumulation remains host-side, not full Metal GPU backend evidence.",
 }
 METAL_EVIDENCE_BOUNDARY = (
     "benchmark harness static case-map label only; not a runtime counter, "
@@ -60,8 +60,8 @@ METAL_FULL_REGISTER_SAMPLING_SCOPE = (
     "mixed-path Metal probability fill with selected full-register counts-only "
     "Metal sample-count accumulation after host-generated draws")
 METAL_PARTIAL_REGISTER_SAMPLING_SCOPE = (
-    "mixed-path Metal probability fill with partial-register host-side sample "
-    "draw/count accumulation")
+    "mixed-path Metal probability fill with selected partial-register "
+    "counts-only Metal sample-count accumulation after host-generated draws")
 METAL_SPARSE_SAMPLING_SCOPE = (
     "mixed-path sparse or deterministic sampling with host-side count "
     "accumulation")
@@ -131,8 +131,9 @@ METAL_PATH_CASES = {
     "sample-full-register":
         ("mklq_metal_full_register_sample_count_accumulation",
          METAL_FULL_REGISTER_SAMPLING_SCOPE),
-    "sample-partial-register": ("mklq_metal_partial_register_host_counts",
-                                METAL_PARTIAL_REGISTER_SAMPLING_SCOPE),
+    "sample-partial-register":
+        ("mklq_metal_partial_register_sample_count_accumulation",
+         METAL_PARTIAL_REGISTER_SAMPLING_SCOPE),
 }
 
 

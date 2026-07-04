@@ -20,11 +20,11 @@ Measurement probability uses a
 dedicated measured-qubit Metal reduction kernel with a small host partial-sum
 finish; branch collapse uses a Metal kernel. Unsupported paths fall back to the
 MKL-Q fp64 CPU oracle after synchronizing host state. Selected full-register
-counts-only sampling can accumulate outcome counts with a Metal kernel after
-host-generated random draws and resident probability work; sequential sampling
-and partial-register stochastic counts-only sampling still accumulate
-draw/count results on the host. Deterministic one-outcome sequential and
-counts-only distributions can bypass the draw loop after probability work.
+and partial-register counts-only sampling can accumulate outcome counts with a
+Metal kernel after host-generated random draws and resident probability work;
+sequential sampling still accumulates draw/count results on the host.
+Deterministic one-outcome sequential and counts-only distributions can bypass
+the draw loop after probability work.
 Treat `mklq-metal` benchmark rows as mixed-path evidence, not full Metal GPU
 backend performance.
 New benchmark rows for `mklq-metal` include conservative `metal_path_label`,
@@ -507,10 +507,11 @@ python3 benchmarks/mklq/check_metal_sampling_boundary_evidence.py
 The guard does not run benchmarks. It checks the tracked q20 and q22
 counts-only shot-scaling summaries for full-register and partial-register
 `mklq-metal` sampling rows at 256, 1024, 8192, and 65536 shots, verifies
-ignored raw payload boundaries, requires explicit selected full-register Metal
-sample-count accumulation after host-generated draws plus partial-register
-host-side draw/count wording, and rejects claims of Metal RNG, GPU sampler,
-broad device-side sampler coverage, release readiness, or all-Metal execution.
+ignored raw payload boundaries, requires explicit selected Metal sample-count
+accumulation after host-generated draws or historical host-side draw/count
+wording for partial-register rows, and rejects claims of Metal RNG, GPU
+sampler, broad device-side sampler coverage, release readiness, or all-Metal
+execution.
 
 ## Metal Runtime Counter Probe
 
@@ -883,8 +884,9 @@ The generated public index is tracked at
   M5, 10 logical cores, 16 GB RAM, macOS 26.5.1. All 8 rows completed with
   `status == "ok"` from a clean worktree. Treat this as local tuning evidence
   for the selected full-register Metal sample-count accumulation path after
-  host-generated draws, with partial-register stochastic counts still
-  host-side. The q20 high-shot versus low-shot median elapsed ratios were
+  host-generated draws; the partial-register rows remain historical
+  host-side-boundary evidence collected before selected partial-register Metal
+  count accumulation was enabled. The q20 high-shot versus low-shot median elapsed ratios were
   0.988x for full-register sampling and 0.560x for partial-register sampling.
 - `reports/local-metal-count-accumulation-sampling-q22-2026-07-04.summary.json`:
   tracked sanitized summary for the ignored raw result
@@ -895,11 +897,13 @@ The generated public index is tracked at
   `256,1024,8192,65536`, `repeats=2`, `warmups=1`, and `layers=8` on Apple
   M5, 10 logical cores, 16 GB RAM, macOS 26.5.1. All 8 rows completed with
   `status == "ok"` from a clean worktree. Treat this as local tuning evidence
-  for the same selected full-register Metal sample-count accumulation boundary,
-  not as release readiness, cross-machine certification, or proof of a Metal
-  RNG/device-side sampler. The q22 high-shot versus low-shot median elapsed
-  ratios were 0.914x for full-register sampling and 0.943x for
-  partial-register sampling.
+  for the same selected full-register Metal sample-count accumulation boundary;
+  the partial-register rows remain historical host-side-boundary evidence
+  collected before selected partial-register Metal count accumulation was
+  enabled. Treat it as local tuning evidence, not as release readiness,
+  cross-machine certification, or proof of a Metal RNG/device-side sampler. The
+  q22 high-shot versus low-shot median elapsed ratios were 0.914x for
+  full-register sampling and 0.943x for partial-register sampling.
 - `reports/local-y-cy-fastpath-isolated-q20-2026-06-19.summary.json`:
   tracked sanitized summary for the ignored raw result
   `results/local-y-cy-fastpath-isolated-q20-2026-06-19.json`

@@ -26,10 +26,10 @@ Current counter evidence tracks these resident Metal state routes:
 | Two-target and three-target updates | Counter tests grouped under `resident_gate` | This is not a broad arbitrary-unitary guarantee. |
 | Full-register probability fill | Counter tests grouped under `probability_sampling` | The probability vector is host-visible output by design. |
 | Marginal probability fill | Counter tests grouped under `probability_sampling` | Marginal output is host-visible by design. |
-| Requested-order partial-register sampling | Counter tests grouped under `probability_sampling` | The selected route proves resident marginal-probability work before host-side draw/count accumulation. |
+| Requested-order partial-register sampling | Counter tests grouped under `probability_sampling` | The selected route proves resident marginal-probability work before counts-only Metal sample-count accumulation or sequential host draw/count accumulation. |
 | Deterministic sampling bypass | Counter tests grouped under `probability_sampling` | One-outcome sequential and counts-only distributions can materialize results directly after resident probability work; this is not a general on-device sampler. |
-| Full-register counts-only sample-count accumulation | Counter tests grouped under `probability_sampling` | Random draws are still host-generated, but the selected full-register counts-only path can accumulate outcome counts with a Metal kernel after resident probability work. |
-| Host-side sampling draw telemetry | Counter tests grouped under `probability_sampling` | Sequential draw batches and partial-register counts-only draw batches are explicitly counted as host-side work after resident probability work. |
+| Full-register and partial-register counts-only sample-count accumulation | Counter tests grouped under `probability_sampling` | Random draws are still host-generated, but selected counts-only paths can accumulate outcome counts with a Metal kernel after resident probability work. |
+| Host-side sampling draw telemetry | Counter tests grouped under `probability_sampling` | Sequential draw batches are explicitly counted as host-side work after resident probability work. |
 | Native sampling phase timing telemetry | Counter tests grouped under `probability_sampling` | Test-accessor timing accumulators separate probability fill, draw/count, and expectation-reduction phases for selected fixtures; this is not release timing evidence. |
 | Measurement, collapse, and reset | Counter tests grouped under `measurement_reset` | Measurement results and sampled counts cross the host boundary. |
 
@@ -72,17 +72,17 @@ Probability fills can be resident Metal work, but public sampling evidence does
 not claim an end-to-end on-device sampler. Current counter evidence tracks
 deterministic sequential and counts-only shortcuts that materialize a single
 non-zero outcome directly after resident probability work. It also tracks a
-selected full-register counts-only path where host-generated random draws are
-counted by a Metal sample-count accumulation kernel. Sequential sampling and
-partial-register stochastic counts-only sampling still record host-side
-draw/count telemetry after resident probability work.
+selected full-register and partial-register counts-only paths where
+host-generated random draws are counted by a Metal sample-count accumulation
+kernel. Sequential stochastic sampling still records host-side draw/count
+telemetry after resident probability work.
 The tracked q20 and q22 shot-scaling summaries for stochastic full-register and
 partial-register sampling are historical static boundary evidence checked by
 `check_metal_sampling_boundary_evidence.py`; that guard still verifies the
 summary-era host-side draw/count wording and rejects Metal RNG, GPU sampler, or
-general on-device count-accumulation claims. Runtime counter reports are the
-authoritative evidence for the newer selected full-register counts-only Metal
-sample-count accumulation path.
+general on-device sampler claims. Runtime counter reports are the authoritative
+evidence for the newer selected full-register and partial-register counts-only
+Metal sample-count accumulation paths.
 
 Selected build-tree fixtures also assert positive native test-accessor timing
 accumulators for probability fill, draw/count, and expectation-reduction
