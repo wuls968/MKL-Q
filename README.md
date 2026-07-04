@@ -171,16 +171,17 @@ python3 benchmarks/mklq/check_metal_evidence.py
 
 To verify the current tracked experimental Metal stochastic sampling summaries
 that document selected full-register Metal sample-count accumulation after
-host-generated draws while keeping partial-register stochastic counts
-host-side:
+host-generated draws while preserving the historical partial-register
+host-side boundary captured in those summaries:
 
 ```bash
 python3 benchmarks/mklq/check_metal_sampling_boundary_evidence.py
 ```
 
-Current selected Metal runtime counter coverage, including full-register
-counts-only Metal sample-count accumulation after host-generated draws, is
-checked through `docs/mklq/metal-runtime-counters.md`.
+Current selected Metal runtime counter coverage, including full-register and
+partial-register counts-only Metal sample-count accumulation after
+host-generated draws, is checked through
+`docs/mklq/metal-runtime-counters.md`.
 
 For a fast local public-maintenance gate, run:
 

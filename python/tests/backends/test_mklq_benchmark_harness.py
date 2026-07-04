@@ -2094,6 +2094,34 @@ def test_mklq_metal_sampling_boundary_guard_accepts_selected_count_accumulation(
     assert result["failures"] == []
 
 
+def test_mklq_metal_sampling_boundary_guard_accepts_selected_partial_count_accumulation(
+):
+    module = _load_metal_sampling_boundary_evidence_module()
+
+    result = module.check_summary(
+        _metal_sampling_boundary_summary_fixture(
+            module,
+            metal_scope=(
+                "mixed-path Metal probability fill with selected "
+                "full-register and partial-register counts-only Metal "
+                "sample-count accumulation after host-generated draws"),
+            extra_interpretation={
+                "full_register_counts_accumulation":
+                    "selected Metal sample-count accumulation after "
+                    "host-generated draws",
+                "partial_register_counts_accumulation":
+                    "selected Metal sample-count accumulation after "
+                    "host-generated draws",
+            },
+        ),
+        required_rows=module.DEFAULT_REQUIRED_ROWS,
+        max_high_to_low_ratio=module.DEFAULT_MAX_HIGH_TO_LOW_RATIO,
+    )
+
+    assert result["status"] == "passed"
+    assert result["failures"] == []
+
+
 def test_mklq_public_claim_guard_accepts_negated_boundary_text():
     module = _load_public_claims_module()
 
@@ -2844,7 +2872,7 @@ def test_mklq_metal_runtime_counter_probe_tracks_runtime_counter_surface():
         "SimulatorSamplesSmallResidentPartialRegisterThroughMarginalProbability",
         "SimulatorSamplesRequestedOrderPartialRegisterThroughMarginalProbability",
         "SimulatorSamplesResidentPartialRegisterWithHostSequentialDrawTelemetry",
-        "SimulatorSamplesResidentPartialRegisterWithHostCountsOnlyDrawTelemetry",
+        "SimulatorSamplesResidentPartialRegisterCountsOnlyWithMetalAccumulation",
         "SimulatorSamplesResidentFullRegisterWithHostSequentialDrawTelemetry",
         "SimulatorSamplesResidentFullRegisterCountsOnlyWithMetalAccumulation",
         "SimulatorSamplesResidentDeterministicPartialRegisterCountsOnlyWithoutDrawLoop",
@@ -6433,8 +6461,8 @@ def test_mklq_benchmark_dry_run_records_metal_path_metadata(tmp_path):
         "counts-only Metal sample-count accumulation after host-generated "
         "draws")
     assert rows["sample-partial-register"]["metrics"]["metal_path_label"] == (
-        "mklq_metal_partial_register_host_counts")
-    assert "host-side sample draw/count" in rows[
+        "mklq_metal_partial_register_sample_count_accumulation")
+    assert "host-generated draws" in rows[
         "sample-partial-register"]["metrics"]["metal_path_scope"]
     for row in rows.values():
         metrics = row["metrics"]
