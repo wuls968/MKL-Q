@@ -56,7 +56,9 @@ four-or-more-target unsupported gate fallback/reupload fixtures. The
 2026-07-04 Metal counter refresh adds a requested-order partial-register
 sampling fixture that asserts the resident marginal probability route, no
 full-register probability fill, and no resident download for that selected
-path. It also reran
+path. The later 2026-07-04 Metal counter refresh adds explicit host-side
+sequential and counts-only draw telemetry for selected resident
+partial-register sampling paths. It also reran
 the full install/build/signature-repair/correctness/example gate on the current
 MKL-Q branch after adding the local macOS install-prefix signature repair step.
 The current tracked CPU gate counter evidence includes three bounded reports for
@@ -70,7 +72,7 @@ sampling/probability counter
 evidence includes two bounded reports, each with explicit full-register and
 marginal probability-fill counter ctests alongside the existing sampling phase
 counter ctests. The current tracked Metal runtime counter evidence includes
-four bounded reports. Counter-summary aggregate counts are summed
+five bounded reports. Counter-summary aggregate counts are summed
 across tracked reports, so repeated daily probes intentionally count the same
 selected tests once per report.
 
@@ -85,6 +87,7 @@ Raw wrapper output was written to ignored local paths
 `benchmarks/mklq/results/public-healthcheck-cpu-sampling-oracle-2026-07-04.json`,
 `benchmarks/mklq/results/public-healthcheck-metal-sampling-oracle-2026-07-04.json`,
 `benchmarks/mklq/results/public-healthcheck-metal-sampling-counter-oracle-2026-07-04.json`,
+`benchmarks/mklq/results/public-healthcheck-metal-host-sampling-telemetry-2026-07-04.json`,
 `benchmarks/mklq/results/public-healthcheck-full-2026-06-22.json`,
 `benchmarks/mklq/results/public-healthcheck-full-2026-06-23.json`,
 `benchmarks/mklq/results/public-healthcheck-full-2026-06-24.json`,
@@ -97,6 +100,7 @@ Raw wrapper output was written to ignored local paths
 `benchmarks/mklq/results/local-correctness-gate-cpu-sampling-oracle-2026-07-04.json`,
 `benchmarks/mklq/results/local-correctness-gate-metal-sampling-oracle-2026-07-04.json`,
 `benchmarks/mklq/results/local-correctness-gate-metal-sampling-counter-oracle-2026-07-04.json`,
+`benchmarks/mklq/results/local-correctness-gate-metal-host-sampling-telemetry-2026-07-04.json`,
 `benchmarks/mklq/results/local-metal-runtime-counter-probe-2026-06-22.counter.json`,
 `benchmarks/mklq/results/local-metal-runtime-counter-probe-2026-06-23.counter.json`,
 `benchmarks/mklq/results/local-metal-runtime-counter-probe-2026-06-24.counter.json`,
@@ -104,6 +108,7 @@ Raw wrapper output was written to ignored local paths
 `benchmarks/mklq/results/local-metal-runtime-counter-probe-2026-07-02.counter.json`,
 `benchmarks/mklq/results/local-metal-runtime-counter-probe-2026-07-04.counter.json`,
 `benchmarks/mklq/results/local-metal-runtime-counter-probe-metal-sampling-counter-oracle-2026-07-04.counter.json`,
+`benchmarks/mklq/results/local-metal-runtime-counter-probe-metal-host-sampling-telemetry-2026-07-04.counter.json`,
 `benchmarks/mklq/results/local-sampling-scaling-cpu-q18-q22-2026-06-23.json`,
 `benchmarks/mklq/results/local-scaling-cpu-two-qubit-three-qubit-q18-q22-2026-07-03-two-three-scaling.json`,
 `benchmarks/mklq/results/example-smoke-2026-06-23.json`,
@@ -137,15 +142,16 @@ latest full 2026-07-03 result is `33/33` steps passed.
 - Standalone install-prefix Python subset: `37 passed`.
 - `python_target_smoke`: `70 passed`.
 - `nvqpp_smoke`: `2 passed`.
-- Current `target_config_ctest`: `93/93 passed`, including the
+- Current `target_config_ctest`: `96/96 passed`, including the
   `HardwareEfficientAnsatzCompositeUsesDedicatedFastPaths` CPU counter fixture
   that checks the hardware-efficient ansatz gate mix uses the expected
   rotation, CNOT, CRZ, CZ, CRX, and SWAP fast paths.
-- Current tracked `metal_runtime_counter_probe`: 4 bounded reports, 119
-  expected, 119 selected, 0 missing, and 0 failures. The latest tracked report
-  runs 40 counter ctests independently, including the requested-order
-  partial-register sampling marginal-probability fixture; the older reports
-  remain historical 20-, 20-, and 39-test evidence.
+- Current tracked `metal_runtime_counter_probe`: 5 bounded reports, 161
+  expected, 161 selected, 0 missing, and 0 failures. The latest tracked report
+  runs 42 counter ctests independently, including the requested-order
+  partial-register sampling marginal-probability fixture and host-side
+  sequential/counts-only draw telemetry; the older reports remain historical
+  20-, 20-, 39-, and 40-test evidence.
 - Clean CPU benchmark gate: passed, with 32 q20 `qpp-cpu`/`mklq-cpu` rows and
   32 rows reporting `status == "ok"`, including `two-qubit-state`,
   `three-qubit-state`, and `hardware-efficient-ansatz-state`.
@@ -247,21 +253,23 @@ python3 benchmarks/mklq/run_correctness_gate.py \
 
 Latest local result: passed on 2026-07-04 after adding the CPU phase-family,
 controlled phase, CPU sampling oracle, experimental `mklq-metal`
-partial-register bit-order plus qpp-cpu marginal sampling oracle fixtures, and
-the requested-order Metal sampling counter oracle fixture. It reported 4
-wrapper steps passed, 0 failed, and 0 skipped.
+partial-register bit-order plus qpp-cpu marginal sampling oracle fixtures, the
+requested-order Metal sampling counter oracle fixture, and host-side Metal
+sampling draw telemetry. It reported 4 wrapper steps passed, 0 failed, and 0
+skipped.
 The step-level results were:
 
 - `python_target_smoke`: `70 passed`.
 - `nvqpp_smoke`: `2 passed`.
-- `target_config_ctest`: `94/94 passed`, including the hardware-efficient
+- `target_config_ctest`: `96/96 passed`, including the hardware-efficient
   ansatz composite CPU fast-path counter fixture.
-- `metal_runtime_counter_probe`: 40 expected, 40 selected, 0 missing, and 40
+- `metal_runtime_counter_probe`: 42 expected, 42 selected, 0 missing, and 42
   independently executed passing counter ctests, including direct runtime
   single-, two-, and three-qubit gate fixtures, full-register and marginal
   probability fixtures, built-in Rx/Ry/Rz and phase-family fixtures, sampling
   fixtures including requested-order partial-register sampling through the
-  resident marginal probability route, measurement/collapse/reset fixtures, unsupported-gate
+  resident marginal probability route plus host-side sequential/counts-only
+  draw telemetry, measurement/collapse/reset fixtures, unsupported-gate
   fallback/reupload fixtures, and resident error-boundary fixtures.
 
 The Python smoke step includes the MKL-Q API smoke tests, the CPU correctness

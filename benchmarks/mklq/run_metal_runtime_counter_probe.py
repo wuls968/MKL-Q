@@ -53,6 +53,8 @@ COUNTER_TEST_SUFFIXES = (
     "SimulatorSamplesLargeResidentPartialRegisterThroughFullProbability",
     "SimulatorSamplesSmallResidentPartialRegisterThroughMarginalProbability",
     "SimulatorSamplesRequestedOrderPartialRegisterThroughMarginalProbability",
+    "SimulatorSamplesResidentPartialRegisterWithHostSequentialDrawTelemetry",
+    "SimulatorSamplesResidentPartialRegisterWithHostCountsOnlyDrawTelemetry",
     "SimulatorSamplesDeterministicSparseStateWithOneBitStringConversion",
     "SimulatorSynchronizesResidentStateBeforeUnsupportedGate",
     "SimulatorKeepsThreeQubitGateResidentUntilReadback",
