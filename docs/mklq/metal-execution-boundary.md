@@ -27,6 +27,7 @@ Current counter evidence tracks these resident Metal state routes:
 | Full-register probability fill | Counter tests grouped under `probability_sampling` | The probability vector is host-visible output by design. |
 | Marginal probability fill | Counter tests grouped under `probability_sampling` | Marginal output is host-visible by design. |
 | Requested-order partial-register sampling | Counter tests grouped under `probability_sampling` | The selected route proves resident marginal-probability work before host-side draw/count accumulation. |
+| Host-side sampling draw telemetry | Counter tests grouped under `probability_sampling` | Sequential and counts-only draw batches are explicitly counted as host-side work after resident probability work. |
 | Measurement, collapse, and reset | Counter tests grouped under `measurement_reset` | Measurement results and sampled counts cross the host boundary. |
 
 The counter summary is rendered by:
@@ -65,9 +66,11 @@ was Metal-native.
 ## Sampling Boundary
 
 Probability fills can be resident Metal work, but public sampling evidence does
-not claim an end-to-end on-device sampler. Sample draw and count accumulation
-remain host-side unless a future counter test and benchmark gate explicitly
-prove otherwise.
+not claim an end-to-end on-device sampler. Current counter evidence explicitly
+tracks selected sequential and counts-only draw batches as host-side work after
+resident probability work. Sample draw and count accumulation therefore remain
+host-side for the current `mklq-metal` boundary unless a future counter test and
+benchmark gate explicitly prove an on-device sampler.
 
 ## Error Boundary
 
