@@ -26,6 +26,7 @@ Current counter evidence tracks these resident Metal state routes:
 | Two-target and three-target updates | Counter tests grouped under `resident_gate` | This is not a broad arbitrary-unitary guarantee. |
 | Full-register probability fill | Counter tests grouped under `probability_sampling` | The probability vector is host-visible output by design. |
 | Marginal probability fill | Counter tests grouped under `probability_sampling` | Marginal output is host-visible by design. |
+| Requested-order partial-register sampling | Counter tests grouped under `probability_sampling` | The selected route proves resident marginal-probability work before host-side draw/count accumulation. |
 | Measurement, collapse, and reset | Counter tests grouped under `measurement_reset` | Measurement results and sampled counts cross the host boundary. |
 
 The counter summary is rendered by:

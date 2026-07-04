@@ -1177,6 +1177,39 @@ CUDAQ_TEST(MKLQMetalTester,
 }
 
 CUDAQ_TEST(MKLQMetalTester,
+           SimulatorSamplesRequestedOrderPartialRegisterThroughMarginalProbability) {
+  constexpr std::size_t qubitCount = 7;
+  constexpr std::size_t dimension = 1ULL << qubitCount;
+  const std::vector<std::complex<double>> xGate{{0.0, 0.0},
+                                                {1.0, 0.0},
+                                                {1.0, 0.0},
+                                                {0.0, 0.0}};
+
+  MklqMetalCircuitSimulatorTester sim;
+  std::vector<std::complex<double>> state(dimension, {0.0, 0.0});
+  state[0] = {1.0, 0.0};
+  sim.setStateForTest(std::move(state));
+  sim.applySingleQubitGateForTest(xGate, {}, 0);
+  sim.applySingleQubitGateForTest(xGate, {}, 4);
+
+  const std::vector<std::size_t> measuredQubits{4, 0, 2};
+  const auto counts = sim.sampleQubitsForTest(measuredQubits, 16);
+
+  ASSERT_EQ(counts.counts.size(), 1);
+  ASSERT_TRUE(counts.counts.contains("110"));
+  EXPECT_EQ(counts.counts.at("110"), 16);
+  EXPECT_EQ(counts.sequentialData.size(), 16);
+  EXPECT_EQ(sim.singleQubitApplicationsForTest(),
+            sim.metalRuntimeAvailableForTest() ? 2 : 0);
+  EXPECT_EQ(sim.residentStateUploadsForTest(),
+            sim.metalRuntimeAvailableForTest() ? 1 : 0);
+  EXPECT_EQ(sim.residentStateDownloadsForTest(), 0);
+  EXPECT_EQ(sim.marginalProbabilityApplicationsForTest(),
+            sim.metalRuntimeAvailableForTest() ? 1 : 0);
+  EXPECT_EQ(sim.probabilityFillApplicationsForTest(), 0);
+}
+
+CUDAQ_TEST(MKLQMetalTester,
            SimulatorSamplesDeterministicSparseStateWithOneBitStringConversion) {
   std::vector<std::complex<double>> state(8, {0.0, 0.0});
   state[5] = {1.0, 0.0};
