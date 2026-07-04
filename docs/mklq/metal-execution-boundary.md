@@ -28,6 +28,7 @@ Current counter evidence tracks these resident Metal state routes:
 | Marginal probability fill | Counter tests grouped under `probability_sampling` | Marginal output is host-visible by design. |
 | Requested-order partial-register sampling | Counter tests grouped under `probability_sampling` | The selected route proves resident marginal-probability work before host-side draw/count accumulation. |
 | Host-side sampling draw telemetry | Counter tests grouped under `probability_sampling` | Sequential and counts-only draw batches are explicitly counted as host-side work after resident probability work. |
+| Native sampling phase timing telemetry | Counter tests grouped under `probability_sampling` | Test-accessor timing accumulators separate probability fill, host draw/count, and expectation-reduction phases for selected fixtures; this is not release timing evidence. |
 | Measurement, collapse, and reset | Counter tests grouped under `measurement_reset` | Measurement results and sampled counts cross the host boundary. |
 
 The counter summary is rendered by:
@@ -71,6 +72,12 @@ tracks selected sequential and counts-only draw batches as host-side work after
 resident probability work. Sample draw and count accumulation therefore remain
 host-side for the current `mklq-metal` boundary unless a future counter test and
 benchmark gate explicitly prove an on-device sampler.
+
+Selected build-tree fixtures also assert positive native test-accessor timing
+accumulators for probability fill, host draw/count, and expectation-reduction
+phases. Those timers are useful for regression triage and phase attribution,
+but they are not benchmark rows, release timing evidence, or cross-machine
+performance claims.
 
 ## Error Boundary
 

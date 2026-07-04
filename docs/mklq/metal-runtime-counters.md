@@ -11,11 +11,11 @@ Aggregate counts are summed across tracked reports; repeated daily probes intent
 | Field | Value |
 | --- | --- |
 | `status` | passed |
-| `report_count` | 5 |
-| `expected` | 161 |
-| `selected` | 161 |
+| `report_count` | 6 |
+| `expected` | 204 |
+| `selected` | 204 |
 | `missing` | 0 |
-| `passed` | 161 |
+| `passed` | 204 |
 | `failed` | 0 |
 
 ## Evidence Boundary
@@ -31,13 +31,13 @@ Aggregate counts are summed across tracked reports; repeated daily probes intent
 
 | Category | Passed | Failed | Other | Description |
 | --- | ---: | ---: | ---: | --- |
-| error_boundary | 18 | 0 | 0 | Resident Metal error and poisoned-state boundary tests |
-| fallback_boundary | 5 | 0 | 0 | Unsupported-gate fallback and reupload boundary tests |
-| measurement_reset | 15 | 0 | 0 | Measurement, collapse, and reset counter tests |
-| probability_sampling | 44 | 0 | 0 | Resident probability fill and sampling counter tests |
-| resident_gate | 70 | 0 | 0 | Resident Metal gate/update counter tests |
-| runtime_device | 3 | 0 | 0 | Runtime/device boundary counter tests |
-| synchronization_boundary | 6 | 0 | 0 | Resident state synchronization boundary tests |
+| error_boundary | 24 | 0 | 0 | Resident Metal error and poisoned-state boundary tests |
+| fallback_boundary | 6 | 0 | 0 | Unsupported-gate fallback and reupload boundary tests |
+| measurement_reset | 18 | 0 | 0 | Measurement, collapse, and reset counter tests |
+| probability_sampling | 58 | 0 | 0 | Resident probability fill and sampling counter tests |
+| resident_gate | 86 | 0 | 0 | Resident Metal gate/update counter tests |
+| runtime_device | 4 | 0 | 0 | Runtime/device boundary counter tests |
+| synchronization_boundary | 8 | 0 | 0 | Resident state synchronization boundary tests |
 
 ## Counter Tests
 
@@ -62,6 +62,7 @@ Aggregate counts are summed across tracked reports; repeated daily probes intent
 | probability_sampling | `mklq_metal_MKLQMetalTester.SimulatorSamplesLargeResidentPartialRegisterThroughFullProbability` |
 | probability_sampling | `mklq_metal_MKLQMetalTester.SimulatorSamplesRequestedOrderPartialRegisterThroughMarginalProbability` |
 | probability_sampling | `mklq_metal_MKLQMetalTester.SimulatorSamplesResidentDenseStateWithoutReadback` |
+| probability_sampling | `mklq_metal_MKLQMetalTester.SimulatorSamplesResidentPartialRegisterReportsNativePhaseTiming` |
 | probability_sampling | `mklq_metal_MKLQMetalTester.SimulatorSamplesResidentPartialRegisterWithHostCountsOnlyDrawTelemetry` |
 | probability_sampling | `mklq_metal_MKLQMetalTester.SimulatorSamplesResidentPartialRegisterWithHostSequentialDrawTelemetry` |
 | probability_sampling | `mklq_metal_MKLQMetalTester.SimulatorSamplesSmallResidentPartialRegisterThroughMarginalProbability` |
@@ -94,6 +95,7 @@ Aggregate counts are summed across tracked reports; repeated daily probes intent
 | benchmarks/mklq/reports/local-metal-runtime-counter-probe-2026-06-24.counter.json | 2026-06-24T04:49:20.683974+00:00 | passed | 20 | 20 | 0 | 20 | 0 |
 | benchmarks/mklq/reports/local-metal-runtime-counter-probe-2026-07-03.counter.json | 2026-07-03T12:17:01.069186+00:00 | passed | 39 | 39 | 0 | 39 | 0 |
 | benchmarks/mklq/reports/local-metal-runtime-counter-probe-2026-07-04-host-sampling-telemetry.counter.json | 2026-07-04T07:52:15.268720+00:00 | passed | 42 | 42 | 0 | 42 | 0 |
+| benchmarks/mklq/reports/local-metal-runtime-counter-probe-2026-07-04-phase-timing.counter.json | 2026-07-04T08:27:40.049861+00:00 | passed | 43 | 43 | 0 | 43 | 0 |
 | benchmarks/mklq/reports/local-metal-runtime-counter-probe-2026-07-04.counter.json | 2026-07-04T07:22:11.941840+00:00 | passed | 40 | 40 | 0 | 40 | 0 |
 
 Regenerate with:

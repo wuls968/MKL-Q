@@ -206,6 +206,18 @@ public:
     return sparseDrawCountMaps;
   }
 
+  double sampleProbabilityFillSecondsForTest() const {
+    return sampleProbabilityFillSeconds;
+  }
+
+  double sampleDrawAndCountSecondsForTest() const {
+    return sampleDrawAndCountSeconds;
+  }
+
+  double sampleExpectationReductionSecondsForTest() const {
+    return sampleExpectationReductionSeconds;
+  }
+
 protected:
 #if defined(MKLQ_ENABLE_METAL_RUNTIME)
   bool applyMetalResidentSingleQubitGate(
@@ -1307,6 +1319,41 @@ CUDAQ_TEST(MKLQMetalTester,
   EXPECT_EQ(sim.sampleExpectationReductionsForTest(), 1);
   EXPECT_EQ(sim.denseDrawCountBuffersForTest(), 1);
   EXPECT_EQ(sim.sparseDrawCountMapsForTest(), 0);
+}
+
+CUDAQ_TEST(MKLQMetalTester,
+           SimulatorSamplesResidentPartialRegisterReportsNativePhaseTiming) {
+  constexpr std::size_t qubitCount = 7;
+  constexpr std::size_t dimension = 1ULL << qubitCount;
+  constexpr int shots = 2048;
+  const std::vector<std::complex<double>> xGate{{0.0, 0.0},
+                                                {1.0, 0.0},
+                                                {1.0, 0.0},
+                                                {0.0, 0.0}};
+
+  MklqMetalCircuitSimulatorTester sim;
+  std::vector<std::complex<double>> state(dimension, {0.0, 0.0});
+  state[0] = {1.0, 0.0};
+  sim.setStateForTest(std::move(state));
+  sim.applySingleQubitGateForTest(xGate, {}, 0);
+  sim.applySingleQubitGateForTest(xGate, {}, 4);
+
+  const auto counts =
+      sim.sampleQubitsWithoutSequentialDataForTest({4, 0, 2}, shots);
+
+  ASSERT_EQ(counts.counts.size(), 1);
+  ASSERT_TRUE(counts.counts.contains("110"));
+  EXPECT_EQ(counts.counts.at("110"), shots);
+  EXPECT_TRUE(counts.sequentialData.empty());
+  EXPECT_EQ(sim.marginalProbabilityApplicationsForTest(),
+            sim.metalRuntimeAvailableForTest() ? 1 : 0);
+  EXPECT_EQ(sim.probabilityFillApplicationsForTest(), 0);
+  EXPECT_EQ(sim.countsOnlySampleDrawBatchesForTest(), 1);
+  EXPECT_EQ(sim.sequentialSampleDrawBatchesForTest(), 0);
+  EXPECT_EQ(sim.sampleExpectationReductionsForTest(), 1);
+  EXPECT_GT(sim.sampleProbabilityFillSecondsForTest(), 0.0);
+  EXPECT_GT(sim.sampleDrawAndCountSecondsForTest(), 0.0);
+  EXPECT_GT(sim.sampleExpectationReductionSecondsForTest(), 0.0);
 }
 
 CUDAQ_TEST(MKLQMetalTester,
