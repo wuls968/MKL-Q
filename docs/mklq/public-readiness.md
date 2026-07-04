@@ -191,14 +191,16 @@ completed local gates, and focused CRZ distance-sweep evidence retained from
 - standalone install-prefix Python subset: `37 passed`;
 - `python_target_smoke`: `70 passed`;
 - `nvqpp_smoke`: `2 passed`;
-- current full `target_config_ctest`: `101/101 passed`, including the
+- current full `target_config_ctest`: `102/102 passed`, including the
   hardware-efficient ansatz composite CPU fast-path counter fixture and the
-  resident full-register Metal sampling telemetry fixtures;
-- current tracked `metal_runtime_counter_probe`: 9 bounded reports, 340
-  expected, 340 selected, 0 missing, and 0 failures, including resident gate,
-  probability/sampling, deterministic sampling bypass, full-register and
-  partial-register host-side sampling telemetry, native sampling phase timing,
-  measurement/reset, fallback, and error-boundary fixtures.
+  resident full-register Metal sampling telemetry plus selected sample-count
+  accumulation fixtures;
+- current tracked `metal_runtime_counter_probe`: 10 bounded reports, 388
+  expected, 388 selected, 0 missing, and 0 failures, including resident gate,
+  probability/sampling, deterministic sampling bypass, direct and simulator
+  coverage for selected full-register counts-only Metal sample-count
+  accumulation, remaining host-side sampling telemetry, native sampling phase
+  timing, measurement/reset, fallback, and error-boundary fixtures.
 - clean CPU benchmark gate: passed with 32 q20 `qpp-cpu`/`mklq-cpu` rows,
   including `two-qubit-state`, `three-qubit-state`, `qft-like-state`,
   `seeded-clifford-state`, and `hardware-efficient-ansatz-state`, with 32 rows
@@ -234,9 +236,9 @@ The current public healthcheck also includes the static
 checks local tuning provenance, ignored raw payload paths, successful Metal
 rows, and wording that keeps the experimental mixed-path/host boundary clear.
 It also includes `check_metal_sampling_boundary_evidence.py` for the tracked
-q20 and q22 stochastic `mklq-metal` sampling summaries, requiring host-side
-draw/count wording and rejecting Metal RNG or GPU-side count accumulation
-claims.
+q20 and q22 stochastic `mklq-metal` sampling summaries, requiring historical
+host-side draw/count wording and rejecting Metal RNG or broad on-device
+count-accumulation claims in those static summaries.
 It also includes `check_cpu_gate_counter_docs.py` and
 `check_metal_runtime_counter_docs.py`, which fail if the public CPU gate
 fast-path or Metal runtime counter summaries drift from the tracked bounded

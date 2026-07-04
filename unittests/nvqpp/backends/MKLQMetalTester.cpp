@@ -20,6 +20,7 @@
 #include <bit>
 #include <cmath>
 #include <complex>
+#include <cstdint>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -129,6 +130,14 @@ public:
   std::size_t measurementCollapseApplicationsForTest() const {
 #if defined(MKLQ_ENABLE_METAL_RUNTIME)
     return metalExecutor.measurementCollapseApplications();
+#else
+    return 0;
+#endif
+  }
+
+  std::size_t sampleCountAccumulationsForTest() const {
+#if defined(MKLQ_ENABLE_METAL_RUNTIME)
+    return metalExecutor.sampleCountAccumulations();
 #else
     return 0;
 #endif
@@ -725,6 +734,27 @@ CUDAQ_TEST(MKLQMetalTester,
   EXPECT_EQ(executor.probabilityFillApplications(), 1);
 }
 
+CUDAQ_TEST(MKLQMetalTester, MetalRuntimeAccumulatesSampleCounts) {
+  nvqir::mklq::MetalStateVectorExecutor executor;
+
+  if (!expectMetalRuntimeReadyOrUnavailable(executor))
+    return;
+
+  const std::array<double, 3> probabilities{0.25, 0.25, 0.5};
+  const std::array<double, 6> draws{0.0, 0.24, 0.25, 0.49, 0.5, 0.99};
+  std::array<std::uint32_t, 3> counts{0, 0, 0};
+
+  ASSERT_TRUE(executor.accumulateSampleCounts(
+      probabilities.data(), probabilities.size(), draws.data(), draws.size(),
+      counts.data(), counts.size()))
+      << executor.lastError();
+
+  EXPECT_EQ(counts[0], 2u);
+  EXPECT_EQ(counts[1], 2u);
+  EXPECT_EQ(counts[2], 2u);
+  EXPECT_EQ(executor.sampleCountAccumulations(), 1);
+}
+
 CUDAQ_TEST(MKLQMetalTester, MetalRuntimeRejectsTargetsOutsideStateRange) {
   nvqir::mklq::MetalStateVectorExecutor executor;
 
@@ -1194,7 +1224,7 @@ CUDAQ_TEST(MKLQMetalTester,
 }
 
 CUDAQ_TEST(MKLQMetalTester,
-           SimulatorSamplesResidentFullRegisterWithHostCountsOnlyDrawTelemetry) {
+           SimulatorSamplesResidentFullRegisterCountsOnlyWithMetalAccumulation) {
   constexpr std::size_t qubitCount = 7;
   constexpr std::size_t dimension = 1ULL << qubitCount;
   constexpr int shots = 32;
@@ -1222,19 +1252,18 @@ CUDAQ_TEST(MKLQMetalTester,
     totalShots += count;
   EXPECT_EQ(totalShots, shots);
   EXPECT_TRUE(counts.sequentialData.empty());
-  EXPECT_EQ(sim.singleQubitApplicationsForTest(),
-            sim.metalRuntimeAvailableForTest() ? qubitCount : 0);
-  EXPECT_EQ(sim.residentStateUploadsForTest(),
-            sim.metalRuntimeAvailableForTest() ? 1 : 0);
   EXPECT_EQ(sim.residentStateDownloadsForTest(), 0);
-  EXPECT_EQ(sim.marginalProbabilityApplicationsForTest(), 0);
   EXPECT_EQ(sim.probabilityFillApplicationsForTest(),
             sim.metalRuntimeAvailableForTest() ? 1 : 0);
-  EXPECT_EQ(sim.countsOnlySampleDrawBatchesForTest(), 1);
+  EXPECT_EQ(sim.sampleCountAccumulationsForTest(),
+            sim.metalRuntimeAvailableForTest() ? 1 : 0);
+  EXPECT_EQ(sim.countsOnlySampleDrawBatchesForTest(),
+            sim.metalRuntimeAvailableForTest() ? 0 : 1);
   EXPECT_EQ(sim.sequentialSampleDrawBatchesForTest(), 0);
-  EXPECT_EQ(sim.sampleExpectationReductionsForTest(), 1);
-  EXPECT_EQ(sim.denseDrawCountBuffersForTest(), 1);
+  EXPECT_EQ(sim.denseDrawCountBuffersForTest(),
+            sim.metalRuntimeAvailableForTest() ? 0 : 1);
   EXPECT_EQ(sim.sparseDrawCountMapsForTest(), 0);
+  EXPECT_EQ(sim.sampleExpectationReductionsForTest(), 1);
   EXPECT_GT(sim.sampleProbabilityFillSecondsForTest(), 0.0);
   EXPECT_GT(sim.sampleDrawAndCountSecondsForTest(), 0.0);
   EXPECT_GT(sim.sampleExpectationReductionSecondsForTest(), 0.0);

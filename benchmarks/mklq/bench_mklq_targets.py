@@ -36,7 +36,7 @@ APPLE_SILICON_TARGETS = ("qpp-cpu", "mklq-cpu", "mklq-metal")
 PORTABLE_DEFAULT_TARGETS = ("qpp-cpu",)
 TARGET_NOTES = {
     "mklq-metal":
-        "Experimental mixed-path target: mklq_metal uses resident fp32 Metal single-target/two-target/three-target/probability-fill kernels, cost-gated resident full-register and marginal probability kernels for sampling, a measured-qubit probability-reduction kernel, and a resident measurement-collapse path with MKL-Q fp64 CPU-oracle fallback for unsupported paths; sample draw/count accumulation remains host-side, not full Metal GPU backend evidence.",
+        "Experimental mixed-path target: mklq_metal uses resident fp32 Metal single-target/two-target/three-target/probability-fill kernels, cost-gated resident full-register and marginal probability kernels for sampling, selected full-register counts-only Metal sample-count accumulation after host-generated draws, a measured-qubit probability-reduction kernel, and a resident measurement-collapse path with MKL-Q fp64 CPU-oracle fallback for unsupported paths; sequential and partial-register stochastic draw/count accumulation remain host-side, not full Metal GPU backend evidence.",
 }
 METAL_EVIDENCE_BOUNDARY = (
     "benchmark harness static case-map label only; not a runtime counter, "
@@ -57,8 +57,8 @@ METAL_COMPOSITE_SCOPE = (
     "experimental mklq-metal mixed-path composite state-vector update followed "
     "by host readback for cudaq.get_state")
 METAL_SAMPLING_SCOPE = (
-    "mixed-path Metal probability fill with host-side sample draw/count "
-    "accumulation")
+    "mixed-path Metal probability fill with historical host-side sample "
+    "draw/count accumulation boundary")
 METAL_SPARSE_SAMPLING_SCOPE = (
     "mixed-path sparse or deterministic sampling with host-side count "
     "accumulation")

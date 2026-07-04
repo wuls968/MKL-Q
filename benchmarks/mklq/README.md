@@ -19,10 +19,12 @@ collapse paths can read or update that resident buffer directly.
 Measurement probability uses a
 dedicated measured-qubit Metal reduction kernel with a small host partial-sum
 finish; branch collapse uses a Metal kernel. Unsupported paths fall back to the
-MKL-Q fp64 CPU oracle after synchronizing host state, and sample draw/count
-accumulation remains host-side for stochastic distributions. Deterministic
-one-outcome sequential and counts-only distributions can bypass the draw loop
-after probability work.
+MKL-Q fp64 CPU oracle after synchronizing host state. Selected full-register
+counts-only sampling can accumulate outcome counts with a Metal kernel after
+host-generated random draws and resident probability work; sequential sampling
+and partial-register stochastic counts-only sampling still accumulate
+draw/count results on the host. Deterministic one-outcome sequential and
+counts-only distributions can bypass the draw loop after probability work.
 Treat `mklq-metal` benchmark rows as mixed-path evidence, not full Metal GPU
 backend performance.
 New benchmark rows for `mklq-metal` include conservative `metal_path_label`,
@@ -505,9 +507,9 @@ python3 benchmarks/mklq/check_metal_sampling_boundary_evidence.py
 The guard does not run benchmarks. It checks the tracked q20 and q22
 counts-only shot-scaling summaries for full-register and partial-register
 `mklq-metal` sampling rows at 256, 1024, 8192, and 65536 shots, verifies
-ignored raw payload boundaries, requires explicit host-side draw/count wording,
-and rejects Metal RNG, GPU sampler, GPU-side count accumulation, release-ready,
-or all-Metal claims.
+ignored raw payload boundaries, requires explicit historical host-side
+draw/count wording, and rejects claims of Metal RNG, GPU sampler, broad
+on-device count accumulation, release readiness, or all-Metal execution.
 
 ## Metal Runtime Counter Probe
 
@@ -529,9 +531,11 @@ or failing. The tracked `.counter.json` report is bounded evidence: it records
 keeps `release_signoff` and `all_metal_execution_proof` false. It is not a
 benchmark result and it does not prove every `mklq-metal` operation stays on
 Metal.
-Current sampling counter coverage includes selected full-register and
-partial-register sequential/counts-only host draw telemetry after resident
-Metal probability work, plus deterministic one-outcome draw-loop bypasses.
+Current sampling counter coverage includes selected full-register counts-only
+Metal sample-count accumulation after host-generated draws, full-register
+sequential host draw telemetry, partial-register sequential/counts-only host
+draw telemetry after resident Metal probability work, plus deterministic
+one-outcome draw-loop bypasses.
 
 ## Metal Runtime Counter Summary
 
@@ -851,8 +855,8 @@ The generated public index is tracked at
   for `sample-partial-register`; `mklq-metal` median elapsed time was
   0.04015256251295796 s and 0.03547552099917084 s for the same cases.
   `check_metal_sampling_boundary_evidence.py` treats this summary as one
-  tracked static guard input for the current stochastic `mklq-metal` host-side
-  sample draw/count boundary.
+  tracked static guard input for the historical stochastic `mklq-metal`
+  host-side sample draw/count boundary.
 - `reports/local-metal-sampling-boundary-q22-2026-07-04.summary.json`:
   tracked sanitized summary for the ignored raw result
   `results/local-metal-sampling-boundary-q22-2026-07-04.json`
@@ -1054,9 +1058,9 @@ records their hashes and bounded metrics.
   performance evidence. In its q20 `mklq-metal` rows, median elapsed time
   changed from 0.02171218749936088 s at 256 shots to 0.027931499997066567 s at
   65536 shots for `sample-full-register`, and from 0.024053000001003966 s to
-  0.02549454149630037 s for `sample-partial-register`; this measured range
-  does not justify moving sample count accumulation onto the GPU yet. The next
-  accepted low-risk step was host-side counts-only aggregation for
+  0.02549454149630037 s for `sample-partial-register`; at the time, this
+  measured range did not justify moving sample count accumulation onto the GPU.
+  The next accepted low-risk step was host-side counts-only aggregation for
   `includeSequentialData=false`, using bounded dense counters for small outcome
   spaces and sparse maps for larger outcome spaces. A later bounded counter
   fixtures add deterministic one-outcome sequential and counts-only draw-loop

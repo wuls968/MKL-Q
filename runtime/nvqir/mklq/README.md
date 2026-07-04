@@ -172,13 +172,15 @@ target-marker output.
   marginal partial-sum work is no smaller than a full probability fill, it
   computes resident full-register probabilities once and folds them to
   marginal outcome probabilities on the host without first downloading the
-  state vector. Stochastic sample draw/count accumulation remains host-side;
-  build-tree counter tests cover both full-register and partial-register
-  sequential/counts-only host draw telemetry after resident probability work.
+  state vector. Full-register counts-only sampling can now use a Metal
+  sample-count accumulation kernel after host-generated random draws and
+  resident probability work. Sequential sampling and partial-register
+  stochastic draw/count accumulation remain host-side; build-tree counter tests
+  cover the current split between Metal counts-only accumulation and host-side
+  sequential/partial-register draw telemetry.
   Deterministic one-outcome sequential and counts-only distributions can
-  bypass that draw loop after resident probability work. The current local
-  shot-scaling gate
-  does not justify general GPU-side count accumulation yet.
+  bypass stochastic draw loops after resident probability work. The current
+  local shot-scaling gate does not justify a general on-device sampler yet.
   Resident measure/reset can compute the measured qubit probability with a
   dedicated measured-qubit Metal reduction kernel, then collapse the selected
   branch with a Metal kernel without first downloading the state. The host only
