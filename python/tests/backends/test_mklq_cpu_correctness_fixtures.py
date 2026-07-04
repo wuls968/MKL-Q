@@ -200,6 +200,33 @@ def _hardware_efficient_ansatz_kernel(qubit_count, layers):
     return kernel
 
 
+def _phase_family_fixture_kernel():
+    kernel = cudaq.make_kernel()
+    qubits = kernel.qalloc(5)
+
+    for index in range(5):
+        kernel.h(qubits[index])
+
+    kernel.s(qubits[0])
+    kernel.t(qubits[1])
+    kernel.sdg(qubits[2])
+    kernel.tdg(qubits[3])
+    kernel.r1(0.17, qubits[4])
+
+    kernel.cs(qubits[0], qubits[1])
+    kernel.ct(qubits[1], qubits[2])
+    kernel.cr1(-0.29, qubits[2], qubits[3])
+    kernel.crz(0.43, qubits[3], qubits[4])
+    kernel.cz(qubits[4], qubits[0])
+
+    kernel.cx(qubits[0], qubits[3])
+    kernel.rz(-0.11, qubits[3])
+    kernel.cs(qubits[3], qubits[0])
+    kernel.ct(qubits[4], qubits[2])
+
+    return kernel
+
+
 def test_mklq_cpu_bell_state_matches_analytic_fixture():
     state = _state_for_target("mklq-cpu", _bell_kernel())
     expected = np.array([1.0 / np.sqrt(2.0), 0.0, 0.0,
@@ -275,3 +302,7 @@ def test_mklq_cpu_hardware_efficient_ansatz_matches_qpp_observable():
     actual = _expectation_for_target("mklq-cpu", kernel, observable)
 
     assert np.isclose(actual, reference, rtol=1.0e-12, atol=1.0e-12)
+
+
+def test_mklq_cpu_phase_family_fixture_matches_qpp_state():
+    _assert_matches_qpp(_phase_family_fixture_kernel())
