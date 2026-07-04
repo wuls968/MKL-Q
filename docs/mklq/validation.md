@@ -29,7 +29,8 @@ tracked bounded CPU/Metal counter reports.
 The one-command correctness gate was refreshed again on 2026-06-28 after adding
 the CPU hardware-efficient ansatz state and observable oracle fixture.
 The one-command correctness gate was refreshed again on 2026-07-04 after
-adding the CPU phase-family and controlled phase oracle fixture.
+adding the CPU phase-family, controlled phase, partial-register bit-order, and
+qpp-cpu marginal sampling oracle fixtures.
 The full public healthcheck was refreshed again on 2026-07-02 on clean
 `main` after adding the self-hosted runner inventory audit, confirming that the
 install-prefix build, local signature repair, correctness gate, and public
@@ -74,6 +75,7 @@ Raw wrapper output was written to ignored local paths
 `benchmarks/mklq/results/public-healthcheck-two-three-scaling-evidence-2026-07-03.json`,
 `benchmarks/mklq/results/public-healthcheck-full-two-three-scaling-evidence-2026-07-03.json`,
 `benchmarks/mklq/results/public-healthcheck-cpu-phase-fixture-docs-2026-07-04.json`,
+`benchmarks/mklq/results/public-healthcheck-cpu-sampling-oracle-2026-07-04.json`,
 `benchmarks/mklq/results/public-healthcheck-full-2026-06-22.json`,
 `benchmarks/mklq/results/public-healthcheck-full-2026-06-23.json`,
 `benchmarks/mklq/results/public-healthcheck-full-2026-06-24.json`,
@@ -83,6 +85,7 @@ Raw wrapper output was written to ignored local paths
 `benchmarks/mklq/results/local-correctness-gate-2026-06-28.json`,
 `benchmarks/mklq/results/local-correctness-gate-2026-07-02.json`,
 `benchmarks/mklq/results/local-correctness-gate-cpu-phase-fixture-2026-07-04.json`,
+`benchmarks/mklq/results/local-correctness-gate-cpu-sampling-oracle-2026-07-04.json`,
 `benchmarks/mklq/results/local-metal-runtime-counter-probe-2026-06-22.counter.json`,
 `benchmarks/mklq/results/local-metal-runtime-counter-probe-2026-06-23.counter.json`,
 `benchmarks/mklq/results/local-metal-runtime-counter-probe-2026-06-24.counter.json`,
@@ -119,7 +122,7 @@ latest full 2026-07-03 result is `33/33` steps passed.
   14 selected, 0 missing, and 0 failures; each report includes full-register
   and marginal probability-fill counter ctests.
 - Standalone install-prefix Python subset: `37 passed`.
-- `python_target_smoke`: `62 passed`.
+- `python_target_smoke`: `66 passed`.
 - `nvqpp_smoke`: `2 passed`.
 - Current `target_config_ctest`: `93/93 passed`, including the
   `HardwareEfficientAnsatzCompositeUsesDedicatedFastPaths` CPU counter fixture
@@ -228,11 +231,12 @@ python3 benchmarks/mklq/run_correctness_gate.py \
   --build-dir build-python
 ```
 
-Latest local result: passed on 2026-07-04 after adding the CPU phase-family
-and controlled phase oracle fixture. It reported 4 wrapper steps passed, 0
-failed, and 0 skipped. The step-level results were:
+Latest local result: passed on 2026-07-04 after adding the CPU phase-family,
+controlled phase, partial-register bit-order, and qpp-cpu marginal sampling
+oracle fixtures. It reported 4 wrapper steps passed, 0 failed, and 0 skipped.
+The step-level results were:
 
-- `python_target_smoke`: `62 passed`.
+- `python_target_smoke`: `66 passed`.
 - `nvqpp_smoke`: `2 passed`.
 - `target_config_ctest`: `93/93 passed`, including the hardware-efficient
   ansatz composite CPU fast-path counter fixture.
