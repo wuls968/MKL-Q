@@ -159,27 +159,29 @@ compares the live core protection fields against that JSON reference.
 ## Validation Snapshot
 
 The latest public local validation evidence is recorded in
-[`validation.md`](validation.md), with correctness and public healthcheck
-refreshes on 2026-07-02 and focused CRZ distance-sweep evidence retained from
+[`validation.md`](validation.md), with the default public healthcheck refreshed
+on 2026-07-04, correctness and full-wrapper evidence retained from the latest
+completed local gates, and focused CRZ distance-sweep evidence retained from
 2026-07-01:
 
-- latest correctness refresh date: 2026-07-02;
+- latest correctness refresh date: 2026-07-04;
 - source state: the ignored raw healthcheck JSON records the exact local Git
   state for the latest public healthcheck gate, and the ignored correctness
   gate JSON records the latest correctness-gate state;
 - install-prefix build: passed;
-- default public healthcheck: passed with 29/29 steps passed;
-- full public healthcheck: passed with 33/33 steps passed after adding the
-  dedicated local macOS install-prefix signature repair step; the repair step
-  refreshed and verified 60 local install-prefix `.dylib`, `.so`, and `bin/`
-  Mach-O loadables/executables before correctness and public example smoke
-  gates;
+- default public healthcheck: passed with 30/30 steps passed;
+- full public healthcheck: latest wrapper attempt did not pass; planned count
+  34/34 steps. The last completed full run remains the prior 33-step structure
+  after adding the dedicated local macOS install-prefix signature repair step;
+  the repair step refreshed and verified 60 local install-prefix `.dylib`,
+  `.so`, and `bin/` Mach-O loadables/executables before correctness and public
+  example smoke gates;
 - one-command correctness gate: passed with 4/4 steps passed, including
   `metal_runtime_counter_probe`;
 - public example smoke gate: passed with 30/30 steps passed;
-- current benchmark harness tests: `181 passed`;
-- current `cpu_sampling_counter_probe_parse`: 2 bounded reports, 14 expected,
-  14 selected, 0 missing, and 0 failures, including full-register and marginal
+- current benchmark harness tests: `198 passed`;
+- current `cpu_sampling_counter_probe_parse`: 3 bounded reports, 21 expected,
+  21 selected, 0 missing, and 0 failures, including full-register and marginal
   probability-fill counter ctests;
 - current `cpu_gate_counter_probe_parse`: 3 bounded reports, 37 expected, 37
   selected, 0 missing, and 0 failures, including single-control X/CNOT,
@@ -191,13 +193,11 @@ refreshes on 2026-07-02 and focused CRZ distance-sweep evidence retained from
 - `nvqpp_smoke`: `2 passed`;
 - current full `target_config_ctest`: `93/93 passed`, including the
   hardware-efficient ansatz composite CPU fast-path counter fixture;
-- current tracked `metal_runtime_counter_probe`: 3 bounded reports, 79
-  expected, 79 selected, 0 missing, and 0 failures. The latest tracked report
-  runs 39 counter ctests independently, including direct runtime single-,
-  two-, and three-qubit gate fixtures, full-register and marginal probability
-  fixtures, resident built-in Rx/Ry/Rz and phase-family fixtures, sampling
-  fixtures, measurement/collapse/reset fixtures, unsupported-gate
-  fallback/reupload fixtures, and resident error-boundary fixtures.
+- current tracked `metal_runtime_counter_probe`: 8 bounded reports, 293
+  expected, 293 selected, 0 missing, and 0 failures, including resident gate,
+  probability/sampling, deterministic sampling bypass, host-side sampling
+  telemetry, native sampling phase timing, measurement/reset, fallback, and
+  error-boundary fixtures.
 - clean CPU benchmark gate: passed with 32 q20 `qpp-cpu`/`mklq-cpu` rows,
   including `two-qubit-state`, `three-qubit-state`, `qft-like-state`,
   `seeded-clifford-state`, and `hardware-efficient-ansatz-state`, with 32 rows
@@ -225,6 +225,9 @@ The current public healthcheck also includes the static
 `check_metal_evidence.py` guard for tracked `mklq-metal` summaries. That guard
 checks local tuning provenance, ignored raw payload paths, successful Metal
 rows, and wording that keeps the experimental mixed-path/host boundary clear.
+It also includes `check_metal_sampling_boundary_evidence.py` for the tracked
+q20 stochastic `mklq-metal` sampling summary, requiring host-side draw/count
+wording and rejecting Metal RNG or GPU-side count accumulation claims.
 It also includes `check_cpu_gate_counter_docs.py` and
 `check_metal_runtime_counter_docs.py`, which fail if the public CPU gate
 fast-path or Metal runtime counter summaries drift from the tracked bounded

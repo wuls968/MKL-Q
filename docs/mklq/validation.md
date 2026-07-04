@@ -68,9 +68,13 @@ The next 2026-07-04 Metal counter refresh extends the same deterministic
 one-outcome bypass to explicit sequential sampling and tightens deterministic
 sparse full-register telemetry so only real stochastic draw loops increment
 draw-batch counters.
-It also reran
-the full install/build/signature-repair/correctness/example gate on the current
-MKL-Q branch after adding the local macOS install-prefix signature repair step.
+The follow-up 2026-07-04 public-healthcheck refresh adds a static Metal
+stochastic sampling boundary guard for the tracked q20 counts-only
+shot-scaling summary; it does not add new benchmark rows or claim an on-device
+sampler.
+A previous 2026-07-04 validation pass also reran the full
+install/build/signature-repair/correctness/example gate on the current MKL-Q
+branch after adding the local macOS install-prefix signature repair step.
 The current tracked CPU gate counter evidence includes three bounded reports for
 selected single-qubit, controlled single-qubit, single-control X/CNOT,
 single-control H/Y/Rx/Ry, single-control Rz phase, two-qubit, three-qubit, and
@@ -136,21 +140,23 @@ Raw wrapper output was written to ignored local paths
 `benchmarks/mklq/results/macos-install-signature-repair-2026-07-04.json`;
 these raw payloads are not tracked as public evidence.
 
-Latest default 2026-07-04 result: `29/29` steps passed.
-latest full 2026-07-03 result is `33/33` steps passed.
+Latest default 2026-07-04 result: `30/30` steps passed.
+Full public healthcheck planned step count: `34/34` steps.
 
 - Install-prefix build: passed.
-- Default public healthcheck: passed on 2026-07-04, with 29 steps passed and
+- Default public healthcheck: passed on 2026-07-04, with 30 steps passed and
   0 failed.
-- Latest full public healthcheck: passed on 2026-07-03, with 33 steps passed
-  and 0 failed after adding the dedicated macOS install-prefix signature repair
-  step. The signature repair step refreshed and verified 60 local install-prefix
-  `.dylib` and `.so` loadables before the correctness and public example smoke
-  gates.
+- Latest full public healthcheck wrapper attempt: this metadata-only guard
+  refresh did not rerun the full build/correctness wrapper; the current plan has
+  34 planned steps. The last completed full public healthcheck remains the
+  2026-07-03 run from the previous 33-step structure after adding the dedicated
+  macOS install-prefix signature repair step. The signature repair step
+  refreshed and verified 60 local install-prefix `.dylib` and `.so` loadables
+  before the correctness and public example smoke gates.
 - One-command correctness gate: passed with 4 steps passed, 0 failed, and 0
   skipped, including the Metal runtime counter probe.
 - Public example smoke gate: passed, with 30 steps passed and 0 failed.
-- Current `benchmark_harness_tests`: `191 passed`.
+- Current `benchmark_harness_tests`: `198 passed`.
 - Current `cpu_gate_counter_probe_parse`: 3 bounded reports, 37 expected,
   37 selected, 0 missing, and 0 failures, including single-control X/CNOT,
   per-gate single-control H/Y/Rx/Ry direct pair fixtures, single-control Rz

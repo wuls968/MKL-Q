@@ -202,6 +202,7 @@ python3 benchmarks/mklq/run_public_release_checklist_audit.py
 python3 benchmarks/mklq/run_self_hosted_ci_audit.py
 python3 benchmarks/mklq/check_performance_evidence.py
 python3 benchmarks/mklq/check_metal_evidence.py
+python3 benchmarks/mklq/check_metal_sampling_boundary_evidence.py
 python3 benchmarks/mklq/check_public_claims.py
 python3 benchmarks/mklq/check_sampling_profile_evidence.py
 python3 benchmarks/mklq/check_cpu_gate_counter_docs.py
@@ -213,6 +214,7 @@ python3 -m py_compile \
   benchmarks/mklq/check_cpu_gate_counter_docs.py \
   benchmarks/mklq/check_cpu_sampling_counter_docs.py \
   benchmarks/mklq/check_metal_evidence.py \
+  benchmarks/mklq/check_metal_sampling_boundary_evidence.py \
   benchmarks/mklq/check_metal_runtime_counter_docs.py \
   benchmarks/mklq/check_performance_evidence.py \
   benchmarks/mklq/check_public_claims.py \
@@ -264,6 +266,8 @@ Expected:
 - [ ] `check_performance_evidence.py` passes for tracked clean CPU summaries.
 - [ ] `check_metal_evidence.py` passes for tracked experimental Metal
       summaries.
+- [ ] `check_metal_sampling_boundary_evidence.py` passes for tracked
+      experimental Metal stochastic sampling boundary summaries.
 - [ ] CPU gate fast-path, CPU sampling/probability, and Metal runtime counter
   docs guards pass for the tracked bounded reports.
 - [ ] Counter docs explain that aggregate counts are summed across tracked

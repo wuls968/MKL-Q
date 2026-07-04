@@ -242,6 +242,18 @@ def _load_metal_evidence_module():
     return module
 
 
+def _load_metal_sampling_boundary_evidence_module():
+    repo_root = Path(__file__).resolve().parents[3]
+    script = repo_root / "benchmarks" / "mklq" / (
+        "check_metal_sampling_boundary_evidence.py")
+    spec = importlib.util.spec_from_file_location(
+        "check_metal_sampling_boundary_evidence", script)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    return module
+
+
 def _load_metal_runtime_counter_probe_module():
     repo_root = Path(__file__).resolve().parents[3]
     script = repo_root / "benchmarks" / "mklq" / (
@@ -1212,6 +1224,7 @@ def test_mklq_public_healthcheck_plan_lists_escalating_gates(tmp_path):
         "sampling_scaling_evidence_guard",
         "sampling_profile_evidence_guard",
         "metal_evidence_guard",
+        "metal_sampling_boundary_evidence_guard",
         "cpu_gate_counter_probe_parse",
         "cpu_gate_counter_docs",
         "cpu_sampling_counter_probe_parse",
@@ -1273,6 +1286,8 @@ def test_mklq_public_healthcheck_plans_crz_distance_guard(tmp_path):
     assert steps.index("sampling_profile_evidence_guard") < steps.index(
         "metal_evidence_guard")
     assert steps.index("metal_evidence_guard") < steps.index(
+        "metal_sampling_boundary_evidence_guard")
+    assert steps.index("metal_sampling_boundary_evidence_guard") < steps.index(
         "cpu_gate_counter_probe_parse")
     assert steps.index("cpu_gate_counter_probe_parse") < steps.index(
         "cpu_gate_counter_docs")
@@ -1333,6 +1348,18 @@ def test_mklq_public_healthcheck_checks_snapshot_doc_step_counts(tmp_path):
 
     assert result["status"] == "passed"
     assert result["details"]["expected_counts"] == counts
+
+
+def test_mklq_public_healthcheck_snapshot_counts_ignore_only_step(tmp_path):
+    module = _load_public_healthcheck_module()
+    config = _public_healthcheck_config(module, tmp_path)
+    only_config = module.replace(
+        config,
+        only_steps=("healthcheck_snapshot_docs",),
+    )
+
+    assert module.public_snapshot_step_counts(only_config) == (
+        module.public_snapshot_step_counts(config))
 
 
 def test_mklq_public_healthcheck_accepts_full_wrapper_timeout_snapshot_docs(
@@ -1852,6 +1879,139 @@ def test_mklq_sampling_profile_evidence_guard_rejects_missing_row():
     assert result["status"] == "failed"
     assert any("sample-full-register q22 shots=65536" in failure
                for failure in result["failures"])
+
+
+def _metal_sampling_boundary_summary_fixture(module,
+                                             *,
+                                             omit_row=None,
+                                             elapsed_override=None,
+                                             metal_scope=None):
+    rows = []
+    for case in ("sample-full-register", "sample-partial-register"):
+        for shots in module.DEFAULT_REQUIRED_SHOTS:
+            row_key = (case, 20, shots)
+            if row_key == omit_row:
+                continue
+            elapsed = 0.03
+            if shots == max(module.DEFAULT_REQUIRED_SHOTS):
+                elapsed = 0.04
+            if elapsed_override and row_key in elapsed_override:
+                elapsed = elapsed_override[row_key]
+            rows.append({
+                "target": "mklq-metal",
+                "case": case,
+                "qubits": 20,
+                "shots": shots,
+                "status": "ok",
+                "elapsed_seconds_median": elapsed,
+                "estimated_state_bytes": 16777216,
+            })
+    return {
+        "schema_version": "mklq-benchmark-summary-v1",
+        "summary_id": module.DEFAULT_SUMMARY_ID,
+        "evidence_kind": "local_tuning_evidence",
+        "config": {
+            "targets": ["qpp-cpu", "mklq-cpu", "mklq-metal"],
+            "cases": ["sample-full-register", "sample-partial-register"],
+            "qubits": [20],
+            "shot_counts": list(module.DEFAULT_REQUIRED_SHOTS),
+        },
+        "raw_results": [{
+            "path": (
+                "benchmarks/mklq/results/"
+                "local-counts-only-sampling-shot-scaling-q20-2026-06-19.json"
+            ),
+            "sha256": "a" * 64,
+            "status_rows": {
+                "ok": 24,
+            },
+            "tracked": False,
+        }],
+        "rows": rows,
+        "interpretation": {
+            "do_not_treat_as_clean_release_provenance": True,
+            "raw_json_files_are_ignored": True,
+            "performance_claim_scope":
+                "local Apple M5 tuning evidence only; standard sample "
+                "counts-only rows are not release or cross-machine certification",
+            "metal_path_scope": metal_scope or (
+                "mixed-path Metal probability fill with host-side sample "
+                "draw/count accumulation"),
+            "sequential_data_accessor_not_invoked": True,
+            "standard_sample_counts_only_path": True,
+        },
+    }
+
+
+def test_mklq_metal_sampling_boundary_guard_accepts_current_summary():
+    module = _load_metal_sampling_boundary_evidence_module()
+    repo_root = Path(__file__).resolve().parents[3]
+
+    report = module.check_reports(
+        reports=repo_root / "benchmarks" / "mklq" / "reports",
+        pattern="*.summary.json",
+        summary_ids={module.DEFAULT_SUMMARY_ID},
+    )
+
+    assert report["summary"]["status"] == "passed"
+    assert report["summary"]["checked"] == 1
+    summary = report["summaries"][0]
+    assert summary["checked_row_count"] == len(module.DEFAULT_REQUIRED_ROWS)
+    assert summary["max_high_to_low_ratio"] <= module.DEFAULT_MAX_HIGH_TO_LOW_RATIO
+
+
+def test_mklq_metal_sampling_boundary_guard_rejects_missing_required_row():
+    module = _load_metal_sampling_boundary_evidence_module()
+
+    result = module.check_summary(
+        _metal_sampling_boundary_summary_fixture(
+            module, omit_row=("sample-partial-register", 20, 65536)),
+        required_rows=module.DEFAULT_REQUIRED_ROWS,
+        max_high_to_low_ratio=module.DEFAULT_MAX_HIGH_TO_LOW_RATIO,
+    )
+
+    assert result["status"] == "failed"
+    assert any("sample-partial-register q20 shots=65536" in failure
+               for failure in result["failures"])
+
+
+def test_mklq_metal_sampling_boundary_guard_rejects_shot_scaling_blowup():
+    module = _load_metal_sampling_boundary_evidence_module()
+
+    result = module.check_summary(
+        _metal_sampling_boundary_summary_fixture(
+            module,
+            elapsed_override={
+                ("sample-full-register", 20, 256): 0.01,
+                ("sample-full-register", 20, 65536): 0.20,
+            },
+        ),
+        required_rows=module.DEFAULT_REQUIRED_ROWS,
+        max_high_to_low_ratio=module.DEFAULT_MAX_HIGH_TO_LOW_RATIO,
+    )
+
+    assert result["status"] == "failed"
+    assert any("high/low shot elapsed ratio" in failure
+               for failure in result["failures"])
+
+
+def test_mklq_metal_sampling_boundary_guard_rejects_gpu_sampler_claim():
+    module = _load_metal_sampling_boundary_evidence_module()
+
+    result = module.check_summary(
+        _metal_sampling_boundary_summary_fixture(
+            module,
+            metal_scope=(
+                "full Metal RNG with GPU-side count accumulation and no "
+                "host-side sampling boundary"),
+        ),
+        required_rows=module.DEFAULT_REQUIRED_ROWS,
+        max_high_to_low_ratio=module.DEFAULT_MAX_HIGH_TO_LOW_RATIO,
+    )
+
+    assert result["status"] == "failed"
+    failures = "\n".join(result["failures"])
+    assert "forbidden sampling claim" in failures
 
 
 def test_mklq_public_claim_guard_accepts_negated_boundary_text():
@@ -3678,6 +3838,32 @@ def test_mklq_public_healthcheck_runs_metal_evidence_guard(monkeypatch,
     assert "--reports" in calls[0]
 
 
+def test_mklq_public_healthcheck_runs_metal_sampling_boundary_guard(
+        monkeypatch, tmp_path):
+    module = _load_public_healthcheck_module()
+    config = _public_healthcheck_config(module, tmp_path)
+    calls = []
+
+    def fake_run_command(config, command, env_overlay=None):
+        calls.append(command)
+        return {
+            "returncode": 0,
+            "command": command,
+            "stdout_tail": "{}",
+            "stderr_tail": "",
+        }
+
+    monkeypatch.setattr(module, "run_command", fake_run_command)
+
+    result = module.run_metal_sampling_boundary_evidence_check(config)
+
+    assert result["status"] == "passed"
+    assert calls[0][1].endswith(
+        "benchmarks/mklq/check_metal_sampling_boundary_evidence.py")
+    assert calls[0][calls[0].index("--summary-id") + 1] == (
+        module.METAL_SAMPLING_BOUNDARY_SUMMARY_ID)
+
+
 def test_mklq_public_healthcheck_plan_includes_metal_evidence_guard(tmp_path):
     module = _load_public_healthcheck_module()
     config = _public_healthcheck_config(module,
@@ -3690,6 +3876,8 @@ def test_mklq_public_healthcheck_plan_includes_metal_evidence_guard(tmp_path):
     assert steps.index("performance_evidence_guard") < steps.index(
         "metal_evidence_guard")
     assert steps.index("metal_evidence_guard") < steps.index(
+        "metal_sampling_boundary_evidence_guard")
+    assert steps.index("metal_sampling_boundary_evidence_guard") < steps.index(
         "cpu_gate_counter_probe_parse")
     assert steps.index("cpu_gate_counter_probe_parse") < steps.index(
         "cpu_gate_counter_docs")
@@ -3729,6 +3917,13 @@ def test_mklq_public_healthcheck_compiles_sampling_profile_guard():
     module = _load_public_healthcheck_module()
 
     assert "benchmarks/mklq/check_sampling_profile_evidence.py" in (
+        module.PY_COMPILE_FILES)
+
+
+def test_mklq_public_healthcheck_compiles_metal_sampling_boundary_guard():
+    module = _load_public_healthcheck_module()
+
+    assert "benchmarks/mklq/check_metal_sampling_boundary_evidence.py" in (
         module.PY_COMPILE_FILES)
 
 
@@ -4728,6 +4923,7 @@ def _write_release_checklist_audit_fixture(
             "benchmarks/mklq/summarize_cpu_gate_counters.py",
             "benchmarks/mklq/check_performance_evidence.py",
             "benchmarks/mklq/check_metal_evidence.py",
+            "benchmarks/mklq/check_metal_sampling_boundary_evidence.py",
             "benchmarks/mklq/check_public_claims.py",
             "benchmarks/mklq/check_sampling_profile_evidence.py",
             "benchmarks/mklq/check_cpu_gate_counter_docs.py",
@@ -4832,6 +5028,7 @@ python3 benchmarks/mklq/run_self_hosted_ci_audit.py --check-runners --repo wuls9
 python3 benchmarks/mklq/repair_macos_install_signatures.py
 python3 benchmarks/mklq/check_performance_evidence.py
 python3 benchmarks/mklq/check_metal_evidence.py
+python3 benchmarks/mklq/check_metal_sampling_boundary_evidence.py
 python3 benchmarks/mklq/check_public_claims.py
 python3 benchmarks/mklq/check_sampling_profile_evidence.py
 python3 benchmarks/mklq/check_cpu_gate_counter_docs.py
@@ -4882,6 +5079,7 @@ git ls-files .github/workflows | sort
 python3 benchmarks/mklq/check_public_claims.py
 python3 benchmarks/mklq/check_performance_evidence.py
 python3 benchmarks/mklq/check_metal_evidence.py
+python3 benchmarks/mklq/check_metal_sampling_boundary_evidence.py
 python3 benchmarks/mklq/check_sampling_profile_evidence.py
 python3 benchmarks/mklq/check_cpu_gate_counter_docs.py
 python3 benchmarks/mklq/check_cpu_sampling_counter_docs.py

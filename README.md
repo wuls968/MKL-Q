@@ -169,6 +169,13 @@ not-release-ready evidence boundary:
 python3 benchmarks/mklq/check_metal_evidence.py
 ```
 
+To verify that tracked experimental Metal stochastic sampling evidence keeps
+sample draw/count accumulation on the host boundary:
+
+```bash
+python3 benchmarks/mklq/check_metal_sampling_boundary_evidence.py
+```
+
 For a fast local public-maintenance gate, run:
 
 ```bash

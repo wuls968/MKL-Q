@@ -50,6 +50,9 @@
       clean CPU summaries or CPU performance wording changed.
 - [ ] `python3 benchmarks/mklq/check_metal_evidence.py` passes if tracked
       `mklq-metal` summaries or experimental Metal wording changed.
+- [ ] `python3 benchmarks/mklq/check_metal_sampling_boundary_evidence.py`
+      passes if tracked `mklq-metal` stochastic sampling summaries or
+      host-side sampler wording changed.
 
 ## Public Hygiene
 

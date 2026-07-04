@@ -76,6 +76,11 @@ host-side work.
 Stochastic sample draw and count accumulation therefore remain host-side for
 the current `mklq-metal` boundary unless a future counter test and benchmark
 gate explicitly prove an on-device sampler.
+The tracked q20 shot-scaling summary for stochastic full-register and
+partial-register sampling is checked by
+`check_metal_sampling_boundary_evidence.py`; that static guard verifies the
+current host-side draw/count wording and rejects Metal RNG, GPU sampler, or
+GPU-side count accumulation claims.
 
 Selected build-tree fixtures also assert positive native test-accessor timing
 accumulators for probability fill, host draw/count, and expectation-reduction
@@ -109,6 +114,7 @@ python3 benchmarks/mklq/summarize_metal_runtime_counters.py \
   --reports benchmarks/mklq/reports \
   --output docs/mklq/metal-runtime-counters.md
 python3 benchmarks/mklq/check_metal_runtime_counter_docs.py
+python3 benchmarks/mklq/check_metal_sampling_boundary_evidence.py
 python3 benchmarks/mklq/run_correctness_gate.py \
   --install-prefix "${HOME}/.cudaq-mklq" \
   --build-dir build-python
