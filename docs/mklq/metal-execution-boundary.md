@@ -76,8 +76,8 @@ host-side work.
 Stochastic sample draw and count accumulation therefore remain host-side for
 the current `mklq-metal` boundary unless a future counter test and benchmark
 gate explicitly prove an on-device sampler.
-The tracked q20 shot-scaling summary for stochastic full-register and
-partial-register sampling is checked by
+The tracked q20 and q22 shot-scaling summaries for stochastic full-register and
+partial-register sampling are checked by
 `check_metal_sampling_boundary_evidence.py`; that static guard verifies the
 current host-side draw/count wording and rejects Metal RNG, GPU sampler, or
 GPU-side count accumulation claims.
