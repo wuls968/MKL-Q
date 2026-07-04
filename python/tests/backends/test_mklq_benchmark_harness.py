@@ -1883,13 +1883,14 @@ def test_mklq_sampling_profile_evidence_guard_rejects_missing_row():
 
 def _metal_sampling_boundary_summary_fixture(module,
                                              *,
+                                             qubits=20,
                                              omit_row=None,
                                              elapsed_override=None,
                                              metal_scope=None):
     rows = []
     for case in ("sample-full-register", "sample-partial-register"):
         for shots in module.DEFAULT_REQUIRED_SHOTS:
-            row_key = (case, 20, shots)
+            row_key = (case, qubits, shots)
             if row_key == omit_row:
                 continue
             elapsed = 0.03
@@ -1900,7 +1901,7 @@ def _metal_sampling_boundary_summary_fixture(module,
             rows.append({
                 "target": "mklq-metal",
                 "case": case,
-                "qubits": 20,
+                "qubits": qubits,
                 "shots": shots,
                 "status": "ok",
                 "elapsed_seconds_median": elapsed,
@@ -1913,7 +1914,7 @@ def _metal_sampling_boundary_summary_fixture(module,
         "config": {
             "targets": ["qpp-cpu", "mklq-cpu", "mklq-metal"],
             "cases": ["sample-full-register", "sample-partial-register"],
-            "qubits": [20],
+            "qubits": [qubits],
             "shot_counts": list(module.DEFAULT_REQUIRED_SHOTS),
         },
         "raw_results": [{
@@ -1950,14 +1951,33 @@ def test_mklq_metal_sampling_boundary_guard_accepts_current_summary():
     report = module.check_reports(
         reports=repo_root / "benchmarks" / "mklq" / "reports",
         pattern="*.summary.json",
-        summary_ids={module.DEFAULT_SUMMARY_ID},
+        summary_ids=set(module.DEFAULT_SUMMARY_IDS),
     )
 
     assert report["summary"]["status"] == "passed"
-    assert report["summary"]["checked"] == 1
-    summary = report["summaries"][0]
-    assert summary["checked_row_count"] == len(module.DEFAULT_REQUIRED_ROWS)
-    assert summary["max_high_to_low_ratio"] <= module.DEFAULT_MAX_HIGH_TO_LOW_RATIO
+    assert report["summary"]["checked"] == len(module.DEFAULT_SUMMARY_IDS)
+    checked_qubits = {
+        summary["required_qubits"]
+        for summary in report["summaries"]
+    }
+    assert checked_qubits == set(module.DEFAULT_REQUIRED_QUBITS)
+    for summary in report["summaries"]:
+        assert summary["checked_row_count"] == len(module.DEFAULT_REQUIRED_ROWS)
+        assert summary["max_high_to_low_ratio"] <= (
+            module.DEFAULT_MAX_HIGH_TO_LOW_RATIO)
+
+
+def test_mklq_metal_sampling_boundary_guard_accepts_q22_fixture():
+    module = _load_metal_sampling_boundary_evidence_module()
+
+    result = module.check_summary(
+        _metal_sampling_boundary_summary_fixture(module, qubits=22),
+        required_rows=module.required_rows_for_qubits(22),
+        max_high_to_low_ratio=module.DEFAULT_MAX_HIGH_TO_LOW_RATIO,
+    )
+
+    assert result["status"] == "passed"
+    assert result["required_qubits"] == 22
 
 
 def test_mklq_metal_sampling_boundary_guard_rejects_missing_required_row():
@@ -3860,8 +3880,12 @@ def test_mklq_public_healthcheck_runs_metal_sampling_boundary_guard(
     assert result["status"] == "passed"
     assert calls[0][1].endswith(
         "benchmarks/mklq/check_metal_sampling_boundary_evidence.py")
-    assert calls[0][calls[0].index("--summary-id") + 1] == (
-        module.METAL_SAMPLING_BOUNDARY_SUMMARY_ID)
+    summary_ids = [
+        calls[0][index + 1]
+        for index, token in enumerate(calls[0])
+        if token == "--summary-id"
+    ]
+    assert summary_ids == list(module.METAL_SAMPLING_BOUNDARY_SUMMARY_IDS)
 
 
 def test_mklq_public_healthcheck_plan_includes_metal_evidence_guard(tmp_path):

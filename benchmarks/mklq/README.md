@@ -502,12 +502,12 @@ draw/count placement:
 python3 benchmarks/mklq/check_metal_sampling_boundary_evidence.py
 ```
 
-The guard does not run benchmarks. It checks the tracked q20 counts-only shot
-scaling summary for full-register and partial-register `mklq-metal` sampling
-rows at 256, 1024, 8192, and 65536 shots, verifies ignored raw payload
-boundaries, requires explicit host-side draw/count wording, and rejects Metal
-RNG, GPU sampler, GPU-side count accumulation, release-ready, or all-Metal
-claims.
+The guard does not run benchmarks. It checks the tracked q20 and q22
+counts-only shot-scaling summaries for full-register and partial-register
+`mklq-metal` sampling rows at 256, 1024, 8192, and 65536 shots, verifies
+ignored raw payload boundaries, requires explicit host-side draw/count wording,
+and rejects Metal RNG, GPU sampler, GPU-side count accumulation, release-ready,
+or all-Metal claims.
 
 ## Metal Runtime Counter Probe
 
@@ -847,9 +847,24 @@ The generated public index is tracked at
   0.01916737499414012 s for `sample-full-register` and 0.016119854502903763 s
   for `sample-partial-register`; `mklq-metal` median elapsed time was
   0.04015256251295796 s and 0.03547552099917084 s for the same cases.
-  `check_metal_sampling_boundary_evidence.py` treats this summary as the
-  tracked static guard for the current stochastic `mklq-metal` host-side
+  `check_metal_sampling_boundary_evidence.py` treats this summary as one
+  tracked static guard input for the current stochastic `mklq-metal` host-side
   sample draw/count boundary.
+- `reports/local-metal-sampling-boundary-q22-2026-07-04.summary.json`:
+  tracked sanitized summary for the ignored raw result
+  `results/local-metal-sampling-boundary-q22-2026-07-04.json`
+  (`sha256: c351ec6c2b3e2b32344d63a6386f222a83270a36cfa332b3ece2ef4d12d828c2`).
+  Isolated `mklq-metal` rows for `sample-full-register` and
+  `sample-partial-register` at q22 with `OMP_NUM_THREADS=10`,
+  `OMP_PROC_BIND=close`, `OMP_DYNAMIC=false`, `VECLIB_MAXIMUM_THREADS=1`,
+  shot counts `256,1024,8192,65536`, `repeats=2`, `warmups=1`, and
+  `layers=8` on Apple M5, 10 logical cores, 16 GB RAM, macOS 26.5.1.
+  All 8 rows completed with `status == "ok"`. Treat this as local tuning
+  evidence for the standard non-explicit `cudaq.sample` counts-only backend
+  path, not as clean-release provenance, cross-machine certification, or proof
+  of an on-device sampler. The q22 high-shot versus low-shot median elapsed
+  ratios were 1.588x for full-register sampling and 1.113x for
+  partial-register sampling, under the current static guard threshold of 2.0.
 - `reports/local-y-cy-fastpath-isolated-q20-2026-06-19.summary.json`:
   tracked sanitized summary for the ignored raw result
   `results/local-y-cy-fastpath-isolated-q20-2026-06-19.json`

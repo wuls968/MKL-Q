@@ -130,8 +130,10 @@ SAMPLING_SCALING_SUMMARY_ID = (
     "local-sampling-scaling-cpu-q18-q22-2026-06-23")
 SAMPLING_PROFILE_SUMMARY_ID = (
     "local-sampling-profile-breakdown-cpu-q20-q22-2026-06-23")
-METAL_SAMPLING_BOUNDARY_SUMMARY_ID = (
-    "local-counts-only-sampling-shot-scaling-q20-2026-06-19")
+METAL_SAMPLING_BOUNDARY_SUMMARY_IDS = (
+    "local-counts-only-sampling-shot-scaling-q20-2026-06-19",
+    "local-metal-sampling-boundary-q22-2026-07-04",
+)
 CLEAN_CPU_SUMMARY_ID = "local-clean-cpu-q20-2026-07-03-two-three"
 SAMPLING_SCALING_REQUIRED_RATIOS = (
     "sample_full_register_q18_1024_shots",
@@ -821,9 +823,9 @@ def run_metal_sampling_boundary_evidence_check(
         "benchmarks/mklq/reports",
         "--pattern",
         "*.summary.json",
-        "--summary-id",
-        METAL_SAMPLING_BOUNDARY_SUMMARY_ID,
     ]
+    for summary_id in METAL_SAMPLING_BOUNDARY_SUMMARY_IDS:
+        command.extend(["--summary-id", summary_id])
     result = run_command(config, command)
     if result["returncode"] != 0:
         return failed("Metal sampling boundary evidence guard failed", result)

@@ -20,18 +20,27 @@ SUMMARY_SCHEMA_VERSION = "mklq-benchmark-summary-v1"
 DEFAULT_EVIDENCE_KIND = "local_tuning_evidence"
 DEFAULT_REPORT_PATTERN = "*.summary.json"
 DEFAULT_SUMMARY_ID = "local-counts-only-sampling-shot-scaling-q20-2026-06-19"
+Q22_SUMMARY_ID = "local-metal-sampling-boundary-q22-2026-07-04"
+DEFAULT_SUMMARY_IDS = (DEFAULT_SUMMARY_ID, Q22_SUMMARY_ID)
 METAL_TARGET = "mklq-metal"
+DEFAULT_REQUIRED_QUBITS = (20, 22)
 DEFAULT_REQUIRED_SHOTS = (256, 1024, 8192, 65536)
 DEFAULT_MAX_HIGH_TO_LOW_RATIO = 2.0
-DEFAULT_REQUIRED_ROWS = tuple(
-    {
-        "target": METAL_TARGET,
-        "case": case,
-        "qubits": 20,
-        "shots": shots,
-    }
-    for case in ("sample-full-register", "sample-partial-register")
-    for shots in DEFAULT_REQUIRED_SHOTS)
+
+
+def required_rows_for_qubits(qubits: int) -> tuple[dict[str, Any], ...]:
+    return tuple(
+        {
+            "target": METAL_TARGET,
+            "case": case,
+            "qubits": qubits,
+            "shots": shots,
+        }
+        for case in ("sample-full-register", "sample-partial-register")
+        for shots in DEFAULT_REQUIRED_SHOTS)
+
+
+DEFAULT_REQUIRED_ROWS = required_rows_for_qubits(20)
 FORBIDDEN_SAMPLING_CLAIMS = (
     "metal rng",
     "gpu rng",
@@ -128,6 +137,19 @@ def target_values(summary: dict[str, Any]) -> set[str]:
     return {str(target) for target in targets}
 
 
+def single_config_qubits(summary: dict[str, Any]) -> int | None:
+    config = summary.get("config")
+    if not isinstance(config, dict):
+        return None
+    qubits = config.get("qubits")
+    if not isinstance(qubits, list) or len(qubits) != 1:
+        return None
+    value = qubits[0]
+    if isinstance(value, bool) or not isinstance(value, int):
+        return None
+    return value
+
+
 def check_raw_results(raw_results: Any) -> list[str]:
     failures: list[str] = []
     if not isinstance(raw_results, list) or not raw_results:
@@ -194,6 +216,8 @@ def check_summary(summary: dict[str, Any], *,
                   required_rows: tuple[dict[str, Any], ...],
                   max_high_to_low_ratio: float) -> dict[str, Any]:
     failures: list[str] = []
+    required_qubits = (required_rows[0].get("qubits")
+                       if required_rows else None)
 
     if summary.get("schema_version") != SUMMARY_SCHEMA_VERSION:
         failures.append("unexpected schema_version")
@@ -260,6 +284,7 @@ def check_summary(summary: dict[str, Any], *,
     return {
         "status": "passed" if not failures else "failed",
         "summary_id": summary.get("summary_id"),
+        "required_qubits": required_qubits,
         "checked_row_count": checked_row_count,
         "required_row_count": len(required_rows),
         "max_high_to_low_ratio": max_ratio,
@@ -278,15 +303,33 @@ def check_reports(reports: Path, pattern: str,
     for path in paths:
         try:
             payload = load_json(path)
-            result = check_summary(
-                payload,
-                required_rows=DEFAULT_REQUIRED_ROWS,
-                max_high_to_low_ratio=max_high_to_low_ratio,
-            )
+            qubits = single_config_qubits(payload)
+            if qubits not in DEFAULT_REQUIRED_QUBITS:
+                result = {
+                    "status": "failed",
+                    "summary_id": payload.get("summary_id"),
+                    "required_qubits": qubits,
+                    "checked_row_count": 0,
+                    "required_row_count": 0,
+                    "max_high_to_low_ratio": None,
+                    "high_to_low_ratios": {},
+                    "failures": [
+                        "summary config.qubits must contain exactly one "
+                        f"supported value from {DEFAULT_REQUIRED_QUBITS}"
+                    ],
+                }
+            else:
+                required_rows = required_rows_for_qubits(qubits)
+                result = check_summary(
+                    payload,
+                    required_rows=required_rows,
+                    max_high_to_low_ratio=max_high_to_low_ratio,
+                )
         except (OSError, json.JSONDecodeError, ValueError) as exc:
             result = {
                 "status": "failed",
                 "summary_id": None,
+                "required_qubits": None,
                 "checked_row_count": 0,
                 "required_row_count": len(DEFAULT_REQUIRED_ROWS),
                 "max_high_to_low_ratio": None,
@@ -297,6 +340,7 @@ def check_reports(reports: Path, pattern: str,
             "path": command_path(root, path),
             "summary_id": result.get("summary_id"),
             "status": result["status"],
+            "required_qubits": result["required_qubits"],
             "checked_row_count": result["checked_row_count"],
             "required_row_count": result["required_row_count"],
             "max_high_to_low_ratio": result["max_high_to_low_ratio"],
@@ -311,7 +355,8 @@ def check_reports(reports: Path, pattern: str,
             "reports": command_path(root, reports),
             "pattern": pattern,
             "summary_ids": sorted(summary_ids),
-            "required_rows": list(DEFAULT_REQUIRED_ROWS),
+            "required_qubits": list(DEFAULT_REQUIRED_QUBITS),
+            "required_shots": list(DEFAULT_REQUIRED_SHOTS),
             "max_high_to_low_ratio": max_high_to_low_ratio,
         },
         "summaries": summaries,
@@ -343,7 +388,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
-    summary_ids = set(args.summary_id or [DEFAULT_SUMMARY_ID])
+    summary_ids = set(args.summary_id or DEFAULT_SUMMARY_IDS)
     result = check_reports(args.reports, args.pattern, summary_ids,
                            args.max_high_to_low_ratio)
     print(json.dumps(result, indent=2, sort_keys=True))
