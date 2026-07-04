@@ -529,6 +529,9 @@ or failing. The tracked `.counter.json` report is bounded evidence: it records
 keeps `release_signoff` and `all_metal_execution_proof` false. It is not a
 benchmark result and it does not prove every `mklq-metal` operation stays on
 Metal.
+Current sampling counter coverage includes selected full-register and
+partial-register sequential/counts-only host draw telemetry after resident
+Metal probability work, plus deterministic one-outcome draw-loop bypasses.
 
 ## Metal Runtime Counter Summary
 

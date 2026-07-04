@@ -2784,6 +2784,8 @@ def test_mklq_metal_runtime_counter_probe_tracks_runtime_counter_surface():
         "SimulatorSamplesRequestedOrderPartialRegisterThroughMarginalProbability",
         "SimulatorSamplesResidentPartialRegisterWithHostSequentialDrawTelemetry",
         "SimulatorSamplesResidentPartialRegisterWithHostCountsOnlyDrawTelemetry",
+        "SimulatorSamplesResidentFullRegisterWithHostSequentialDrawTelemetry",
+        "SimulatorSamplesResidentFullRegisterWithHostCountsOnlyDrawTelemetry",
         "SimulatorSamplesResidentDeterministicPartialRegisterCountsOnlyWithoutDrawLoop",
         "SimulatorSamplesResidentDeterministicPartialRegisterSequentialWithoutDrawLoop",
         "SimulatorSamplesResidentPartialRegisterReportsNativePhaseTiming",
@@ -2812,7 +2814,7 @@ def test_mklq_metal_runtime_counter_probe_tracks_runtime_counter_surface():
 
     assert suffixes == expected_suffixes
     assert suffixes.isdisjoint(metadata_only_suffixes)
-    assert len(module.COUNTER_TEST_SUFFIXES) == 45
+    assert len(module.COUNTER_TEST_SUFFIXES) == 47
 
 
 def test_mklq_metal_runtime_counter_probe_builds_bounded_report(monkeypatch,

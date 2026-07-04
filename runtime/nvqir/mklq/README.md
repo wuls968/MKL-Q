@@ -173,7 +173,9 @@ target-marker output.
   computes resident full-register probabilities once and folds them to
   marginal outcome probabilities on the host without first downloading the
   state vector. Stochastic sample draw/count accumulation remains host-side;
-  deterministic one-outcome sequential and counts-only distributions can
+  build-tree counter tests cover both full-register and partial-register
+  sequential/counts-only host draw telemetry after resident probability work.
+  Deterministic one-outcome sequential and counts-only distributions can
   bypass that draw loop after resident probability work. The current local
   shot-scaling gate
   does not justify general GPU-side count accumulation yet.

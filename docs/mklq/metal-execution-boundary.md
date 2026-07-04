@@ -71,8 +71,8 @@ Probability fills can be resident Metal work, but public sampling evidence does
 not claim an end-to-end on-device sampler. Current counter evidence tracks
 deterministic sequential and counts-only shortcuts that materialize a single
 non-zero outcome directly after resident probability work, and it separately
-tracks selected non-deterministic sequential and counts-only draw batches as
-host-side work.
+tracks selected non-deterministic full-register and partial-register sequential
+and counts-only draw batches as host-side work.
 Stochastic sample draw and count accumulation therefore remain host-side for
 the current `mklq-metal` boundary unless a future counter test and benchmark
 gate explicitly prove an on-device sampler.
