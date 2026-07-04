@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <array>
 #include <bit>
+#include <chrono>
 #include <cmath>
 #include <complex>
 #include <cstddef>
@@ -236,8 +237,25 @@ protected:
   mutable std::size_t countsOnlySampleDrawBatches = 0;
   mutable std::size_t sequentialSampleDrawBatches = 0;
   mutable std::size_t sampleExpectationReductions = 0;
+  mutable double sampleProbabilityFillSeconds = 0.0;
+  mutable double sampleDrawAndCountSeconds = 0.0;
+  mutable double sampleExpectationReductionSeconds = 0.0;
   mutable std::size_t metalCpuFallbackApplications = 0;
   mutable std::size_t threeQubitRowSparseApplications = 0;
+
+  struct ScopedTestTimer {
+    double &accumulator;
+    std::chrono::steady_clock::time_point start =
+        std::chrono::steady_clock::now();
+
+    explicit ScopedTestTimer(double &accumulator) : accumulator(accumulator) {}
+
+    ~ScopedTestTimer() {
+      accumulator += std::chrono::duration<double>(
+                         std::chrono::steady_clock::now() - start)
+                         .count();
+    }
+  };
 #endif
 
 #if defined(MKLQ_ENABLE_METAL_RUNTIME)
@@ -1561,6 +1579,7 @@ protected:
       cudaq::ExecutionResult &counts, const std::vector<double> &probabilities,
       int shots, std::size_t bitCount) {
 #if defined(MKLQ_ENABLE_TEST_ACCESSORS)
+    ScopedTestTimer sampleDrawTimer(sampleDrawAndCountSeconds);
     ++countsOnlySampleDrawBatches;
 #endif
     if (probabilities.size() <= denseDrawCountOutcomeLimit) {
@@ -1578,6 +1597,7 @@ protected:
   void setExpectationFromSampleCounts(cudaq::ExecutionResult &counts,
                                       int shots) const {
 #if defined(MKLQ_ENABLE_TEST_ACCESSORS)
+    ScopedTestTimer sampleExpectationTimer(sampleExpectationReductionSeconds);
     ++sampleExpectationReductions;
 #endif
     double expectation = 0.0;
@@ -1789,7 +1809,12 @@ protected:
 #endif
 
       std::vector<double> probabilities(state.size(), 0.0);
-      fillFullRegisterProbabilities(probabilities);
+      {
+#if defined(MKLQ_ENABLE_TEST_ACCESSORS)
+        ScopedTestTimer probabilityFillTimer(sampleProbabilityFillSeconds);
+#endif
+        fillFullRegisterProbabilities(probabilities);
+      }
       validateProbabilityWeights(probabilities, "full-register sampler");
       if (!includeSequentialData) {
         drawAndAppendSampleOutcomeCounts(counts, probabilities, shots,
@@ -1798,15 +1823,20 @@ protected:
         return counts;
       }
 
-      std::discrete_distribution<std::size_t> distribution(
-          probabilities.begin(), probabilities.end());
+      {
 #if defined(MKLQ_ENABLE_TEST_ACCESSORS)
-      ++sequentialSampleDrawBatches;
+        ScopedTestTimer sampleDrawTimer(sampleDrawAndCountSeconds);
 #endif
-      for (int shot = 0; shot < shots; ++shot) {
-        const auto outcome = distribution(randomEngine);
-        appendSampleOutcome(counts, outcome, qubits.size(),
-                            includeSequentialData);
+        std::discrete_distribution<std::size_t> distribution(
+            probabilities.begin(), probabilities.end());
+#if defined(MKLQ_ENABLE_TEST_ACCESSORS)
+        ++sequentialSampleDrawBatches;
+#endif
+        for (int shot = 0; shot < shots; ++shot) {
+          const auto outcome = distribution(randomEngine);
+          appendSampleOutcome(counts, outcome, qubits.size(),
+                              includeSequentialData);
+        }
       }
 
       setExpectationFromSampleCounts(counts, shots);
@@ -1815,7 +1845,12 @@ protected:
 
     const auto outcomeCount = 1ULL << qubits.size();
     std::vector<double> probabilities(outcomeCount, 0.0);
-    fillMarginalProbabilities(probabilities, qubits);
+    {
+#if defined(MKLQ_ENABLE_TEST_ACCESSORS)
+      ScopedTestTimer probabilityFillTimer(sampleProbabilityFillSeconds);
+#endif
+      fillMarginalProbabilities(probabilities, qubits);
+    }
     validateProbabilityWeights(probabilities, "marginal sampler");
 
     cudaq::ExecutionResult counts;
@@ -1826,15 +1861,20 @@ protected:
       return counts;
     }
 
-    std::discrete_distribution<std::size_t> distribution(probabilities.begin(),
-                                                         probabilities.end());
+    {
 #if defined(MKLQ_ENABLE_TEST_ACCESSORS)
-    ++sequentialSampleDrawBatches;
+      ScopedTestTimer sampleDrawTimer(sampleDrawAndCountSeconds);
 #endif
-    for (int shot = 0; shot < shots; ++shot) {
-      const auto outcome = distribution(randomEngine);
-      appendSampleOutcome(counts, outcome, qubits.size(),
-                          includeSequentialData);
+      std::discrete_distribution<std::size_t> distribution(
+          probabilities.begin(), probabilities.end());
+#if defined(MKLQ_ENABLE_TEST_ACCESSORS)
+      ++sequentialSampleDrawBatches;
+#endif
+      for (int shot = 0; shot < shots; ++shot) {
+        const auto outcome = distribution(randomEngine);
+        appendSampleOutcome(counts, outcome, qubits.size(),
+                            includeSequentialData);
+      }
     }
 
     setExpectationFromSampleCounts(counts, shots);
