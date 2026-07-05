@@ -4,7 +4,7 @@ This page records the public repository readiness snapshot for MKL-Q. It is a
 source-only repository audit, not a release certification, package
 certification, Apple Silicon CI replacement, or performance certification.
 
-Snapshot date: 2026-07-03.
+Snapshot date: 2026-07-05.
 
 ## Scope
 
@@ -131,12 +131,16 @@ successful `MKL-Q public hygiene` run, the latest pushed commit has a
 successful `MKL-Q Apple Silicon correctness` run, and the public
 claim-boundary guard passes.
 
-The pushed readiness audit was revalidated on 2026-07-02 after the protected
-`main` branch completed the `MKL-Q public hygiene` and `MKL-Q Apple Silicon
-correctness` guard workflows successfully for the pushed head. Use the
-readiness commands below for exact latest commit and workflow run IDs; this
-tracked page records the stable source-only readiness boundary, not a moving
-run log.
+The pushed readiness audit was revalidated on 2026-07-05 against the
+then-current protected `main` branch after the `MKL-Q public hygiene` and
+`MKL-Q Apple Silicon correctness` guard workflows completed successfully for
+the pushed head. The ignored local readiness payload
+`benchmarks/mklq/results/public-readiness-audit-2026-07-05.json` recorded
+13/13 checks passed, including repository identity, issue templates, labels,
+branch protection, latest pushed workflow status, public claim boundaries, and
+the source-only no-tags/no-releases boundary. Use the readiness commands below
+for exact latest commit and workflow run IDs; this tracked page records the
+stable source-only readiness boundary, not a moving run log.
 
 ## Branch Protection
 
@@ -173,6 +177,8 @@ completed local gates, and focused CRZ distance-sweep evidence retained from
 - full public healthcheck: passed with 35/35 steps passed; this includes the
   install-prefix build, local macOS signature repair for 60 loadables,
   correctness gate, benchmark harness tests, and public example smoke gate;
+- public readiness audit: passed with 13/13 checks passed against the
+  then-current protected `main` branch;
 - one-command correctness gate: passed with 4/4 steps passed, including
   `metal_runtime_counter_probe`;
 - public example smoke gate: passed with 30/30 steps passed;
@@ -188,7 +194,7 @@ completed local gates, and focused CRZ distance-sweep evidence retained from
 - standalone install-prefix Python subset: `37 passed`;
 - `python_target_smoke`: `70 passed`;
 - `nvqpp_smoke`: `2 passed`;
-- current full `target_config_ctest`: `102/102 passed`, including the
+- current build-tree `ctest` subset: `104/104 passed`, including the
   hardware-efficient ansatz composite CPU fast-path counter fixture and the
   resident full-register Metal sampling telemetry plus selected sample-count
   accumulation fixtures;
