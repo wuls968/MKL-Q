@@ -1985,6 +1985,19 @@ def test_mklq_metal_sampling_boundary_guard_accepts_q22_fixture():
     assert result["required_qubits"] == 22
 
 
+def test_mklq_metal_sampling_boundary_guard_accepts_q24_fixture():
+    module = _load_metal_sampling_boundary_evidence_module()
+
+    result = module.check_summary(
+        _metal_sampling_boundary_summary_fixture(module, qubits=24),
+        required_rows=module.required_rows_for_qubits(24),
+        max_high_to_low_ratio=module.DEFAULT_MAX_HIGH_TO_LOW_RATIO,
+    )
+
+    assert result["status"] == "passed"
+    assert result["required_qubits"] == 24
+
+
 def test_mklq_metal_sampling_boundary_guard_rejects_missing_required_row():
     module = _load_metal_sampling_boundary_evidence_module()
 
@@ -8659,6 +8672,47 @@ def test_mklq_benchmark_summary_records_metal_count_accumulation_q22():
     assert summary["raw_results"][0]["status_rows"] == {"ok": 8}
     assert summary["config"]["targets"] == ["mklq-metal"]
     assert summary["config"]["qubits"] == [22]
+
+
+def test_mklq_benchmark_summary_records_metal_partial_count_accumulation_q24(
+):
+    repo_root = Path(__file__).resolve().parents[3]
+    summary_path = (
+        repo_root / "benchmarks" / "mklq" / "reports" /
+        "local-metal-partial-count-accumulation-sampling-q24-2026-07-05.summary.json"
+    )
+
+    summary = json.loads(summary_path.read_text(encoding="utf-8"))
+
+    assert summary["schema_version"] == "mklq-benchmark-summary-v1"
+    assert summary["evidence_kind"] == "local_tuning_evidence"
+    assert summary["summary_id"] == (
+        "local-metal-partial-count-accumulation-sampling-q24-2026-07-05")
+    assert summary["raw_results"][0]["path"] == (
+        "benchmarks/mklq/results/"
+        "local-metal-partial-count-accumulation-sampling-q24-2026-07-05.json")
+    assert summary["raw_results"][0]["sha256"] == (
+        "be9062049a05c2bfcfa49e4071a58604d4cad3846588a3dcec42d248fe4e37dd")
+    assert summary["raw_results"][0]["status_rows"] == {"ok": 8}
+    assert summary["interpretation"]["clean_worktree"] is True
+    assert summary["git"]["dirty"] is False
+    assert summary["config"]["targets"] == ["mklq-metal"]
+    assert summary["config"]["qubits"] == [24]
+    assert summary["config"]["shot_counts"] == [256, 1024, 8192, 65536]
+
+    rows = {
+        (row["case"], row["shots"]): row
+        for row in summary["rows"]
+    }
+    assert len(rows) == 8
+    assert rows[("sample-partial-register", 65536)]["metal_path_label"] == (
+        "mklq_metal_partial_register_sample_count_accumulation")
+    assert "host-generated draws" in rows[
+        ("sample-partial-register", 65536)]["metal_path_scope"]
+    assert summary["interpretation"]["partial_register_counts_accumulation"] == (
+        "selected Metal sample-count accumulation after host-generated draws")
+    assert summary["interpretation"]["full_register_counts_accumulation"] == (
+        "selected Metal sample-count accumulation after host-generated draws")
 
 
 def test_mklq_benchmark_summary_records_y_cy_fastpath_evidence():

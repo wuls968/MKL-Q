@@ -170,9 +170,8 @@ python3 benchmarks/mklq/check_metal_evidence.py
 ```
 
 To verify the current tracked experimental Metal stochastic sampling summaries
-that document selected full-register Metal sample-count accumulation after
-host-generated draws while preserving the historical partial-register
-host-side boundary captured in those summaries:
+that document selected full-register and partial-register Metal sample-count
+accumulation after host-generated draws at q20/q22/q24:
 
 ```bash
 python3 benchmarks/mklq/check_metal_sampling_boundary_evidence.py
