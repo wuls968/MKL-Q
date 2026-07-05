@@ -42,6 +42,7 @@ jobs:
     timeout-minutes: 180
     env:
       MKLQ_BUILD_DIR: build-python
+      MKLQ_PYTHON: /opt/anaconda3/bin/python3
     steps:
       - name: Check out source
         uses: actions/checkout@v7
@@ -49,13 +50,49 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      - name: Select Python and install prefix
+        shell: bash
+        run: |
+          set -euo pipefail
+          python_bin="${MKLQ_PYTHON}"
+          if [ ! -x "${python_bin}" ]; then
+            python_bin="$(command -v python3)"
+          fi
+          install_prefix="${RUNNER_TEMP}/cudaq-mklq-install"
+          {
+            echo "MKLQ_EFFECTIVE_PYTHON=${python_bin}"
+            echo "MKLQ_INSTALL_PREFIX=${install_prefix}"
+          } >> "${GITHUB_ENV}"
+          "${python_bin}" --version
+
+      - name: Normalize Git remotes
+        shell: bash
+        run: |
+          set -euo pipefail
+          git remote set-url origin https://github.com/wuls968/MKL-Q.git
+          git remote remove upstream 2>/dev/null || true
+          git remote add upstream https://github.com/NVIDIA/cuda-quantum.git
+          git fetch --filter=blob:none origin main:refs/remotes/origin/main
+          git fetch --filter=blob:none upstream main:refs/remotes/upstream/main
+          if ! git rev-parse --verify main >/dev/null 2>&1; then
+            git branch main origin/main
+          elif [ "$(git rev-parse main)" != "$(git rev-parse origin/main)" ]; then
+            if [ "$(git branch --show-current)" = "main" ]; then
+              echo "Local main is checked out but does not match origin/main." >&2
+              exit 1
+            fi
+            git branch --force main origin/main
+          fi
+          git remote -v
+          git rev-parse main origin/main upstream/main
+
       - name: Show runner context
         shell: bash
         run: |
           set -euo pipefail
           uname -a
           sw_vers
-          python3 --version
+          "${MKLQ_EFFECTIVE_PYTHON}" --version
           cmake --version
           ninja --version
 
@@ -67,14 +104,27 @@ jobs:
           test "$(git rev-parse --is-shallow-repository)" = "false"
           git ls-files .github/workflows | sort
 
+      - name: Configure MKL-Q build
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -S . -B "${MKLQ_BUILD_DIR}" -G Ninja \
+            -D CUDAQ_ENABLE_MKLQ_BACKEND=ON \
+            -D CMAKE_INSTALL_PREFIX="${MKLQ_INSTALL_PREFIX}" \
+            -D Python_EXECUTABLE="${MKLQ_EFFECTIVE_PYTHON}" \
+            -D Python3_EXECUTABLE="${MKLQ_EFFECTIVE_PYTHON}"
+
       - name: Run full MKL-Q local healthcheck
         shell: bash
         run: |
           set -euo pipefail
-          python3 benchmarks/mklq/run_public_healthcheck.py \
+          "${MKLQ_EFFECTIVE_PYTHON}" benchmarks/mklq/run_public_healthcheck.py \
             --full \
             --require-clean \
-            --install-prefix "${RUNNER_TEMP}/cudaq-mklq-install" \
+            --install-prefix "${MKLQ_INSTALL_PREFIX}" \
+            --python-executable "${MKLQ_EFFECTIVE_PYTHON}" \
+            --pythonpath "${MKLQ_INSTALL_PREFIX}" \
+            --nvqpp "${MKLQ_INSTALL_PREFIX}/bin/nvq++" \
             --build-dir "${MKLQ_BUILD_DIR}" \
             --jobs 6 \
             --timeout-seconds 1800 \
