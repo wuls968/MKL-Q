@@ -79,19 +79,41 @@ The manual self-hosted correctness job builds from source and then runs the full
 local public healthcheck:
 
 ```bash
-cmake -S . -B build-python -D CUDAQ_ENABLE_MKLQ_BACKEND=ON \
-  -D CMAKE_INSTALL_PREFIX="${HOME}/.cudaq-mklq"
+python_bin="${MKLQ_PYTHON:-$(command -v python3)}"
+install_prefix="${RUNNER_TEMP:-${HOME}}/cudaq-mklq-install"
+git remote set-url origin https://github.com/wuls968/MKL-Q.git
+git remote remove upstream 2>/dev/null || true
+git remote add upstream https://github.com/NVIDIA/cuda-quantum.git
+git fetch --filter=blob:none origin main:refs/remotes/origin/main
+git fetch --filter=blob:none upstream main:refs/remotes/upstream/main
+cmake -S . -B build-python -G Ninja \
+  -D CUDAQ_ENABLE_MKLQ_BACKEND=ON \
+  -D CMAKE_INSTALL_PREFIX="${install_prefix}" \
+  -D Python_EXECUTABLE="${python_bin}" \
+  -D Python3_EXECUTABLE="${python_bin}"
 cmake --build build-python --target install -j 6
-python3 benchmarks/mklq/run_public_healthcheck.py --full --require-clean
+"${python_bin}" benchmarks/mklq/run_public_healthcheck.py \
+  --full \
+  --require-clean \
+  --install-prefix "${install_prefix}" \
+  --python-executable "${python_bin}" \
+  --pythonpath "${install_prefix}" \
+  --nvqpp "${install_prefix}/bin/nvq++" \
+  --build-dir build-python
 ```
 
-The tracked workflow invokes the same gate through:
+The tracked workflow invokes the same gate after selecting the effective Python,
+normalizing `origin` and `upstream`, fetching `origin/main` and
+`upstream/main`, and configuring a fresh `build-python` tree:
 
 ```bash
-python3 benchmarks/mklq/run_public_healthcheck.py \
+"${MKLQ_EFFECTIVE_PYTHON}" benchmarks/mklq/run_public_healthcheck.py \
   --full \
   --require-clean \
   --install-prefix "${MKLQ_INSTALL_PREFIX}" \
+  --python-executable "${MKLQ_EFFECTIVE_PYTHON}" \
+  --pythonpath "${MKLQ_INSTALL_PREFIX}" \
+  --nvqpp "${MKLQ_INSTALL_PREFIX}/bin/nvq++" \
   --build-dir "${MKLQ_BUILD_DIR}" \
   --jobs 6 \
   --timeout-seconds 1800
