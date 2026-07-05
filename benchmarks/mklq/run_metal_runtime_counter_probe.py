@@ -80,7 +80,7 @@ COUNTER_TEST_SUFFIXES = (
 )
 
 TEST_PREFIX = "mklq_metal_MKLQMetalTester."
-TEST_LINE_RE = re.compile(r"Test #\d+:\s+(\S+)")
+TEST_LINE_RE = re.compile(r"Test\s+#\d+:\s+(\S+)")
 TAIL_CHARS = 1200
 
 
