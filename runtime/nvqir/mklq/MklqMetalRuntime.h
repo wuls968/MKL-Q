@@ -83,6 +83,12 @@ public:
                               const double *draws, std::size_t drawCount,
                               std::uint32_t *counts,
                               std::size_t countBufferSize);
+  bool accumulateGeneratedSampleCounts(const double *probabilities,
+                                       std::size_t probabilityCount,
+                                       std::uint64_t seed,
+                                       std::size_t drawCount,
+                                       std::uint32_t *counts,
+                                       std::size_t countBufferSize);
   bool computeResidentQubitProbability(std::size_t qubit,
                                        double *probabilityOne);
   bool collapseResidentQubit(std::size_t qubit, bool result,
@@ -97,6 +103,7 @@ public:
   std::size_t measurementProbabilityReductionApplications() const;
   std::size_t measurementCollapseApplications() const;
   std::size_t sampleCountAccumulations() const;
+  std::size_t generatedSampleCountAccumulations() const;
   std::size_t residentStateUploads() const;
   std::size_t residentStateDownloads() const;
 

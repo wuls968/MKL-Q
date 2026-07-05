@@ -76,6 +76,12 @@ struct SampleCountParams {
   std::uint32_t drawCount;
 };
 
+struct GeneratedSampleCountParams {
+  std::uint32_t outcomeCount;
+  std::uint32_t drawCount;
+  std::uint64_t seed;
+};
+
 constexpr const char *metalKernelSource = R"metal(
 #include <metal_stdlib>
 using namespace metal;
@@ -133,6 +139,12 @@ struct MarginalProbabilityParams {
 struct SampleCountParams {
   uint outcomeCount;
   uint drawCount;
+};
+
+struct GeneratedSampleCountParams {
+  uint outcomeCount;
+  uint drawCount;
+  ulong seed;
 };
 
 inline ComplexFloat cadd(ComplexFloat lhs, ComplexFloat rhs) {
@@ -338,6 +350,21 @@ kernel void mklq_measure_qubit_probability(
     partialSums[groupPosition.x] = scratch[0];
 }
 
+inline uint mklq_select_sample_outcome(
+    constant float *cumulativeWeights, uint outcomeCount, float draw) {
+  uint low = 0u;
+  uint high = outcomeCount;
+  while (low < high) {
+    const uint mid = low + ((high - low) >> 1u);
+    if (draw < cumulativeWeights[mid])
+      high = mid;
+    else
+      low = mid + 1u;
+  }
+
+  return low < outcomeCount ? low : outcomeCount - 1u;
+}
+
 kernel void mklq_accumulate_sample_counts(
     constant float *cumulativeWeights [[buffer(0)]],
     constant float *draws [[buffer(1)]],
@@ -347,19 +374,40 @@ kernel void mklq_accumulate_sample_counts(
   if (drawIndex >= params.drawCount || params.outcomeCount == 0u)
     return;
 
-  const float draw = draws[drawIndex];
-  uint low = 0u;
-  uint high = params.outcomeCount;
-  while (low < high) {
-    const uint mid = low + ((high - low) >> 1u);
-    if (draw < cumulativeWeights[mid])
-      high = mid;
-    else
-      low = mid + 1u;
-  }
+  const uint outcome = mklq_select_sample_outcome(
+      cumulativeWeights, params.outcomeCount, draws[drawIndex]);
+  atomic_fetch_add_explicit(&counts[outcome], 1u, memory_order_relaxed);
+}
 
+inline ulong mklq_splitmix64(ulong value) {
+  value += 0x9E3779B97F4A7C15UL;
+  value = (value ^ (value >> 30)) * 0xBF58476D1CE4E5B9UL;
+  value = (value ^ (value >> 27)) * 0x94D049BB133111EBUL;
+  return value ^ (value >> 31);
+}
+
+inline float mklq_uniform_unit(ulong seed, uint drawIndex) {
+  const ulong value =
+      mklq_splitmix64(seed + ulong(drawIndex) * 0x9E3779B97F4A7C15UL);
+  const uint mantissa = uint((value >> 40) & 0xFFFFFFUL);
+  return float(mantissa) * (1.0f / 16777216.0f);
+}
+
+kernel void mklq_accumulate_generated_sample_counts(
+    constant float *cumulativeWeights [[buffer(0)]],
+    device atomic_uint *counts [[buffer(1)]],
+    constant GeneratedSampleCountParams &params [[buffer(2)]],
+    uint drawIndex [[thread_position_in_grid]]) {
+  if (drawIndex >= params.drawCount || params.outcomeCount == 0u)
+    return;
+
+  const float totalWeight = cumulativeWeights[params.outcomeCount - 1u];
+  if (!(totalWeight > 0.0f))
+    return;
+
+  const float draw = mklq_uniform_unit(params.seed, drawIndex) * totalWeight;
   const uint outcome =
-      low < params.outcomeCount ? low : params.outcomeCount - 1u;
+      mklq_select_sample_outcome(cumulativeWeights, params.outcomeCount, draw);
   atomic_fetch_add_explicit(&counts[outcome], 1u, memory_order_relaxed);
 }
 
@@ -451,6 +499,7 @@ struct MetalStateVectorExecutor::Impl {
   id<MTLComputePipelineState> marginalProbabilityPipeline = nil;
   id<MTLComputePipelineState> measurementProbabilityPipeline = nil;
   id<MTLComputePipelineState> sampleCountPipeline = nil;
+  id<MTLComputePipelineState> generatedSampleCountPipeline = nil;
   id<MTLComputePipelineState> collapsePipeline = nil;
   id<MTLBuffer> residentStateBuffer = nil;
   std::size_t residentStateSize = 0;
@@ -465,6 +514,7 @@ struct MetalStateVectorExecutor::Impl {
   std::size_t measurementProbabilityReductionApplications = 0;
   std::size_t measurementCollapseApplications = 0;
   std::size_t sampleCountAccumulations = 0;
+  std::size_t generatedSampleCountAccumulations = 0;
   std::size_t residentUploads = 0;
   std::size_t residentDownloads = 0;
 
@@ -640,6 +690,29 @@ struct MetalStateVectorExecutor::Impl {
         return;
       }
 
+      function =
+          [library newFunctionWithName:@"mklq_accumulate_generated_sample_counts"];
+      if (!function) {
+        [library release];
+        error = "failed to load mklq_accumulate_generated_sample_counts "
+                "Metal kernel.";
+        return;
+      }
+
+      pipelineError = nil;
+      generatedSampleCountPipeline =
+          [device newComputePipelineStateWithFunction:function
+                                                error:&pipelineError];
+      [function release];
+
+      if (!generatedSampleCountPipeline) {
+        [library release];
+        error = describeError(
+            pipelineError,
+            "failed to create Metal generated sample-count compute pipeline.");
+        return;
+      }
+
       function = [library newFunctionWithName:@"mklq_collapse_qubit"];
       if (!function) {
         [library release];
@@ -666,6 +739,7 @@ struct MetalStateVectorExecutor::Impl {
   ~Impl() {
     [residentStateBuffer release];
     [collapsePipeline release];
+    [generatedSampleCountPipeline release];
     [sampleCountPipeline release];
     [measurementProbabilityPipeline release];
     [marginalProbabilityPipeline release];
@@ -681,7 +755,8 @@ struct MetalStateVectorExecutor::Impl {
     return device && commandQueue && singleQubitPipeline && twoQubitPipeline &&
            threeQubitPipeline && probabilityPipeline &&
            marginalProbabilityPipeline && measurementProbabilityPipeline &&
-           sampleCountPipeline && collapsePipeline;
+           sampleCountPipeline && generatedSampleCountPipeline &&
+           collapsePipeline;
   }
 };
 
@@ -1924,6 +1999,117 @@ bool MetalStateVectorExecutor::accumulateSampleCounts(
   return true;
 }
 
+bool MetalStateVectorExecutor::accumulateGeneratedSampleCounts(
+    const double *probabilities, std::size_t probabilityCount,
+    std::uint64_t seed, std::size_t drawCount, std::uint32_t *counts,
+    std::size_t countBufferSize) {
+  if (!impl || !impl->available())
+    return false;
+  if (!probabilities || !counts || probabilityCount == 0 || drawCount == 0 ||
+      countBufferSize != probabilityCount) {
+    impl->error = "invalid Metal generated sample-count accumulation input.";
+    return false;
+  }
+  if (probabilityCount > std::numeric_limits<std::uint32_t>::max() ||
+      drawCount > std::numeric_limits<std::uint32_t>::max()) {
+    impl->error = "Metal generated sample-count input exceeds index range.";
+    return false;
+  }
+
+  std::vector<float> cumulativeWeights(probabilityCount, 0.0f);
+  double cumulative = 0.0;
+  for (std::size_t outcome = 0; outcome < probabilityCount; ++outcome) {
+    cumulative += probabilities[outcome];
+    cumulativeWeights[outcome] = static_cast<float>(cumulative);
+  }
+  if (!(cumulative > 0.0)) {
+    impl->error =
+        "Metal generated sample-count accumulation requires positive weight.";
+    return false;
+  }
+
+  std::vector<std::uint32_t> gpuCounts(probabilityCount, 0);
+  const GeneratedSampleCountParams params{
+      static_cast<std::uint32_t>(probabilityCount),
+      static_cast<std::uint32_t>(drawCount), seed};
+
+  @autoreleasepool {
+    id<MTLBuffer> cumulativeBuffer =
+        [impl->device newBufferWithBytes:cumulativeWeights.data()
+                                  length:cumulativeWeights.size() *
+                                         sizeof(float)
+                                 options:MTLResourceStorageModeShared];
+    id<MTLBuffer> countsBuffer =
+        [impl->device newBufferWithBytes:gpuCounts.data()
+                                  length:gpuCounts.size() *
+                                         sizeof(std::uint32_t)
+                                 options:MTLResourceStorageModeShared];
+    id<MTLBuffer> paramsBuffer =
+        [impl->device newBufferWithBytes:&params
+                                  length:sizeof(GeneratedSampleCountParams)
+                                 options:MTLResourceStorageModeShared];
+
+    if (!cumulativeBuffer || !countsBuffer || !paramsBuffer) {
+      [paramsBuffer release];
+      [countsBuffer release];
+      [cumulativeBuffer release];
+      impl->error = "failed to allocate Metal generated sample-count buffers.";
+      return false;
+    }
+
+    id<MTLCommandBuffer> commandBuffer = [impl->commandQueue commandBuffer];
+    id<MTLComputeCommandEncoder> encoder =
+        [commandBuffer computeCommandEncoder];
+    if (!commandBuffer || !encoder) {
+      [paramsBuffer release];
+      [countsBuffer release];
+      [cumulativeBuffer release];
+      impl->error =
+          "failed to create Metal generated sample-count command encoder.";
+      return false;
+    }
+
+    [encoder setComputePipelineState:impl->generatedSampleCountPipeline];
+    [encoder setBuffer:cumulativeBuffer offset:0 atIndex:0];
+    [encoder setBuffer:countsBuffer offset:0 atIndex:1];
+    [encoder setBuffer:paramsBuffer offset:0 atIndex:2];
+
+    const auto pipelineWidth =
+        [impl->generatedSampleCountPipeline maxTotalThreadsPerThreadgroup];
+    const auto threadsPerThreadgroup =
+        std::max<NSUInteger>(1, std::min<NSUInteger>(pipelineWidth, drawCount));
+    [encoder dispatchThreads:MTLSizeMake(drawCount, 1, 1)
+       threadsPerThreadgroup:MTLSizeMake(threadsPerThreadgroup, 1, 1)];
+    [encoder endEncoding];
+    [commandBuffer commit];
+    [commandBuffer waitUntilCompleted];
+
+    const auto status = [commandBuffer status];
+    if (status != MTLCommandBufferStatusCompleted) {
+      impl->error = describeError(
+          [commandBuffer error],
+          "Metal generated sample-count command buffer failed.");
+      [paramsBuffer release];
+      [countsBuffer release];
+      [cumulativeBuffer release];
+      return false;
+    }
+
+    const auto *updatedCounts =
+        reinterpret_cast<const std::uint32_t *>([countsBuffer contents]);
+    for (std::size_t outcome = 0; outcome < probabilityCount; ++outcome)
+      counts[outcome] = updatedCounts[outcome];
+
+    [paramsBuffer release];
+    [countsBuffer release];
+    [cumulativeBuffer release];
+  }
+
+  impl->error.clear();
+  ++impl->generatedSampleCountAccumulations;
+  return true;
+}
+
 bool MetalStateVectorExecutor::computeResidentQubitProbability(
     std::size_t qubit, double *probabilityOne) {
   if (!impl || !impl->available())
@@ -2142,6 +2328,11 @@ std::size_t MetalStateVectorExecutor::measurementCollapseApplications() const {
 
 std::size_t MetalStateVectorExecutor::sampleCountAccumulations() const {
   return impl ? impl->sampleCountAccumulations : 0;
+}
+
+std::size_t
+MetalStateVectorExecutor::generatedSampleCountAccumulations() const {
+  return impl ? impl->generatedSampleCountAccumulations : 0;
 }
 
 std::size_t MetalStateVectorExecutor::residentStateUploads() const {

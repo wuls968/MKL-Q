@@ -40,6 +40,7 @@ COUNTER_TEST_SUFFIXES = (
     "MetalRuntimeKeepsResidentYAndControlledYSequence",
     "MetalRuntimeFillsResidentProbabilitiesWithoutStateReadback",
     "MetalRuntimeAccumulatesSampleCounts",
+    "MetalRuntimeGeneratesSampleCountsOnDevice",
     "MetalRuntimeRejectsTargetsOutsideStateRange",
     "SimulatorUsesMetalFullRegisterProbabilityFill",
     "SimulatorKeepsSupportedGateSequenceResidentUntilReadback",

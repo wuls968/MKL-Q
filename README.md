@@ -171,15 +171,17 @@ python3 benchmarks/mklq/check_metal_evidence.py
 
 To verify the current tracked experimental Metal stochastic sampling summaries
 that document selected full-register and partial-register Metal sample-count
-accumulation after host-generated draws at q20/q22/q24:
+accumulation after host-generated draws at q20/q22/q24. Newer runtime counter
+tests track selected counts-only Metal device-generated draw plus sample-count
+accumulation:
 
 ```bash
 python3 benchmarks/mklq/check_metal_sampling_boundary_evidence.py
 ```
 
 Current selected Metal runtime counter coverage, including full-register and
-partial-register counts-only Metal sample-count accumulation after
-host-generated draws, is checked through
+partial-register counts-only Metal device-generated draw plus sample-count
+accumulation, is checked through
 `docs/mklq/metal-runtime-counters.md`.
 
 For a fast local public-maintenance gate, run:

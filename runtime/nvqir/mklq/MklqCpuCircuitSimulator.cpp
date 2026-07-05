@@ -1638,15 +1638,12 @@ protected:
 #if defined(MKLQ_ENABLE_TEST_ACCESSORS)
     const auto sampleDrawStart = std::chrono::steady_clock::now();
 #endif
-    std::uniform_real_distribution<double> distribution(0.0, totalWeight);
-    std::vector<double> draws(static_cast<std::size_t>(shots), 0.0);
-    for (double &draw : draws)
-      draw = distribution(randomEngine);
-
     std::vector<std::uint32_t> drawCounts(probabilities.size(), 0);
-    if (!metalExecutor.accumulateSampleCounts(
-            probabilities.data(), probabilities.size(), draws.data(),
-            draws.size(), drawCounts.data(), drawCounts.size()))
+    const auto seed = static_cast<std::uint64_t>(randomEngine());
+    if (!metalExecutor.accumulateGeneratedSampleCounts(
+            probabilities.data(), probabilities.size(), seed,
+            static_cast<std::size_t>(shots), drawCounts.data(),
+            drawCounts.size()))
       return false;
 
     for (std::size_t outcome = 0; outcome < drawCounts.size(); ++outcome) {

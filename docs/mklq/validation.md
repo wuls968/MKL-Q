@@ -98,6 +98,10 @@ The 2026-07-05 Metal sampling evidence refresh adds clean-worktree q20/q22/q24
 `mklq-metal` shot-scaling summaries for selected full-register and
 partial-register Metal sample-count accumulation after host-generated draws,
 and makes those summaries the default sampling-boundary guard inputs.
+The next 2026-07-05 Metal runtime refresh adds selected counts-only
+Metal-generated draw plus sample-count accumulation for full-register and
+partial-register sampling, while sequential stochastic sampling remains
+host-side.
 A previous 2026-07-04 validation pass also reran the full
 install/build/signature-repair/correctness/example gate on the current MKL-Q
 branch after adding the local macOS install-prefix signature repair step.
@@ -206,16 +210,17 @@ Full public healthcheck planned step count: `34/34` steps.
   rotation, CNOT, CRZ, CZ, CRX, and SWAP fast paths, plus the resident
   full-register Metal sampling telemetry and selected sample-count accumulation
   fixtures.
-- Current tracked `metal_runtime_counter_probe`: 11 bounded reports, 436
-  expected, 436 selected, 0 missing, and 0 failures. The latest tracked report
-  runs 48 counter ctests independently, including the direct Metal
-  sample-count accumulation kernel fixture, selected full-register and
-  partial-register counts-only Metal sample-count accumulation after
-  host-generated draws, resident sequential host draw telemetry,
+- Current tracked `metal_runtime_counter_probe`: 12 bounded reports, 485
+  expected, 485 selected, 0 missing, and 0 failures. The latest tracked report
+  runs 49 counter ctests independently, including the direct Metal
+  sample-count accumulation kernel fixture, the direct Metal generated-draw
+  sample-count fixture, selected full-register and partial-register
+  counts-only Metal generated-draw/count accumulation, resident sequential
+  host draw telemetry,
   requested-order partial-register sampling marginal-probability coverage,
   deterministic sequential/counts-only draw-loop bypasses, and native sampling
   phase timing accumulators; the older reports remain historical 20-, 20-,
-  39-, 40-, 42-, 43-, 44-, 45-, 47-, and 48-test evidence.
+  39-, 40-, 42-, 43-, 44-, 45-, 47-, 48-, and 49-test evidence.
 - Clean CPU benchmark gate: passed, with 32 q20 `qpp-cpu`/`mklq-cpu` rows and
   32 rows reporting `status == "ok"`, including `two-qubit-state`,
   `three-qubit-state`, and `hardware-efficient-ansatz-state`.
@@ -330,14 +335,14 @@ The step-level results were:
 - `target_config_ctest`: `102/102 passed`, including the hardware-efficient
   ansatz composite CPU fast-path counter fixture and the resident full-register
   Metal sampling telemetry plus selected sample-count accumulation fixtures.
-- `metal_runtime_counter_probe`: 48 expected, 48 selected, 0 missing, and 48
+- `metal_runtime_counter_probe`: 49 expected, 49 selected, 0 missing, and 49
   independently executed passing counter ctests, including direct runtime
   single-, two-, and three-qubit gate fixtures, full-register and marginal
   probability fixtures, built-in Rx/Ry/Rz and phase-family fixtures, sampling
   fixtures including requested-order partial-register sampling through the
   resident marginal probability route, deterministic sequential/counts-only
   draw-loop bypasses, selected full-register and partial-register counts-only
-  Metal sample-count accumulation, sequential host draw telemetry, and native
+  Metal generated-draw/count accumulation, sequential host draw telemetry, and native
   probability-fill/draw/expectation phase timing,
   measurement/collapse/reset fixtures, unsupported-gate fallback/reupload
   fixtures, and resident error-boundary fixtures.
