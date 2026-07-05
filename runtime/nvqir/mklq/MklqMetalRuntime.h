@@ -104,6 +104,7 @@ public:
   std::size_t measurementCollapseApplications() const;
   std::size_t sampleCountAccumulations() const;
   std::size_t generatedSampleCountAccumulations() const;
+  std::size_t uniformGeneratedSampleCountAccumulations() const;
   std::size_t residentStateUploads() const;
   std::size_t residentStateDownloads() const;
 

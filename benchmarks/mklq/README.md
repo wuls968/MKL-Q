@@ -534,6 +534,7 @@ benchmark result and it does not prove every `mklq-metal` operation stays on
 Metal.
 Current sampling counter coverage includes selected full-register and
 partial-register counts-only Metal generated-draw/count accumulation,
+the uniform-probability generated-count fast path,
 full-register and partial-register sequential host draw telemetry after
 resident Metal probability work, plus deterministic one-outcome draw-loop
 bypasses.

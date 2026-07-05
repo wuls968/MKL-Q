@@ -159,6 +159,11 @@ MetalStateVectorExecutor::generatedSampleCountAccumulations() const {
   return 0;
 }
 
+std::size_t
+MetalStateVectorExecutor::uniformGeneratedSampleCountAccumulations() const {
+  return 0;
+}
+
 std::size_t MetalStateVectorExecutor::residentStateUploads() const { return 0; }
 
 std::size_t MetalStateVectorExecutor::residentStateDownloads() const {

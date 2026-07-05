@@ -210,17 +210,17 @@ Full public healthcheck planned step count: `34/34` steps.
   rotation, CNOT, CRZ, CZ, CRX, and SWAP fast paths, plus the resident
   full-register Metal sampling telemetry and selected sample-count accumulation
   fixtures.
-- Current tracked `metal_runtime_counter_probe`: 12 bounded reports, 485
-  expected, 485 selected, 0 missing, and 0 failures. The latest tracked report
-  runs 49 counter ctests independently, including the direct Metal
+- Current tracked `metal_runtime_counter_probe`: 13 bounded reports, 535
+  expected, 535 selected, 0 missing, and 0 failures. The latest tracked report
+  runs 50 counter ctests independently, including the direct Metal
   sample-count accumulation kernel fixture, the direct Metal generated-draw
   sample-count fixture, selected full-register and partial-register
-  counts-only Metal generated-draw/count accumulation, resident sequential
-  host draw telemetry,
+  counts-only Metal generated-draw/count accumulation, the uniform-probability
+  generated-count fast path, resident sequential host draw telemetry,
   requested-order partial-register sampling marginal-probability coverage,
   deterministic sequential/counts-only draw-loop bypasses, and native sampling
   phase timing accumulators; the older reports remain historical 20-, 20-,
-  39-, 40-, 42-, 43-, 44-, 45-, 47-, 48-, and 49-test evidence.
+  39-, 40-, 42-, 43-, 44-, 45-, 47-, 48-, 49-, and 50-test evidence.
 - Clean CPU benchmark gate: passed, with 32 q20 `qpp-cpu`/`mklq-cpu` rows and
   32 rows reporting `status == "ok"`, including `two-qubit-state`,
   `three-qubit-state`, and `hardware-efficient-ansatz-state`.
@@ -335,14 +335,15 @@ The step-level results were:
 - `target_config_ctest`: `102/102 passed`, including the hardware-efficient
   ansatz composite CPU fast-path counter fixture and the resident full-register
   Metal sampling telemetry plus selected sample-count accumulation fixtures.
-- `metal_runtime_counter_probe`: 49 expected, 49 selected, 0 missing, and 49
+- `metal_runtime_counter_probe`: 50 expected, 50 selected, 0 missing, and 50
   independently executed passing counter ctests, including direct runtime
   single-, two-, and three-qubit gate fixtures, full-register and marginal
   probability fixtures, built-in Rx/Ry/Rz and phase-family fixtures, sampling
   fixtures including requested-order partial-register sampling through the
   resident marginal probability route, deterministic sequential/counts-only
   draw-loop bypasses, selected full-register and partial-register counts-only
-  Metal generated-draw/count accumulation, sequential host draw telemetry, and native
+  Metal generated-draw/count accumulation, the uniform-probability
+  generated-count fast path, sequential host draw telemetry, and native
   probability-fill/draw/expectation phase timing,
   measurement/collapse/reset fixtures, unsupported-gate fallback/reupload
   fixtures, and resident error-boundary fixtures.

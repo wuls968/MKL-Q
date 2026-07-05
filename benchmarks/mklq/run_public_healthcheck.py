@@ -346,6 +346,8 @@ def public_metadata_requirements() -> list[tuple[str, str]]:
         ("runtime/nvqir/mklq/mklq-metal.yml",
          "full-register and partial-register counts-only Metal "
          "device-generated draw plus sample-count accumulation"),
+        ("runtime/nvqir/mklq/mklq-metal.yml",
+         "uniform-probability generated-count fast path"),
         ("docs/mklq/apple-silicon-ci.md", "self-hosted"),
         ("docs/mklq/apple-silicon-ci.md", "workflow_dispatch"),
         ("docs/mklq/apple-silicon-ci.md", "run_full_gate"),

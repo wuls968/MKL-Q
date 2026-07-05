@@ -151,6 +151,14 @@ public:
 #endif
   }
 
+  std::size_t uniformGeneratedSampleCountAccumulationsForTest() const {
+#if defined(MKLQ_ENABLE_METAL_RUNTIME)
+    return metalExecutor.uniformGeneratedSampleCountAccumulations();
+#else
+    return 0;
+#endif
+  }
+
   std::size_t marginalProbabilityApplicationsForTest() const {
 #if defined(MKLQ_ENABLE_METAL_RUNTIME)
     return metalExecutor.marginalProbabilityApplications();
@@ -786,6 +794,32 @@ CUDAQ_TEST(MKLQMetalTester, MetalRuntimeGeneratesSampleCountsOnDevice) {
   EXPECT_GT(counts[2], 0u);
   EXPECT_EQ(executor.sampleCountAccumulations(), 0);
   EXPECT_EQ(executor.generatedSampleCountAccumulations(), 1);
+  EXPECT_EQ(executor.uniformGeneratedSampleCountAccumulations(), 0);
+}
+
+CUDAQ_TEST(MKLQMetalTester, MetalRuntimeGeneratesUniformSampleCountsOnDevice) {
+  nvqir::mklq::MetalStateVectorExecutor executor;
+
+  if (!expectMetalRuntimeReadyOrUnavailable(executor))
+    return;
+
+  const std::array<double, 4> probabilities{0.25, 0.25, 0.25, 0.25};
+  constexpr std::uint64_t seed = 0x4d4b4c512d756e69ULL;
+  constexpr std::size_t shots = 512;
+  std::array<std::uint32_t, 4> counts{0, 0, 0, 0};
+
+  ASSERT_TRUE(executor.accumulateGeneratedSampleCounts(
+      probabilities.data(), probabilities.size(), seed, shots, counts.data(),
+      counts.size()))
+      << executor.lastError();
+
+  const auto total = counts[0] + counts[1] + counts[2] + counts[3];
+  EXPECT_EQ(total, shots);
+  for (const auto count : counts)
+    EXPECT_GT(count, 0u);
+  EXPECT_EQ(executor.sampleCountAccumulations(), 0);
+  EXPECT_EQ(executor.generatedSampleCountAccumulations(), 1);
+  EXPECT_EQ(executor.uniformGeneratedSampleCountAccumulations(), 1);
 }
 
 CUDAQ_TEST(MKLQMetalTester, MetalRuntimeRejectsTargetsOutsideStateRange) {
@@ -1291,6 +1325,8 @@ CUDAQ_TEST(MKLQMetalTester,
   EXPECT_EQ(sim.sampleCountAccumulationsForTest(),
             0);
   EXPECT_EQ(sim.generatedSampleCountAccumulationsForTest(),
+            sim.metalRuntimeAvailableForTest() ? 1 : 0);
+  EXPECT_EQ(sim.uniformGeneratedSampleCountAccumulationsForTest(),
             sim.metalRuntimeAvailableForTest() ? 1 : 0);
   EXPECT_EQ(sim.countsOnlySampleDrawBatchesForTest(),
             sim.metalRuntimeAvailableForTest() ? 0 : 1);
