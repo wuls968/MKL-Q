@@ -115,6 +115,8 @@ def public_claim_paths(root: Path) -> list[Path]:
         root / ".github" / "pull_request_template.md",
         root / "benchmarks" / "mklq" / "README.md",
         root / "examples" / "mklq" / "README.md",
+        root / "runtime" / "nvqir" / "mklq" / "README.md",
+        root / "runtime" / "nvqir" / "mklq" / "mklq-metal.yml",
     ]
     paths.extend((root / "docs" / "mklq").glob("*.md"))
     return sorted(path for path in set(paths) if path.exists())

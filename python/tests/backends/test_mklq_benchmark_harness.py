@@ -2178,6 +2178,18 @@ def test_mklq_public_claim_guard_rejects_unbounded_public_claims():
     assert any("fully Metal-native" in failure for failure in failures)
 
 
+def test_mklq_public_claim_guard_scans_runtime_target_metadata():
+    module = _load_public_claims_module()
+
+    scanned_paths = {
+        path.relative_to(Path.cwd()).as_posix()
+        for path in module.public_claim_paths(Path.cwd())
+    }
+
+    assert "runtime/nvqir/mklq/README.md" in scanned_paths
+    assert "runtime/nvqir/mklq/mklq-metal.yml" in scanned_paths
+
+
 def test_mklq_public_healthcheck_rejects_tracked_artifacts(monkeypatch,
                                                            tmp_path):
     module = _load_public_healthcheck_module()
@@ -2325,9 +2337,12 @@ def test_mklq_public_healthcheck_requires_metal_execution_boundary_metadata():
             "Metal Execution Boundary") in requirements
     assert ("runtime/nvqir/mklq/README.md",
             "metal-execution-boundary.md") in requirements
+    assert ("runtime/nvqir/mklq/mklq-metal.yml",
+            "full-register and partial-register counts-only Metal "
+            "sample-count accumulation after host-generated draws") in requirements
 
 
-def test_mklq_public_healthcheck_scans_runtime_mklq_readme():
+def test_mklq_public_healthcheck_scans_runtime_mklq_metadata():
     module = _load_public_healthcheck_module()
 
     scanned_paths = {
@@ -2336,6 +2351,7 @@ def test_mklq_public_healthcheck_scans_runtime_mklq_readme():
     }
 
     assert "runtime/nvqir/mklq/README.md" in scanned_paths
+    assert "runtime/nvqir/mklq/mklq-metal.yml" in scanned_paths
 
 
 def _workflow_step_block(workflow: str, step_name: str) -> str:
