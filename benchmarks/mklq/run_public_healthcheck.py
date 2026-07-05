@@ -343,6 +343,9 @@ def public_metadata_requirements() -> list[tuple[str, str]]:
         ("docs/mklq/metal-execution-boundary.md",
          "not proof that every operation stayed on Metal"),
         ("runtime/nvqir/mklq/README.md", "metal-execution-boundary.md"),
+        ("runtime/nvqir/mklq/mklq-metal.yml",
+         "full-register and partial-register counts-only Metal "
+         "sample-count accumulation after host-generated draws"),
         ("docs/mklq/apple-silicon-ci.md", "self-hosted"),
         ("docs/mklq/apple-silicon-ci.md", "workflow_dispatch"),
         ("docs/mklq/apple-silicon-ci.md", "run_full_gate"),
@@ -508,6 +511,7 @@ def public_metadata_paths(root: Path) -> list[Path]:
         root / "benchmarks" / "mklq" / "README.md",
         root / "examples" / "mklq" / "README.md",
         root / "runtime" / "nvqir" / "mklq" / "README.md",
+        root / "runtime" / "nvqir" / "mklq" / "mklq-metal.yml",
     ]
     paths.extend((root / "docs" / "mklq").glob("*.md"))
     paths.extend(path for path in (root / ".github").rglob("*") if path.is_file())

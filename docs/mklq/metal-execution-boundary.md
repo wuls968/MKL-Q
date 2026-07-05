@@ -71,7 +71,7 @@ was Metal-native.
 Probability fills can be resident Metal work, but public sampling evidence does
 not claim an end-to-end on-device sampler. Current counter evidence tracks
 deterministic sequential and counts-only shortcuts that materialize a single
-non-zero outcome directly after resident probability work. It also tracks a
+non-zero outcome directly after resident probability work. It also tracks
 selected full-register and partial-register counts-only paths where
 host-generated random draws are counted by a Metal sample-count accumulation
 kernel. Sequential stochastic sampling still records host-side draw/count

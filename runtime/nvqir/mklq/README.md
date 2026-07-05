@@ -172,12 +172,11 @@ target-marker output.
   marginal partial-sum work is no smaller than a full probability fill, it
   computes resident full-register probabilities once and folds them to
   marginal outcome probabilities on the host without first downloading the
-  state vector. Full-register counts-only sampling can now use a Metal
-  sample-count accumulation kernel after host-generated random draws and
-  resident probability work. Sequential sampling and partial-register
-  stochastic draw/count accumulation remain host-side; build-tree counter tests
-  cover the current split between Metal counts-only accumulation and host-side
-  sequential/partial-register draw telemetry.
+  state vector. Full-register and partial-register counts-only sampling can
+  now use a Metal sample-count accumulation kernel after host-generated random
+  draws and resident probability work. Sequential stochastic sampling remains
+  host-side; build-tree counter tests cover the current split between selected
+  counts-only Metal accumulation and host-side sequential draw telemetry.
   Deterministic one-outcome sequential and counts-only distributions can
   bypass stochastic draw loops after resident probability work. The current
   local shot-scaling gate does not justify a general on-device sampler yet.
