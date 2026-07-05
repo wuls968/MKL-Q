@@ -4613,12 +4613,20 @@ def test_mklq_public_healthcheck_requires_self_hosted_ci_audit_metadata():
             "--focused-install-build") in requirements
     assert (".github/workflows/mklq-apple-silicon-ci.yml",
             "CUDAQ_ENABLE_PROJECTS=python") in requirements
+    assert (".github/workflows/mklq-apple-silicon-ci.yml",
+            "Bootstrap source submodules") in requirements
+    assert (".github/workflows/mklq-apple-silicon-ci.yml",
+            "GIT_SUBMODULE=OFF") in requirements
     assert ("docs/mklq/apple-silicon-ci.md",
             "run_public_healthcheck.py --full --require-clean") in requirements
     assert ("docs/mklq/apple-silicon-ci.md",
             "--focused-install-build") in requirements
     assert ("docs/mklq/apple-silicon-ci.md",
             "CUDAQ_ENABLE_PROJECTS=python") in requirements
+    assert ("docs/mklq/apple-silicon-ci.md",
+            "GIT_SUBMODULE=OFF") in requirements
+    assert ("docs/mklq/apple-silicon-ci.md",
+            "source submodule bootstrapping") in requirements
     assert ("README.md", "apple-silicon-ci.md") in requirements
     assert ("benchmarks/mklq/README.md",
             "Self-hosted Apple Silicon CI Audit") in requirements
@@ -5766,7 +5774,8 @@ Before dispatching the full gate, run --check-runners to query actions/runners.
 ## Validation Command
 
 Run run_public_healthcheck.py --full --require-clean --focused-install-build
-with CUDAQ_ENABLE_PROJECTS=python and run_correctness_gate.py.
+with CUDAQ_ENABLE_PROJECTS=python and GIT_SUBMODULE=OFF after source submodule
+bootstrapping, then run_correctness_gate.py.
 Keep raw JSON under benchmarks/mklq/results/.
 
 ## Activation Checklist
@@ -5826,8 +5835,12 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+      - name: Bootstrap source submodules
+        run: |
+          git submodule sync --recursive
+          git -c submodule.tpls/llvm.update=none submodule update --init --depth 1 tpls/qpp
       - run: |
-          cmake -S . -B build-python -G Ninja -D CUDAQ_ENABLE_PROJECTS=python
+          cmake -S . -B build-python -G Ninja -D CUDAQ_ENABLE_PROJECTS=python -D GIT_SUBMODULE=OFF
           python3 benchmarks/mklq/run_public_healthcheck.py --full --require-clean \\
             --focused-install-build \\
             --output benchmarks/mklq/results/apple-silicon-ci-test.json

@@ -86,10 +86,32 @@ git remote remove upstream 2>/dev/null || true
 git remote add upstream https://github.com/NVIDIA/cuda-quantum.git
 git fetch --filter=blob:none origin main:refs/remotes/origin/main
 git fetch --filter=blob:none upstream main:refs/remotes/upstream/main
+git submodule sync --recursive
+git -c submodule.tpls/llvm.update=none submodule update \
+  --init \
+  --depth 1 \
+  --jobs 6 \
+  tpls/Stim \
+  tpls/armadillo \
+  tpls/cpr \
+  tpls/eigen \
+  tpls/ensmallen \
+  tpls/fmt \
+  tpls/googletest-src \
+  tpls/nanobind \
+  tpls/qpp \
+  tpls/spdlog \
+  tpls/xtensor \
+  tpls/xtl
+git -C tpls/nanobind submodule update \
+  --init \
+  --depth 1 \
+  ext/robin_map
 rm -rf build-python "${install_prefix}"
 cmake -S . -B build-python -G Ninja \
   -D CUDAQ_ENABLE_MKLQ_BACKEND=ON \
   -D CUDAQ_ENABLE_PROJECTS=python \
+  -D GIT_SUBMODULE=OFF \
   -D CMAKE_INSTALL_PREFIX="${install_prefix}" \
   -D Python_EXECUTABLE="${python_bin}" \
   -D Python3_EXECUTABLE="${python_bin}"
@@ -106,8 +128,10 @@ cmake -S . -B build-python -G Ninja \
 
 The tracked workflow invokes the same gate after selecting the effective Python,
 normalizing `origin` and `upstream`, fetching `origin/main` and
-`upstream/main`, clearing the persistent runner build/install directories, and
-configuring a fresh `build-python` tree with `CUDAQ_ENABLE_PROJECTS=python`.
+`upstream/main`, bootstrapping the non-LLVM source submodules with shallow
+fetches, clearing the persistent runner build/install directories, and
+configuring a fresh `build-python` tree with `CUDAQ_ENABLE_PROJECTS=python` and
+`GIT_SUBMODULE=OFF`.
 The `--focused-install-build` option builds the reviewed installable MKL-Q
 targets and then runs `cmake --install`, avoiding unrelated upstream test
 binaries that are not part of this source-only Apple Silicon gate.
@@ -161,6 +185,8 @@ Before making the full self-hosted job automatic or branch-protected:
   the working directory.
 - Confirm the job uses `permissions: contents: read`.
 - Confirm the job has explicit `timeout-minutes` and `concurrency` settings.
+- Confirm source submodule bootstrapping is a visible step before CMake
+  configure and CMake uses `GIT_SUBMODULE=OFF`.
 - Confirm the command is
   `run_public_healthcheck.py --full --require-clean --focused-install-build` or
   a stricter reviewed replacement.

@@ -63,6 +63,8 @@ REQUIRED_TOKENS = (
     "run_public_healthcheck.py --full --require-clean",
     "--focused-install-build",
     "CUDAQ_ENABLE_PROJECTS=python",
+    "GIT_SUBMODULE=OFF",
+    "source submodule bootstrapping",
     "run_correctness_gate.py",
     "benchmarks/mklq/results/",
     "no tags",
@@ -107,6 +109,8 @@ APPLE_WORKFLOW_REQUIRED_TOKENS = (
     "--require-clean",
     "--focused-install-build",
     "CUDAQ_ENABLE_PROJECTS=python",
+    "Bootstrap source submodules",
+    "GIT_SUBMODULE=OFF",
     "benchmarks/mklq/results/",
 )
 
