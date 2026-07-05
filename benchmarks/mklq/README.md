@@ -39,7 +39,7 @@ counters or release sign-off.
 python3 benchmarks/mklq/bench_mklq_targets.py \
   --dry-run \
   --targets qpp-cpu,mklq-cpu,mklq-metal \
-  --cases gate-state,sample-basis,sample-ghz,sample-full-register,sample-partial-register,single-qubit-state,h-state,y-state,rx-state,ry-state,rz-state,controlled-state,multi-control-state,ch-state,cy-state,crx-state,cry-state,crz-state,cz-state,two-qubit-state,three-qubit-state,qft-like-state,crz-distance-state,crz-distance-sweep-state,seeded-clifford-state \
+  --cases gate-state,sample-basis,sample-ghz,sample-full-register,sample-partial-register,sample-uniform-partial-register,single-qubit-state,h-state,y-state,rx-state,ry-state,rz-state,controlled-state,multi-control-state,ch-state,cy-state,crx-state,cry-state,crz-state,cz-state,two-qubit-state,three-qubit-state,qft-like-state,crz-distance-state,crz-distance-sweep-state,seeded-clifford-state \
   --qubits 4,8,12 \
   --shot-counts 256,1024,8192 \
   --output /tmp/mklq-benchmark-plan.json
@@ -53,7 +53,7 @@ Use the built Python tree when running from the repository:
 PYTHONPATH="$(pwd)/build-python/python" \
 python3 benchmarks/mklq/bench_mklq_targets.py \
   --targets qpp-cpu,mklq-cpu,mklq-metal \
-  --cases gate-state,sample-basis,sample-ghz,sample-full-register,sample-partial-register,single-qubit-state,h-state,y-state,rx-state,ry-state,rz-state,controlled-state,multi-control-state,ch-state,cy-state,crx-state,cry-state,crz-state,cz-state,two-qubit-state,three-qubit-state,qft-like-state,crz-distance-state,crz-distance-sweep-state,seeded-clifford-state \
+  --cases gate-state,sample-basis,sample-ghz,sample-full-register,sample-partial-register,sample-uniform-partial-register,single-qubit-state,h-state,y-state,rx-state,ry-state,rz-state,controlled-state,multi-control-state,ch-state,cy-state,crx-state,cry-state,crz-state,cz-state,two-qubit-state,three-qubit-state,qft-like-state,crz-distance-state,crz-distance-sweep-state,seeded-clifford-state \
   --qubits 4 \
   --shots 32 \
   --repeats 1 \
@@ -84,7 +84,7 @@ PYTHONPATH="$(pwd)/build-python/python" \
 python3 benchmarks/mklq/bench_mklq_targets.py \
   --isolate-rows \
   --targets mklq-cpu \
-  --cases gate-state,sample-basis,sample-ghz,sample-full-register,sample-partial-register,single-qubit-state,h-state,y-state,rx-state,ry-state,rz-state,controlled-state,multi-control-state,ch-state,cy-state,crx-state,cry-state,crz-state,cz-state,two-qubit-state,three-qubit-state,qft-like-state,crz-distance-state,crz-distance-sweep-state,seeded-clifford-state \
+  --cases gate-state,sample-basis,sample-ghz,sample-full-register,sample-partial-register,sample-uniform-partial-register,single-qubit-state,h-state,y-state,rx-state,ry-state,rz-state,controlled-state,multi-control-state,ch-state,cy-state,crx-state,cry-state,crz-state,cz-state,two-qubit-state,three-qubit-state,qft-like-state,crz-distance-state,crz-distance-sweep-state,seeded-clifford-state \
   --qubits 15,16,17,18,19,20 \
   --shots 1024 \
   --repeats 2 \
@@ -175,6 +175,11 @@ compatibility. For
 `mklq-metal`, small marginal buffers use the resident marginal probability
 kernel, while q15-q20 every-other-qubit rows currently route to resident
 full-register probability fill plus host marginal folding.
+`sample-uniform-partial-register` applies H gates to up to the first 12 measured
+qubits, measures only those qubits, and leaves the remaining state in a basis
+configuration. Use it as a dedicated uniform marginal fixture for the
+counts-only uniform-probability generated-count fast path; it is not a claim
+about arbitrary non-uniform partial-register sampling.
 
 `--profile-sampling-breakdown` is a diagnostic benchmark-harness feature, not a
 native backend profiler. It records additional timings around Python-visible
@@ -914,6 +919,19 @@ The generated public index is tracked at
   cross-machine performance certification. The q24 high-shot versus low-shot
   median elapsed ratios were 0.984x for full-register sampling and 0.941x for
   partial-register sampling.
+- `reports/local-metal-uniform-partial-sampling-q20-q24-2026-07-05.summary.json`:
+  tracked sanitized summary for the ignored raw result
+  `results/local-metal-uniform-partial-sampling-q20-q24-2026-07-05.json`
+  (`sha256: a9505bdef5818c9055944ac0d2702edbf000428702355779299cc84310e4c7ec`).
+  Isolated `mklq-metal` rows for `sample-uniform-partial-register` at
+  q20/q22/q24 with shot counts `256,1024,8192,65536`, `repeats=2`,
+  `warmups=1`, and `layers=8` on Apple M5, 10 logical cores, 16 GB RAM,
+  macOS 26.5.1. All 12 rows completed with `status == "ok"` from a dirty
+  worktree because this benchmark fixture and public docs were being added in
+  the same change. Treat this as local tuning evidence for the
+  uniform-probability generated-count fast path, not as clean release
+  provenance or cross-machine certification. The high-shot versus low-shot
+  median elapsed ratios were 1.285x at q20, 0.892x at q22, and 1.110x at q24.
 - `reports/local-metal-count-accumulation-sampling-q20-2026-07-04.summary.json`:
   tracked sanitized summary for the ignored raw result
   `results/local-metal-count-accumulation-sampling-q20-2026-07-04.json`

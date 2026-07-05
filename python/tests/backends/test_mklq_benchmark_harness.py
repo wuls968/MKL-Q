@@ -6160,6 +6160,7 @@ def test_mklq_summary_renderer_builds_stable_markdown(tmp_path):
             "status": "ok",
             "target": "mklq-metal",
             "case": "y-state",
+            "qubits": 20,
             "shots": 1024,
             "metal_path_label":
                 "mklq_metal_resident_single_gate_state_host_readback",
@@ -6217,6 +6218,8 @@ def test_mklq_summary_renderer_builds_stable_markdown(tmp_path):
     assert "0.075 s" in markdown
     assert "benchmark harness diagnostic timing" in markdown
     assert "## Metal Path Labels" in markdown
+    assert "| Summary ID | Case | Qubits | Shots | Label | Scope | Source |" in markdown
+    assert "| a-summary | y-state | 20 | 1024 |" in markdown
     assert "mklq_metal_resident_single_gate_state_host_readback" in markdown
     assert "benchmark_harness_static_case_map" in markdown
 
@@ -6484,7 +6487,7 @@ def test_mklq_benchmark_dry_run_records_metal_path_metadata(tmp_path):
         "--targets",
         "mklq-metal",
         "--cases",
-        "y-state,cy-state,three-qubit-state,qft-like-state,hardware-efficient-ansatz-state,crz-distance-state,sample-full-register,sample-partial-register",
+        "y-state,cy-state,three-qubit-state,qft-like-state,hardware-efficient-ansatz-state,crz-distance-state,sample-full-register,sample-partial-register,sample-uniform-partial-register",
         "--qubits",
         "4",
         "--output",
@@ -6524,6 +6527,11 @@ def test_mklq_benchmark_dry_run_records_metal_path_metadata(tmp_path):
         "mklq_metal_partial_register_sample_count_accumulation")
     assert "device-generated draw" in rows[
         "sample-partial-register"]["metrics"]["metal_path_scope"]
+    assert rows["sample-uniform-partial-register"]["metrics"][
+        "metal_path_label"] == (
+            "mklq_metal_uniform_partial_register_sample_count_accumulation")
+    assert "uniform-probability generated-count fast path" in rows[
+        "sample-uniform-partial-register"]["metrics"]["metal_path_scope"]
     for row in rows.values():
         metrics = row["metrics"]
         assert metrics["metal_path_label_source"] == (
@@ -7797,6 +7805,131 @@ def test_mklq_benchmark_dry_run_accepts_sample_partial_register_case(tmp_path):
     assert rows[0]["status"] == "planned"
     assert rows[0]["case"] == "sample-partial-register"
     assert rows[0]["estimated_state_bytes"] == 16 * (1 << 5)
+
+
+def test_mklq_benchmark_dry_run_accepts_sample_uniform_partial_register_case(
+        tmp_path):
+    repo_root = Path(__file__).resolve().parents[3]
+    script = repo_root / "benchmarks" / "mklq" / "bench_mklq_targets.py"
+    output = tmp_path / "dry-run-sample-uniform-partial-register.json"
+    env = os.environ.copy()
+    env.pop("PYTHONPATH", None)
+
+    subprocess.run([
+        sys.executable,
+        str(script),
+        "--dry-run",
+        "--targets",
+        "mklq-metal",
+        "--cases",
+        "sample-uniform-partial-register",
+        "--qubits",
+        "20",
+        "--output",
+        str(output),
+    ],
+                   check=True,
+                   capture_output=True,
+                   text=True,
+                   env=env)
+
+    report = json.loads(output.read_text(encoding="utf-8"))
+    assert report["config"]["cases"] == ["sample-uniform-partial-register"]
+    rows = report["results"]
+    assert len(rows) == 1
+    assert rows[0]["status"] == "planned"
+    assert rows[0]["case"] == "sample-uniform-partial-register"
+    assert rows[0]["estimated_state_bytes"] == 16 * (1 << 20)
+    metrics = rows[0]["metrics"]
+    assert metrics["metal_path_label"] == (
+        "mklq_metal_uniform_partial_register_sample_count_accumulation")
+    assert "uniform-probability generated-count fast path" in metrics[
+        "metal_path_scope"]
+
+
+def test_mklq_benchmark_uniform_partial_register_case_records_metrics(
+        monkeypatch):
+    module = _load_benchmark_module()
+
+    class FakeSampleResult:
+
+        def items(self):
+            return {"0" * 12: 16}.items()
+
+    class FakeKernel:
+
+        def __init__(self):
+            self.operations = []
+
+        def qalloc(self, qubits):
+            return list(range(qubits))
+
+        def h(self, target):
+            self.operations.append(("h", target))
+
+        def mz(self, target):
+            self.operations.append(("mz", target))
+
+    class FakeCudaq:
+
+        def __init__(self):
+            self.kernels = []
+            self.sample_calls = 0
+
+        def reset_target(self):
+            pass
+
+        def set_target(self, target):
+            assert target == "mklq-metal"
+
+        def set_random_seed(self, seed):
+            assert seed == 13
+
+        def make_kernel(self):
+            kernel = FakeKernel()
+            self.kernels.append(kernel)
+            return kernel
+
+        def sample(self, kernel, shots_count):
+            assert shots_count == 1024
+            self.sample_calls += 1
+            return FakeSampleResult()
+
+    def fake_timed_repeats(action, repeats):
+        assert repeats == 1
+        action()
+        return [0.25]
+
+    monkeypatch.setattr(module, "timed_repeats", fake_timed_repeats)
+    monkeypatch.setattr(module, "process_max_rss_bytes", lambda: 8192)
+
+    fake_cudaq = FakeCudaq()
+    row = module.run_case(fake_cudaq,
+                          "mklq-metal",
+                          "sample-uniform-partial-register",
+                          qubits=20,
+                          shots=1024,
+                          repeats=1,
+                          warmups=0,
+                          layers=2)
+
+    assert row["status"] == "ok"
+    metrics = row["metrics"]
+    assert metrics["gate_count"] == 12
+    assert metrics["measured_qubit_count"] == 12
+    assert metrics["marginal_outcome_count"] == 4096
+    assert metrics["uniform_probability_distribution"] is True
+    assert metrics["sample_latency_seconds_per_shot"] == 0.25 / 1024
+    assert metrics["sample_throughput_shots_per_second"] == 4096
+    assert metrics["process_max_rss_bytes_cumulative"] == 8192
+    assert metrics["metal_path_label"] == (
+        "mklq_metal_uniform_partial_register_sample_count_accumulation")
+    assert "uniform-probability generated-count fast path" in metrics[
+        "metal_path_scope"]
+    operations = fake_cudaq.kernels[0].operations
+    assert sum(1 for operation in operations if operation[0] == "h") == 12
+    assert sum(1 for operation in operations if operation[0] == "mz") == 12
+    assert fake_cudaq.sample_calls == 1
 
 
 def test_mklq_benchmark_dry_run_records_sampling_profile_flag(tmp_path):

@@ -62,6 +62,10 @@ METAL_FULL_REGISTER_SAMPLING_SCOPE = (
 METAL_PARTIAL_REGISTER_SAMPLING_SCOPE = (
     "mixed-path Metal probability fill with selected partial-register "
     "counts-only Metal device-generated draw plus sample-count accumulation")
+METAL_UNIFORM_PARTIAL_REGISTER_SAMPLING_SCOPE = (
+    "mixed-path Metal marginal probability fill with uniform-probability "
+    "generated-count fast path for counts-only partial-register sample-count "
+    "accumulation")
 METAL_SPARSE_SAMPLING_SCOPE = (
     "mixed-path sparse or deterministic sampling with host-side count "
     "accumulation")
@@ -134,6 +138,9 @@ METAL_PATH_CASES = {
     "sample-partial-register":
         ("mklq_metal_partial_register_sample_count_accumulation",
          METAL_PARTIAL_REGISTER_SAMPLING_SCOPE),
+    "sample-uniform-partial-register":
+        ("mklq_metal_uniform_partial_register_sample_count_accumulation",
+         METAL_UNIFORM_PARTIAL_REGISTER_SAMPLING_SCOPE),
 }
 
 
@@ -184,6 +191,7 @@ DEFAULT_CASES = (
     "sample-ghz",
     "sample-full-register",
     "sample-partial-register",
+    "sample-uniform-partial-register",
     "single-qubit-state",
     "h-state",
     "y-state",
@@ -207,6 +215,7 @@ DEFAULT_CASES = (
     "seeded-clifford-state",
 )
 DEFAULT_QUBITS = (4, 8, 12)
+UNIFORM_PARTIAL_REGISTER_MEASURED_QUBIT_LIMIT = 12
 SEEDED_CLIFFORD_SEED = 17
 THREE_QUBIT_OPERATION_NAME = "mklq_bench_flip_all_3"
 PROVENANCE_ENV_KEYS = (
@@ -829,6 +838,25 @@ def build_sample_partial_register_kernel(cudaq: Any,
   return kernel, gate_count, len(measured_qubits)
 
 
+def uniform_partial_register_measurement_indices(qubits: int) -> list[int]:
+  measured_count = min(qubits, UNIFORM_PARTIAL_REGISTER_MEASURED_QUBIT_LIMIT)
+  return list(range(measured_count))
+
+
+def build_sample_uniform_partial_register_kernel(
+    cudaq: Any, qubits: int) -> tuple[Any, int, int]:
+  kernel = cudaq.make_kernel()
+  q = kernel.qalloc(qubits)
+  measured_qubits = uniform_partial_register_measurement_indices(qubits)
+
+  for index in measured_qubits:
+    kernel.h(q[index])
+  for index in measured_qubits:
+    kernel.mz(q[index])
+
+  return kernel, len(measured_qubits), len(measured_qubits)
+
+
 def build_sample_ghz_kernel(cudaq: Any, qubits: int) -> tuple[Any, int]:
   kernel = cudaq.make_kernel()
   q = kernel.qalloc(qubits)
@@ -1283,6 +1311,31 @@ def run_case(cudaq: Any, target: str, case: str, qubits: int, shots: int,
           "sample_throughput_shots_per_second": shots / median
           if median > 0 else None,
       })
+    elif case == "sample-uniform-partial-register":
+      kernel, gate_count, measured_qubit_count = (
+          build_sample_uniform_partial_register_kernel(cudaq, qubits))
+      action = lambda: cudaq.sample(kernel, shots_count=shots)
+      for _ in range(warmups):
+        action()
+      timings = timed_repeats(action, repeats)
+      metrics = summarize_timings(timings)
+      if profile_sampling_breakdown:
+        add_sampling_profile_metrics(
+            metrics,
+            lambda: build_sample_uniform_partial_register_kernel(cudaq, qubits),
+            action, timings, repeats)
+      median = metrics["elapsed_seconds_median"]
+      metrics.update({
+          "gate_count": gate_count,
+          "measured_qubit_count": measured_qubit_count,
+          "marginal_outcome_count": 1 << measured_qubit_count,
+          "uniform_probability_distribution": True,
+          "uniform_partial_register_measured_qubit_limit":
+              UNIFORM_PARTIAL_REGISTER_MEASURED_QUBIT_LIMIT,
+          "sample_latency_seconds_per_shot": median / shots,
+          "sample_throughput_shots_per_second": shots / median
+          if median > 0 else None,
+      })
     else:
       raise ValueError(f"unsupported benchmark case: {case}")
 
@@ -1491,7 +1544,9 @@ def make_parser() -> argparse.ArgumentParser:
                       default=list(DEFAULT_CASES),
                       help=("Comma-separated cases: gate-state,sample-basis,"
                             "sample-ghz,sample-full-register,"
-                            "sample-partial-register,single-qubit-state,"
+                            "sample-partial-register,"
+                            "sample-uniform-partial-register,"
+                            "single-qubit-state,"
                             "h-state,y-state,rx-state,ry-state,rz-state,"
                             "controlled-state,multi-control-state,"
                             "ch-state,cy-state,crx-state,cry-state,crz-state,"
