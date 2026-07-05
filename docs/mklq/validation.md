@@ -102,6 +102,11 @@ The next 2026-07-05 Metal runtime refresh adds selected counts-only
 Metal-generated draw plus sample-count accumulation for full-register and
 partial-register sampling, while sequential stochastic sampling remains
 host-side.
+The follow-up 2026-07-05 benchmark evidence refresh adds a focused
+`sample-uniform-partial-register` fixture for q20/q22/q24 `mklq-metal`
+counts-only sampling. It is local tuning evidence for the
+uniform-probability generated-count fast path, not clean release provenance or
+cross-machine performance certification.
 A previous 2026-07-04 validation pass also reran the full
 install/build/signature-repair/correctness/example gate on the current MKL-Q
 branch after adding the local macOS install-prefix signature repair step.
@@ -520,6 +525,7 @@ Current tracked summaries include:
 - `local-metal-partial-count-accumulation-sampling-q20-2026-07-05.summary.json`
 - `local-metal-partial-count-accumulation-sampling-q22-2026-07-05.summary.json`
 - `local-metal-partial-count-accumulation-sampling-q24-2026-07-05.summary.json`
+- `local-metal-uniform-partial-sampling-q20-q24-2026-07-05.summary.json`
 - `local-multi-control-cpu-q20-2026-06-22.summary.json`
 - `local-scaling-cpu-multi-control-q18-q22-2026-06-22.summary.json`
 - `local-scaling-cpu-hardware-efficient-ansatz-q18-q22-2026-06-30.summary.json`

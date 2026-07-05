@@ -89,6 +89,7 @@ def metal_path_labels(rows: object) -> list[dict[str, str]]:
             continue
         labels.append({
             "case": str(row.get("case", "-")),
+            "qubits": str(row.get("qubits", "-")),
             "shots": str(row.get("shots", "-")),
             "label": str(label),
             "scope": str(row.get("metal_path_scope", "-")),
@@ -251,6 +252,7 @@ def metal_path_label_signals(
             signals.append({
                 "summary_id": str(digest["summary_id"]),
                 "case": str(label.get("case", "-")),
+                "qubits": str(label.get("qubits", "-")),
                 "shots": str(label.get("shots", "-")),
                 "label": str(label.get("label", "-")),
                 "scope": str(label.get("scope", "-")),
@@ -392,15 +394,16 @@ def render_markdown(digests: list[dict[str, Any]]) -> str:
     ])
     if path_labels:
         lines.extend([
-            "| Summary ID | Case | Shots | Label | Scope | Source |",
-            "| --- | --- | --- | --- | --- | --- |",
+            "| Summary ID | Case | Qubits | Shots | Label | Scope | Source |",
+            "| --- | --- | --- | --- | --- | --- | --- |",
         ])
         for label in path_labels:
             lines.append(
-                "| {summary_id} | {case} | {shots} | `{label}` | {scope} | "
-                "{source} |".format(
+                "| {summary_id} | {case} | {qubits} | {shots} | `{label}` | "
+                "{scope} | {source} |".format(
                     summary_id=markdown_escape(label["summary_id"]),
                     case=markdown_escape(label["case"]),
+                    qubits=markdown_escape(label["qubits"]),
                     shots=markdown_escape(label["shots"]),
                     label=markdown_escape(label["label"]),
                     scope=markdown_escape(label["scope"]),
