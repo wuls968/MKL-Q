@@ -415,6 +415,7 @@ benchmark summary JSON, the static clean CPU performance evidence guards,
 including focused CRZ distance, multi-control, q18-q22 CPU scaling, and
 q18-q22 sampling scaling evidence, the static experimental Metal evidence
 boundary guard, the Metal stochastic sampling host-boundary evidence guard,
+the focused Metal uniform partial-register sampling evidence guard,
 bounded CPU sampling phase counter evidence, bounded Metal runtime counter
 probe JSON, helper syntax, local markdown links, regenerated benchmark-evidence
 plus CPU and Metal counter docs consistency, and the benchmark harness tests.
@@ -516,6 +517,23 @@ ignored raw payload boundaries, requires explicit selected Metal sample-count
 accumulation with host-generated or device-generated draws or historical
 host-side draw/count wording for partial-register rows, and rejects claims of
 broad GPU sampler coverage, release readiness, or all-Metal execution.
+
+## Metal Uniform Sampling Evidence Guard
+
+Use the static Metal uniform sampling guard when a change touches the tracked
+uniform-probability partial-register sampling summary or public wording about
+the generated-count fast path:
+
+```bash
+python3 benchmarks/mklq/check_metal_uniform_sampling_evidence.py
+```
+
+The guard does not run benchmarks. It checks the tracked q20/q22/q24
+`sample-uniform-partial-register` summary for 256, 1024, 8192, and 65536-shot
+rows, requires the 12-measured-qubit/4096-outcome uniform-probability metadata,
+verifies the static `mklq_metal_uniform_partial_register_sample_count_accumulation`
+path label, and rejects broad GPU sampler, release-readiness, or all-Metal
+execution claims.
 
 ## Metal Runtime Counter Probe
 

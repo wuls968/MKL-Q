@@ -254,6 +254,18 @@ def _load_metal_sampling_boundary_evidence_module():
     return module
 
 
+def _load_metal_uniform_sampling_evidence_module():
+    repo_root = Path(__file__).resolve().parents[3]
+    script = repo_root / "benchmarks" / "mklq" / (
+        "check_metal_uniform_sampling_evidence.py")
+    spec = importlib.util.spec_from_file_location(
+        "check_metal_uniform_sampling_evidence", script)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    return module
+
+
 def _load_metal_runtime_counter_probe_module():
     repo_root = Path(__file__).resolve().parents[3]
     script = repo_root / "benchmarks" / "mklq" / (
@@ -1225,6 +1237,7 @@ def test_mklq_public_healthcheck_plan_lists_escalating_gates(tmp_path):
         "sampling_profile_evidence_guard",
         "metal_evidence_guard",
         "metal_sampling_boundary_evidence_guard",
+        "metal_uniform_sampling_evidence_guard",
         "cpu_gate_counter_probe_parse",
         "cpu_gate_counter_docs",
         "cpu_sampling_counter_probe_parse",
@@ -1288,6 +1301,8 @@ def test_mklq_public_healthcheck_plans_crz_distance_guard(tmp_path):
     assert steps.index("metal_evidence_guard") < steps.index(
         "metal_sampling_boundary_evidence_guard")
     assert steps.index("metal_sampling_boundary_evidence_guard") < steps.index(
+        "metal_uniform_sampling_evidence_guard")
+    assert steps.index("metal_uniform_sampling_evidence_guard") < steps.index(
         "cpu_gate_counter_probe_parse")
     assert steps.index("cpu_gate_counter_probe_parse") < steps.index(
         "cpu_gate_counter_docs")
@@ -2160,6 +2175,205 @@ def test_mklq_metal_sampling_boundary_guard_accepts_device_generated_draws():
 
     assert result["status"] == "passed"
     assert result["failures"] == []
+
+
+def _metal_uniform_sampling_summary_fixture(module,
+                                            *,
+                                            omit_row=None,
+                                            elapsed_override=None,
+                                            row_override=None,
+                                            metal_scope=None,
+                                            extra_interpretation=None):
+    rows = []
+    for qubits in module.DEFAULT_REQUIRED_QUBITS:
+        for shots in module.DEFAULT_REQUIRED_SHOTS:
+            row_key = (qubits, shots)
+            if row_key == omit_row:
+                continue
+            elapsed = 0.014 + (qubits - 20) * 0.001
+            if shots == max(module.DEFAULT_REQUIRED_SHOTS):
+                elapsed += 0.002
+            if elapsed_override and row_key in elapsed_override:
+                elapsed = elapsed_override[row_key]
+            row = {
+                "target": "mklq-metal",
+                "case": "sample-uniform-partial-register",
+                "qubits": qubits,
+                "shots": shots,
+                "status": "ok",
+                "elapsed_seconds_median": elapsed,
+                "estimated_state_bytes": 1 << (qubits + 4),
+                "marginal_outcome_count": 4096,
+                "measured_qubit_count": 12,
+                "metal_evidence_boundary": (
+                    "benchmark harness static case-map label only; not a "
+                    "runtime counter, release sign-off, or proof that every "
+                    "operation stayed on Metal"),
+                "metal_full_native": False,
+                "metal_path_label": (
+                    "mklq_metal_uniform_partial_register_"
+                    "sample_count_accumulation"),
+                "metal_path_scope": (
+                    "mixed-path Metal marginal probability fill with "
+                    "uniform-probability generated-count fast path for "
+                    "counts-only partial-register sample-count accumulation"),
+                "metal_runtime_counter": False,
+                "uniform_partial_register_measured_qubit_limit": 12,
+                "uniform_probability_distribution": True,
+            }
+            if row_override:
+                row.update(row_override(row_key))
+            rows.append(row)
+    interpretation = {
+        "do_not_treat_as_clean_release_provenance": True,
+        "raw_json_files_are_ignored": True,
+        "performance_claim_scope": (
+            "local tuning benchmark evidence only; not cross-machine "
+            "performance certification"),
+        "metal_path_scope": metal_scope or (
+            "mixed-path Metal marginal probability fill plus the "
+            "uniform-probability generated-count fast path for counts-only "
+            "partial-register sample-count accumulation"),
+        "sequential_data_accessor_not_invoked": True,
+        "standard_sample_counts_only_path": True,
+        "uniform_partial_register_fixture": True,
+    }
+    if extra_interpretation:
+        interpretation.update(extra_interpretation)
+
+    return {
+        "schema_version": "mklq-benchmark-summary-v1",
+        "summary_id": module.DEFAULT_SUMMARY_ID,
+        "evidence_kind": "local_tuning_evidence",
+        "config": {
+            "targets": ["mklq-metal"],
+            "cases": ["sample-uniform-partial-register"],
+            "qubits": list(module.DEFAULT_REQUIRED_QUBITS),
+            "shot_counts": list(module.DEFAULT_REQUIRED_SHOTS),
+        },
+        "raw_results": [{
+            "path": (
+                "benchmarks/mklq/results/"
+                "local-metal-uniform-partial-sampling-q20-q24-"
+                "2026-07-05.json"),
+            "sha256": "b" * 64,
+            "status_rows": {
+                "ok": 12,
+            },
+            "tracked": False,
+        }],
+        "rows": rows,
+        "interpretation": interpretation,
+    }
+
+
+def test_mklq_metal_uniform_sampling_guard_accepts_current_summary():
+    module = _load_metal_uniform_sampling_evidence_module()
+    repo_root = Path(__file__).resolve().parents[3]
+
+    report = module.check_reports(
+        reports=repo_root / "benchmarks" / "mklq" / "reports",
+        pattern="*.summary.json",
+        summary_ids={module.DEFAULT_SUMMARY_ID},
+    )
+
+    assert report["summary"]["status"] == "passed"
+    assert report["summary"]["checked"] == 1
+    assert report["summaries"][0]["checked_row_count"] == (
+        len(module.DEFAULT_REQUIRED_QUBITS) *
+        len(module.DEFAULT_REQUIRED_SHOTS))
+    assert report["summaries"][0]["max_high_to_low_ratio"] <= (
+        module.DEFAULT_MAX_HIGH_TO_LOW_RATIO)
+
+
+def test_mklq_metal_uniform_sampling_guard_accepts_fixture():
+    module = _load_metal_uniform_sampling_evidence_module()
+
+    result = module.check_summary(
+        _metal_uniform_sampling_summary_fixture(module),
+        required_rows=module.DEFAULT_REQUIRED_ROWS,
+        max_high_to_low_ratio=module.DEFAULT_MAX_HIGH_TO_LOW_RATIO,
+    )
+
+    assert result["status"] == "passed"
+    assert result["failures"] == []
+
+
+def test_mklq_metal_uniform_sampling_guard_rejects_missing_required_row():
+    module = _load_metal_uniform_sampling_evidence_module()
+
+    result = module.check_summary(
+        _metal_uniform_sampling_summary_fixture(module, omit_row=(24, 65536)),
+        required_rows=module.DEFAULT_REQUIRED_ROWS,
+        max_high_to_low_ratio=module.DEFAULT_MAX_HIGH_TO_LOW_RATIO,
+    )
+
+    assert result["status"] == "failed"
+    assert any("q24 shots=65536" in failure for failure in result["failures"])
+
+
+def test_mklq_metal_uniform_sampling_guard_rejects_non_uniform_row():
+    module = _load_metal_uniform_sampling_evidence_module()
+
+    result = module.check_summary(
+        _metal_uniform_sampling_summary_fixture(
+            module,
+            row_override=lambda row_key: {
+                "uniform_probability_distribution": False,
+            } if row_key == (22, 8192) else {},
+        ),
+        required_rows=module.DEFAULT_REQUIRED_ROWS,
+        max_high_to_low_ratio=module.DEFAULT_MAX_HIGH_TO_LOW_RATIO,
+    )
+
+    assert result["status"] == "failed"
+    assert any("uniform_probability_distribution" in failure
+               for failure in result["failures"])
+
+
+def test_mklq_metal_uniform_sampling_guard_rejects_wrong_outcome_count():
+    module = _load_metal_uniform_sampling_evidence_module()
+
+    result = module.check_summary(
+        _metal_uniform_sampling_summary_fixture(
+            module,
+            row_override=lambda row_key: {
+                "marginal_outcome_count": 2048,
+            } if row_key == (20, 1024) else {},
+        ),
+        required_rows=module.DEFAULT_REQUIRED_ROWS,
+        max_high_to_low_ratio=module.DEFAULT_MAX_HIGH_TO_LOW_RATIO,
+    )
+
+    assert result["status"] == "failed"
+    assert any("marginal_outcome_count" in failure
+               for failure in result["failures"])
+
+
+def test_mklq_metal_uniform_sampling_guard_rejects_missing_fast_path_label():
+    module = _load_metal_uniform_sampling_evidence_module()
+
+    result = module.check_summary(
+        _metal_uniform_sampling_summary_fixture(
+            module,
+            metal_scope=(
+                "mixed-path Metal marginal probability fill with generic "
+                "partial-register sample-count accumulation"),
+            row_override=lambda row_key: {
+                "metal_path_label": "mklq_metal_partial_register_sample",
+                "metal_path_scope": (
+                    "mixed-path Metal marginal probability fill with generic "
+                    "partial-register sample-count accumulation"),
+            } if row_key == (24, 65536) else {},
+        ),
+        required_rows=module.DEFAULT_REQUIRED_ROWS,
+        max_high_to_low_ratio=module.DEFAULT_MAX_HIGH_TO_LOW_RATIO,
+    )
+
+    assert result["status"] == "failed"
+    failures = "\n".join(result["failures"])
+    assert "uniform-probability generated-count fast path" in failures
+    assert "metal_path_label" in failures
 
 
 def test_mklq_public_claim_guard_accepts_negated_boundary_text():
@@ -4039,6 +4253,36 @@ def test_mklq_public_healthcheck_runs_metal_sampling_boundary_guard(
     assert summary_ids == list(module.METAL_SAMPLING_BOUNDARY_SUMMARY_IDS)
 
 
+def test_mklq_public_healthcheck_runs_metal_uniform_sampling_guard(monkeypatch,
+                                                                   tmp_path):
+    module = _load_public_healthcheck_module()
+    config = _public_healthcheck_config(module, tmp_path)
+    calls = []
+
+    def fake_run_command(config, command, env_overlay=None):
+        calls.append(command)
+        return {
+            "returncode": 0,
+            "command": command,
+            "stdout_tail": "{}",
+            "stderr_tail": "",
+        }
+
+    monkeypatch.setattr(module, "run_command", fake_run_command)
+
+    result = module.run_metal_uniform_sampling_evidence_check(config)
+
+    assert result["status"] == "passed"
+    assert calls[0][1].endswith(
+        "benchmarks/mklq/check_metal_uniform_sampling_evidence.py")
+    summary_ids = [
+        calls[0][index + 1]
+        for index, token in enumerate(calls[0])
+        if token == "--summary-id"
+    ]
+    assert summary_ids == [module.METAL_UNIFORM_SAMPLING_SUMMARY_ID]
+
+
 def test_mklq_public_healthcheck_plan_includes_metal_evidence_guard(tmp_path):
     module = _load_public_healthcheck_module()
     config = _public_healthcheck_config(module,
@@ -4053,6 +4297,8 @@ def test_mklq_public_healthcheck_plan_includes_metal_evidence_guard(tmp_path):
     assert steps.index("metal_evidence_guard") < steps.index(
         "metal_sampling_boundary_evidence_guard")
     assert steps.index("metal_sampling_boundary_evidence_guard") < steps.index(
+        "metal_uniform_sampling_evidence_guard")
+    assert steps.index("metal_uniform_sampling_evidence_guard") < steps.index(
         "cpu_gate_counter_probe_parse")
     assert steps.index("cpu_gate_counter_probe_parse") < steps.index(
         "cpu_gate_counter_docs")
@@ -4099,6 +4345,13 @@ def test_mklq_public_healthcheck_compiles_metal_sampling_boundary_guard():
     module = _load_public_healthcheck_module()
 
     assert "benchmarks/mklq/check_metal_sampling_boundary_evidence.py" in (
+        module.PY_COMPILE_FILES)
+
+
+def test_mklq_public_healthcheck_compiles_metal_uniform_sampling_guard():
+    module = _load_public_healthcheck_module()
+
+    assert "benchmarks/mklq/check_metal_uniform_sampling_evidence.py" in (
         module.PY_COMPILE_FILES)
 
 
@@ -5099,6 +5352,7 @@ def _write_release_checklist_audit_fixture(
             "benchmarks/mklq/check_performance_evidence.py",
             "benchmarks/mklq/check_metal_evidence.py",
             "benchmarks/mklq/check_metal_sampling_boundary_evidence.py",
+            "benchmarks/mklq/check_metal_uniform_sampling_evidence.py",
             "benchmarks/mklq/check_public_claims.py",
             "benchmarks/mklq/check_sampling_profile_evidence.py",
             "benchmarks/mklq/check_cpu_gate_counter_docs.py",
@@ -5204,6 +5458,7 @@ python3 benchmarks/mklq/repair_macos_install_signatures.py
 python3 benchmarks/mklq/check_performance_evidence.py
 python3 benchmarks/mklq/check_metal_evidence.py
 python3 benchmarks/mklq/check_metal_sampling_boundary_evidence.py
+python3 benchmarks/mklq/check_metal_uniform_sampling_evidence.py
 python3 benchmarks/mklq/check_public_claims.py
 python3 benchmarks/mklq/check_sampling_profile_evidence.py
 python3 benchmarks/mklq/check_cpu_gate_counter_docs.py
@@ -5255,6 +5510,7 @@ python3 benchmarks/mklq/check_public_claims.py
 python3 benchmarks/mklq/check_performance_evidence.py
 python3 benchmarks/mklq/check_metal_evidence.py
 python3 benchmarks/mklq/check_metal_sampling_boundary_evidence.py
+python3 benchmarks/mklq/check_metal_uniform_sampling_evidence.py
 python3 benchmarks/mklq/check_sampling_profile_evidence.py
 python3 benchmarks/mklq/check_cpu_gate_counter_docs.py
 python3 benchmarks/mklq/check_cpu_sampling_counter_docs.py

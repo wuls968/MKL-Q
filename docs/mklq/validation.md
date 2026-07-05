@@ -121,7 +121,7 @@ sampling/probability counter evidence includes three bounded reports, each with
 explicit full-register and
 marginal probability-fill counter ctests alongside the existing sampling phase
 counter ctests. The current tracked Metal runtime counter evidence includes
-ten bounded reports. Counter-summary aggregate counts are summed
+thirteen bounded reports. Counter-summary aggregate counts are summed
 across tracked reports, so repeated daily probes intentionally count the same
 selected tests once per report.
 
@@ -141,6 +141,7 @@ Raw wrapper output was written to ignored local paths
 `benchmarks/mklq/results/public-healthcheck-deterministic-sampling-bypass-2026-07-04.json`,
 `benchmarks/mklq/results/public-healthcheck-deterministic-sampling-bypass-final-2026-07-04.json`,
 `benchmarks/mklq/results/public-healthcheck-deterministic-sequential-bypass-2026-07-04.json`,
+`benchmarks/mklq/results/public-healthcheck-2026-07-05.json`,
 `benchmarks/mklq/results/public-healthcheck-full-2026-06-22.json`,
 `benchmarks/mklq/results/public-healthcheck-full-2026-06-23.json`,
 `benchmarks/mklq/results/public-healthcheck-full-2026-06-24.json`,
@@ -175,21 +176,22 @@ Raw wrapper output was written to ignored local paths
 `benchmarks/mklq/results/local-metal-partial-count-accumulation-sampling-q20-2026-07-05.json`,
 `benchmarks/mklq/results/local-metal-partial-count-accumulation-sampling-q22-2026-07-05.json`,
 `benchmarks/mklq/results/local-metal-partial-count-accumulation-sampling-q24-2026-07-05.json`,
+`benchmarks/mklq/results/local-metal-uniform-partial-sampling-q20-q24-2026-07-05.json`,
 `benchmarks/mklq/results/example-smoke-2026-06-23.json`,
 `benchmarks/mklq/results/example-smoke-2026-07-02.json`,
 `benchmarks/mklq/results/macos-install-signature-repair-2026-07-02.json`, and
 `benchmarks/mklq/results/macos-install-signature-repair-2026-07-04.json`;
 these raw payloads are not tracked as public evidence.
 
-Latest default 2026-07-04 result: `30/30` steps passed.
-Full public healthcheck planned step count: `34/34` steps.
+Latest default 2026-07-05 result: `31/31` steps passed.
+Full public healthcheck planned step count: `35/35` steps.
 
 - Install-prefix build: passed.
-- Default public healthcheck: passed on 2026-07-04, with 30 steps passed and
+- Default public healthcheck: passed on 2026-07-05, with 31 steps passed and
   0 failed.
 - Latest full public healthcheck wrapper attempt: this metadata-only guard
   refresh did not rerun the full build/correctness wrapper; the current plan has
-  34 planned steps. The last completed full public healthcheck remains the
+  35 planned steps. The last completed full public healthcheck remains the
   2026-07-03 run from the previous 33-step structure after adding the dedicated
   macOS install-prefix signature repair step. The signature repair step
   refreshed and verified 60 local install-prefix `.dylib` and `.so` loadables
@@ -197,7 +199,7 @@ Full public healthcheck planned step count: `34/34` steps.
 - One-command correctness gate: passed with 4 steps passed, 0 failed, and 0
   skipped, including the Metal runtime counter probe.
 - Public example smoke gate: passed, with 30 steps passed and 0 failed.
-- Current `benchmark_harness_tests`: `206 passed`.
+- Current `benchmark_harness_tests`: `218 passed`.
 - Current `cpu_gate_counter_probe_parse`: 3 bounded reports, 37 expected,
   37 selected, 0 missing, and 0 failures, including single-control X/CNOT,
   per-gate single-control H/Y/Rx/Ry direct pair fixtures, single-control Rz
@@ -593,6 +595,14 @@ current local MKL-Q build to `/Users/a0000/.cudaq-mklq`. It compares q18/q20/q22
 and 65536 shots with `repeats=2`, `warmups=1`, `layers=8`, and isolated rows.
 The public healthcheck now includes a dedicated
 `sampling_scaling_evidence_guard` for this summary.
+
+The focused Metal uniform partial-register sampling summary is local tuning
+evidence only. It records q20/q22/q24 `mklq-metal`
+`sample-uniform-partial-register` rows at 256, 1024, 8192, and 65536 shots,
+requires the 12-measured-qubit/4096-outcome uniform-probability metadata, and
+keeps the static path label boundary separate from runtime counter or release
+certification claims. The public healthcheck now includes a dedicated
+`metal_uniform_sampling_evidence_guard` for this summary.
 
 The Metal composite summary is local tuning evidence only. It records q20
 `qft-like-state` and `seeded-clifford-state` rows for `qpp-cpu`, `mklq-cpu`, and
