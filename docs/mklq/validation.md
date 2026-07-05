@@ -38,6 +38,15 @@ The full public healthcheck was refreshed again on 2026-07-05 on clean
 `main` after adding the Metal uniform sampling evidence guard, confirming that
 the install-prefix build, local signature repair, correctness gate, benchmark
 harness tests, and public examples still pass together.
+A source-only release-candidate dry run was also executed on 2026-07-05 on
+clean `main` without creating tags, releases, wheels, installers, or signed
+artifacts. The local full public healthcheck passed with 35/35 steps, the
+public release checklist audit passed with 7/7 checks, the preflight audit
+passed, and the public readiness audit passed with 13/13 checks. The live
+self-hosted runner inventory check was the only non-passing dry-run item:
+GitHub reported zero registered runners for `wuls968/MKL-Q`, so the manual
+self-hosted Apple Silicon full gate remains inactive until a runner with the
+required labels is registered and online.
 The clean CPU benchmark summary was refreshed separately against
 `dbebe3744f826ba4cbeed2b99708a2bdab03b11e` after promoting the two-qubit/SWAP
 and three-qubit custom gate rows into the clean local CPU benchmark evidence
