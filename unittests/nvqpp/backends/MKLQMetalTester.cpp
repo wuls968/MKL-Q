@@ -143,6 +143,14 @@ public:
 #endif
   }
 
+  std::size_t generatedSampleCountAccumulationsForTest() const {
+#if defined(MKLQ_ENABLE_METAL_RUNTIME)
+    return metalExecutor.generatedSampleCountAccumulations();
+#else
+    return 0;
+#endif
+  }
+
   std::size_t marginalProbabilityApplicationsForTest() const {
 #if defined(MKLQ_ENABLE_METAL_RUNTIME)
     return metalExecutor.marginalProbabilityApplications();
@@ -755,6 +763,31 @@ CUDAQ_TEST(MKLQMetalTester, MetalRuntimeAccumulatesSampleCounts) {
   EXPECT_EQ(executor.sampleCountAccumulations(), 1);
 }
 
+CUDAQ_TEST(MKLQMetalTester, MetalRuntimeGeneratesSampleCountsOnDevice) {
+  nvqir::mklq::MetalStateVectorExecutor executor;
+
+  if (!expectMetalRuntimeReadyOrUnavailable(executor))
+    return;
+
+  const std::array<double, 3> probabilities{0.25, 0.25, 0.5};
+  constexpr std::uint64_t seed = 0x4d4b4c512d73616dULL;
+  constexpr std::size_t shots = 256;
+  std::array<std::uint32_t, 3> counts{0, 0, 0};
+
+  ASSERT_TRUE(executor.accumulateGeneratedSampleCounts(
+      probabilities.data(), probabilities.size(), seed, shots, counts.data(),
+      counts.size()))
+      << executor.lastError();
+
+  const auto total = counts[0] + counts[1] + counts[2];
+  EXPECT_EQ(total, shots);
+  EXPECT_GT(counts[0], 0u);
+  EXPECT_GT(counts[1], 0u);
+  EXPECT_GT(counts[2], 0u);
+  EXPECT_EQ(executor.sampleCountAccumulations(), 0);
+  EXPECT_EQ(executor.generatedSampleCountAccumulations(), 1);
+}
+
 CUDAQ_TEST(MKLQMetalTester, MetalRuntimeRejectsTargetsOutsideStateRange) {
   nvqir::mklq::MetalStateVectorExecutor executor;
 
@@ -1256,6 +1289,8 @@ CUDAQ_TEST(MKLQMetalTester,
   EXPECT_EQ(sim.probabilityFillApplicationsForTest(),
             sim.metalRuntimeAvailableForTest() ? 1 : 0);
   EXPECT_EQ(sim.sampleCountAccumulationsForTest(),
+            0);
+  EXPECT_EQ(sim.generatedSampleCountAccumulationsForTest(),
             sim.metalRuntimeAvailableForTest() ? 1 : 0);
   EXPECT_EQ(sim.countsOnlySampleDrawBatchesForTest(),
             sim.metalRuntimeAvailableForTest() ? 0 : 1);
@@ -1488,6 +1523,8 @@ CUDAQ_TEST(
             sim.metalRuntimeAvailableForTest() ? 1 : 0);
   EXPECT_EQ(sim.probabilityFillApplicationsForTest(), 0);
   EXPECT_EQ(sim.sampleCountAccumulationsForTest(),
+            0);
+  EXPECT_EQ(sim.generatedSampleCountAccumulationsForTest(),
             sim.metalRuntimeAvailableForTest() ? 1 : 0);
   EXPECT_EQ(sim.countsOnlySampleDrawBatchesForTest(),
             sim.metalRuntimeAvailableForTest() ? 0 : 1);
@@ -1572,6 +1609,8 @@ CUDAQ_TEST(MKLQMetalTester,
             sim.metalRuntimeAvailableForTest() ? 1 : 0);
   EXPECT_EQ(sim.probabilityFillApplicationsForTest(), 0);
   EXPECT_EQ(sim.sampleCountAccumulationsForTest(),
+            0);
+  EXPECT_EQ(sim.generatedSampleCountAccumulationsForTest(),
             sim.metalRuntimeAvailableForTest() ? 1 : 0);
   EXPECT_EQ(sim.countsOnlySampleDrawBatchesForTest(),
             sim.metalRuntimeAvailableForTest() ? 0 : 1);

@@ -195,12 +195,12 @@ completed local gates, and focused CRZ distance-sweep evidence retained from
   hardware-efficient ansatz composite CPU fast-path counter fixture and the
   resident full-register Metal sampling telemetry plus selected sample-count
   accumulation fixtures;
-- current tracked `metal_runtime_counter_probe`: 11 bounded reports, 436
-  expected, 436 selected, 0 missing, and 0 failures, including resident gate,
+- current tracked `metal_runtime_counter_probe`: 12 bounded reports, 485
+  expected, 485 selected, 0 missing, and 0 failures, including resident gate,
   probability/sampling, deterministic sampling bypass, direct and simulator
   coverage for selected full-register and partial-register counts-only Metal
-  sample-count accumulation after host-generated draws, remaining sequential
-  host-side sampling telemetry, native sampling phase timing,
+  generated-draw/count accumulation, remaining sequential host-side sampling
+  telemetry, native sampling phase timing,
   measurement/reset, fallback, and error-boundary fixtures.
 - clean CPU benchmark gate: passed with 32 q20 `qpp-cpu`/`mklq-cpu` rows,
   including `two-qubit-state`, `three-qubit-state`, `qft-like-state`,
@@ -239,9 +239,9 @@ checks local tuning provenance, ignored raw payload paths, successful Metal
 rows, and wording that keeps the experimental mixed-path/host boundary clear.
 It also includes `check_metal_sampling_boundary_evidence.py` for the tracked
 q20/q22/q24 stochastic `mklq-metal` sampling summaries, requiring historical
-host-side draw/count wording or selected Metal sample-count accumulation after
-host-generated draws, while rejecting Metal RNG or broad device-side sampler
-claims in those static summaries.
+host-side draw/count wording or selected Metal sample-count accumulation with
+host-generated or device-generated draws, while rejecting broad device-side
+sampler claims in those static summaries.
 It also includes `check_cpu_gate_counter_docs.py` and
 `check_metal_runtime_counter_docs.py`, which fail if the public CPU gate
 fast-path or Metal runtime counter summaries drift from the tracked bounded

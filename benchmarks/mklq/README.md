@@ -20,8 +20,8 @@ Measurement probability uses a
 dedicated measured-qubit Metal reduction kernel with a small host partial-sum
 finish; branch collapse uses a Metal kernel. Unsupported paths fall back to the
 MKL-Q fp64 CPU oracle after synchronizing host state. Selected full-register
-and partial-register counts-only sampling can accumulate outcome counts with a
-Metal kernel after host-generated random draws and resident probability work;
+and partial-register counts-only sampling can generate stochastic draws and
+accumulate outcome counts with Metal kernels after resident probability work;
 sequential sampling still accumulates draw/count results on the host.
 Deterministic one-outcome sequential and counts-only distributions can bypass
 the draw loop after probability work.
@@ -508,10 +508,9 @@ The guard does not run benchmarks. It checks the tracked q20, q22, and q24
 counts-only shot-scaling summaries for full-register and partial-register
 `mklq-metal` sampling rows at 256, 1024, 8192, and 65536 shots, verifies
 ignored raw payload boundaries, requires explicit selected Metal sample-count
-accumulation after host-generated draws or historical host-side draw/count
-wording for partial-register rows, and rejects claims of Metal RNG, GPU
-sampler, broad device-side sampler coverage, release readiness, or all-Metal
-execution.
+accumulation with host-generated or device-generated draws or historical
+host-side draw/count wording for partial-register rows, and rejects claims of
+broad GPU sampler coverage, release readiness, or all-Metal execution.
 
 ## Metal Runtime Counter Probe
 
@@ -533,11 +532,11 @@ or failing. The tracked `.counter.json` report is bounded evidence: it records
 keeps `release_signoff` and `all_metal_execution_proof` false. It is not a
 benchmark result and it does not prove every `mklq-metal` operation stays on
 Metal.
-Current sampling counter coverage includes selected full-register counts-only
-Metal sample-count accumulation after host-generated draws, full-register
-sequential host draw telemetry, partial-register sequential/counts-only host
-draw telemetry after resident Metal probability work, plus deterministic
-one-outcome draw-loop bypasses.
+Current sampling counter coverage includes selected full-register and
+partial-register counts-only Metal generated-draw/count accumulation,
+full-register and partial-register sequential host draw telemetry after
+resident Metal probability work, plus deterministic one-outcome draw-loop
+bypasses.
 
 ## Metal Runtime Counter Summary
 

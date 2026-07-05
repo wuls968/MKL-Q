@@ -123,8 +123,14 @@ def states_host_draw_count_boundary(value: str) -> bool:
 
 def states_selected_metal_count_accumulation(value: str) -> bool:
     normalized = value.lower()
-    return ("metal" in normalized and "sample-count" in normalized and
-            "host-generated draw" in normalized)
+    has_metal_sample_counts = (
+        "metal" in normalized and "sample-count" in normalized)
+    has_historical_host_draws = "host-generated draw" in normalized
+    has_current_device_draws = (
+        "device-generated draw" in normalized or
+        ("generated draw" in normalized and "host-generated" not in normalized))
+    return has_metal_sample_counts and (has_historical_host_draws or
+                                        has_current_device_draws)
 
 
 def list_summaries(reports: Path, pattern: str,
@@ -230,12 +236,13 @@ def check_interpretation(interpretation: Any) -> list[str]:
             failures.append(
                 "partial-register counts accumulation boundary must state "
                 "host-side draw/count accumulation or selected Metal "
-                "sample-count accumulation after host-generated draws")
+                "sample-count accumulation with host-generated or "
+                "device-generated draws")
         if not states_selected_metal_count_accumulation(full_register_counts):
             failures.append(
                 "full-register counts accumulation boundary must state "
-                "selected Metal sample-count accumulation after host-generated "
-                "draws")
+                "selected Metal sample-count accumulation with "
+                "host-generated or device-generated draws")
     elif not has_host_counts_boundary:
         failures.append(
             "metal path scope does not state host-side draw/count accumulation")

@@ -2135,6 +2135,33 @@ def test_mklq_metal_sampling_boundary_guard_accepts_selected_partial_count_accum
     assert result["failures"] == []
 
 
+def test_mklq_metal_sampling_boundary_guard_accepts_device_generated_draws():
+    module = _load_metal_sampling_boundary_evidence_module()
+
+    result = module.check_summary(
+        _metal_sampling_boundary_summary_fixture(
+            module,
+            metal_scope=(
+                "mixed-path Metal probability fill with selected "
+                "full-register and partial-register counts-only Metal "
+                "device-generated draw plus sample-count accumulation"),
+            extra_interpretation={
+                "full_register_counts_accumulation":
+                    "selected Metal device-generated draw plus "
+                    "sample-count accumulation",
+                "partial_register_counts_accumulation":
+                    "selected Metal device-generated draw plus "
+                    "sample-count accumulation",
+            },
+        ),
+        required_rows=module.DEFAULT_REQUIRED_ROWS,
+        max_high_to_low_ratio=module.DEFAULT_MAX_HIGH_TO_LOW_RATIO,
+    )
+
+    assert result["status"] == "passed"
+    assert result["failures"] == []
+
+
 def test_mklq_public_claim_guard_accepts_negated_boundary_text():
     module = _load_public_claims_module()
 
@@ -2339,7 +2366,7 @@ def test_mklq_public_healthcheck_requires_metal_execution_boundary_metadata():
             "metal-execution-boundary.md") in requirements
     assert ("runtime/nvqir/mklq/mklq-metal.yml",
             "full-register and partial-register counts-only Metal "
-            "sample-count accumulation after host-generated draws") in requirements
+            "device-generated draw plus sample-count accumulation") in requirements
 
 
 def test_mklq_public_healthcheck_scans_runtime_mklq_metadata():
@@ -2886,6 +2913,7 @@ def test_mklq_metal_runtime_counter_probe_tracks_runtime_counter_surface():
         "MetalRuntimeKeepsResidentYAndControlledYSequence",
         "MetalRuntimeFillsResidentProbabilitiesWithoutStateReadback",
         "MetalRuntimeAccumulatesSampleCounts",
+        "MetalRuntimeGeneratesSampleCountsOnDevice",
         "MetalRuntimeRejectsTargetsOutsideStateRange",
         "SimulatorUsesMetalFullRegisterProbabilityFill",
         "SimulatorKeepsSupportedGateSequenceResidentUntilReadback",
@@ -2932,7 +2960,7 @@ def test_mklq_metal_runtime_counter_probe_tracks_runtime_counter_surface():
 
     assert suffixes == expected_suffixes
     assert suffixes.isdisjoint(metadata_only_suffixes)
-    assert len(module.COUNTER_TEST_SUFFIXES) == 48
+    assert len(module.COUNTER_TEST_SUFFIXES) == 49
 
 
 def test_mklq_metal_runtime_counter_probe_builds_bounded_report(monkeypatch,
@@ -6487,11 +6515,11 @@ def test_mklq_benchmark_dry_run_records_metal_path_metadata(tmp_path):
         "mklq_metal_full_register_sample_count_accumulation")
     assert rows["sample-full-register"]["metrics"]["metal_path_scope"] == (
         "mixed-path Metal probability fill with selected full-register "
-        "counts-only Metal sample-count accumulation after host-generated "
-        "draws")
+        "counts-only Metal device-generated draw plus sample-count "
+        "accumulation")
     assert rows["sample-partial-register"]["metrics"]["metal_path_label"] == (
         "mklq_metal_partial_register_sample_count_accumulation")
-    assert "host-generated draws" in rows[
+    assert "device-generated draw" in rows[
         "sample-partial-register"]["metrics"]["metal_path_scope"]
     for row in rows.values():
         metrics = row["metrics"]

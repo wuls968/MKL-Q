@@ -173,10 +173,11 @@ target-marker output.
   computes resident full-register probabilities once and folds them to
   marginal outcome probabilities on the host without first downloading the
   state vector. Full-register and partial-register counts-only sampling can
-  now use a Metal sample-count accumulation kernel after host-generated random
-  draws and resident probability work. Sequential stochastic sampling remains
-  host-side; build-tree counter tests cover the current split between selected
-  counts-only Metal accumulation and host-side sequential draw telemetry.
+  now use Metal-generated random draws plus a Metal sample-count accumulation
+  kernel after resident probability work. Sequential stochastic sampling
+  remains host-side; build-tree counter tests cover the current split between
+  selected counts-only Metal draw/count accumulation and host-side sequential
+  draw telemetry.
   Deterministic one-outcome sequential and counts-only distributions can
   bypass stochastic draw loops after resident probability work. The current
   local shot-scaling gate does not justify a general on-device sampler yet.
