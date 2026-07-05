@@ -86,15 +86,17 @@ git remote remove upstream 2>/dev/null || true
 git remote add upstream https://github.com/NVIDIA/cuda-quantum.git
 git fetch --filter=blob:none origin main:refs/remotes/origin/main
 git fetch --filter=blob:none upstream main:refs/remotes/upstream/main
+rm -rf build-python "${install_prefix}"
 cmake -S . -B build-python -G Ninja \
   -D CUDAQ_ENABLE_MKLQ_BACKEND=ON \
+  -D CUDAQ_ENABLE_PROJECTS=python \
   -D CMAKE_INSTALL_PREFIX="${install_prefix}" \
   -D Python_EXECUTABLE="${python_bin}" \
   -D Python3_EXECUTABLE="${python_bin}"
-cmake --build build-python --target install -j 6
 "${python_bin}" benchmarks/mklq/run_public_healthcheck.py \
   --full \
   --require-clean \
+  --focused-install-build \
   --install-prefix "${install_prefix}" \
   --python-executable "${python_bin}" \
   --pythonpath "${install_prefix}" \
@@ -104,12 +106,17 @@ cmake --build build-python --target install -j 6
 
 The tracked workflow invokes the same gate after selecting the effective Python,
 normalizing `origin` and `upstream`, fetching `origin/main` and
-`upstream/main`, and configuring a fresh `build-python` tree:
+`upstream/main`, clearing the persistent runner build/install directories, and
+configuring a fresh `build-python` tree with `CUDAQ_ENABLE_PROJECTS=python`.
+The `--focused-install-build` option builds the reviewed installable MKL-Q
+targets and then runs `cmake --install`, avoiding unrelated upstream test
+binaries that are not part of this source-only Apple Silicon gate.
 
 ```bash
 "${MKLQ_EFFECTIVE_PYTHON}" benchmarks/mklq/run_public_healthcheck.py \
   --full \
   --require-clean \
+  --focused-install-build \
   --install-prefix "${MKLQ_INSTALL_PREFIX}" \
   --python-executable "${MKLQ_EFFECTIVE_PYTHON}" \
   --pythonpath "${MKLQ_INSTALL_PREFIX}" \
@@ -154,7 +161,8 @@ Before making the full self-hosted job automatic or branch-protected:
   the working directory.
 - Confirm the job uses `permissions: contents: read`.
 - Confirm the job has explicit `timeout-minutes` and `concurrency` settings.
-- Confirm the command is `run_public_healthcheck.py --full --require-clean` or
+- Confirm the command is
+  `run_public_healthcheck.py --full --require-clean --focused-install-build` or
   a stricter reviewed replacement.
 - Confirm the workflow produces no release artifacts.
 - Confirm branch protection expectations are updated only after the new job is

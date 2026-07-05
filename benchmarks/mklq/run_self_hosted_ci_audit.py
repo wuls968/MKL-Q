@@ -61,6 +61,8 @@ REQUIRED_TOKENS = (
     "Dispatch guard",
     "manual",
     "run_public_healthcheck.py --full --require-clean",
+    "--focused-install-build",
+    "CUDAQ_ENABLE_PROJECTS=python",
     "run_correctness_gate.py",
     "benchmarks/mklq/results/",
     "no tags",
@@ -103,6 +105,8 @@ APPLE_WORKFLOW_REQUIRED_TOKENS = (
     "run_public_healthcheck.py",
     "--full",
     "--require-clean",
+    "--focused-install-build",
+    "CUDAQ_ENABLE_PROJECTS=python",
     "benchmarks/mklq/results/",
 )
 
