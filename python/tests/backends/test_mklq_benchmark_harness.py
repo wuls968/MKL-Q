@@ -3178,6 +3178,7 @@ def test_mklq_metal_runtime_counter_probe_selects_counter_tests():
     module = _load_metal_runtime_counter_probe_module()
     listing = """
 Test project /repo/build-python
+  Test  #67: mklq_metal_MKLQMetalTester.MetalRuntimeAppliesSingleQubitGate
   Test #787: mklq_metal_MKLQMetalTester.MetalRuntimeKeepsResidentStateAcrossGateSequence
   Test #788: mklq_metal_MKLQMetalTester.MetalRuntimeAppliesResidentThreeQubitGate
   Test #789: mklq_metal_MKLQMetalTester.MetalRuntimeFillsResidentProbabilitiesWithoutStateReadback
@@ -3190,6 +3191,7 @@ Test project /repo/build-python
     tests = module.select_counter_tests(listing)
 
     assert tests == [
+        "mklq_metal_MKLQMetalTester.MetalRuntimeAppliesSingleQubitGate",
         "mklq_metal_MKLQMetalTester.MetalRuntimeAppliesResidentThreeQubitGate",
         "mklq_metal_MKLQMetalTester.MetalRuntimeKeepsResidentStateAcrossGateSequence",
         "mklq_metal_MKLQMetalTester.MetalRuntimeFillsResidentProbabilitiesWithoutStateReadback",
