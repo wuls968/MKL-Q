@@ -104,6 +104,34 @@ jobs:
           test "$(git rev-parse --is-shallow-repository)" = "false"
           git ls-files .github/workflows | sort
 
+      - name: Bootstrap source submodules
+        shell: bash
+        timeout-minutes: 20
+        run: |
+          set -euo pipefail
+          git submodule sync --recursive
+          git -c submodule.tpls/llvm.update=none submodule update \
+            --init \
+            --depth 1 \
+            --jobs 6 \
+            tpls/Stim \
+            tpls/armadillo \
+            tpls/cpr \
+            tpls/eigen \
+            tpls/ensmallen \
+            tpls/fmt \
+            tpls/googletest-src \
+            tpls/nanobind \
+            tpls/qpp \
+            tpls/spdlog \
+            tpls/xtensor \
+            tpls/xtl
+          git -C tpls/nanobind submodule update \
+            --init \
+            --depth 1 \
+            ext/robin_map
+          git submodule status --recursive
+
       - name: Reset local build state
         shell: bash
         run: |
@@ -118,6 +146,7 @@ jobs:
           cmake -S . -B "${MKLQ_BUILD_DIR}" -G Ninja \
             -D CUDAQ_ENABLE_MKLQ_BACKEND=ON \
             -D CUDAQ_ENABLE_PROJECTS=python \
+            -D GIT_SUBMODULE=OFF \
             -D CMAKE_INSTALL_PREFIX="${MKLQ_INSTALL_PREFIX}" \
             -D Python_EXECUTABLE="${MKLQ_EFFECTIVE_PYTHON}" \
             -D Python3_EXECUTABLE="${MKLQ_EFFECTIVE_PYTHON}"
