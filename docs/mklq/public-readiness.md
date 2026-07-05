@@ -177,6 +177,10 @@ completed local gates, and focused CRZ distance-sweep evidence retained from
 - full public healthcheck: passed with 35/35 steps passed; this includes the
   install-prefix build, local macOS signature repair for 60 loadables,
   correctness gate, benchmark harness tests, and public example smoke gate;
+- source-only release-candidate dry run: passed the local full public
+  healthcheck, public release checklist audit, preflight audit, and public
+  readiness audit on 2026-07-05; the live self-hosted runner inventory check
+  reported 0 registered runners and is not release evidence yet;
 - public readiness audit: passed with 13/13 checks passed against the
   then-current protected `main` branch;
 - one-command correctness gate: passed with 4/4 steps passed, including
@@ -291,6 +295,9 @@ certification.
 - `mklq-metal` is experimental and must not be described as default-ready.
 - Public GitHub Actions currently run source hygiene only.
 - Backend correctness still depends on local Apple Silicon validation.
+- The manual self-hosted Apple Silicon full gate is configured but not active
+  as release evidence while the live `actions/runners` inventory has no online
+  runner with the required labels.
 - No package manager or binary artifact support is published.
 - Upstream CUDA-Q syncs must follow [`upstream-sync.md`](upstream-sync.md).
 
