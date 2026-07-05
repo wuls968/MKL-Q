@@ -2367,6 +2367,8 @@ def test_mklq_public_healthcheck_requires_metal_execution_boundary_metadata():
     assert ("runtime/nvqir/mklq/mklq-metal.yml",
             "full-register and partial-register counts-only Metal "
             "device-generated draw plus sample-count accumulation") in requirements
+    assert ("runtime/nvqir/mklq/mklq-metal.yml",
+            "uniform-probability generated-count fast path") in requirements
 
 
 def test_mklq_public_healthcheck_scans_runtime_mklq_metadata():
@@ -2914,6 +2916,7 @@ def test_mklq_metal_runtime_counter_probe_tracks_runtime_counter_surface():
         "MetalRuntimeFillsResidentProbabilitiesWithoutStateReadback",
         "MetalRuntimeAccumulatesSampleCounts",
         "MetalRuntimeGeneratesSampleCountsOnDevice",
+        "MetalRuntimeGeneratesUniformSampleCountsOnDevice",
         "MetalRuntimeRejectsTargetsOutsideStateRange",
         "SimulatorUsesMetalFullRegisterProbabilityFill",
         "SimulatorKeepsSupportedGateSequenceResidentUntilReadback",
@@ -2960,7 +2963,7 @@ def test_mklq_metal_runtime_counter_probe_tracks_runtime_counter_surface():
 
     assert suffixes == expected_suffixes
     assert suffixes.isdisjoint(metadata_only_suffixes)
-    assert len(module.COUNTER_TEST_SUFFIXES) == 49
+    assert len(module.COUNTER_TEST_SUFFIXES) == 50
 
 
 def test_mklq_metal_runtime_counter_probe_builds_bounded_report(monkeypatch,

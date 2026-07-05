@@ -36,7 +36,7 @@ APPLE_SILICON_TARGETS = ("qpp-cpu", "mklq-cpu", "mklq-metal")
 PORTABLE_DEFAULT_TARGETS = ("qpp-cpu",)
 TARGET_NOTES = {
     "mklq-metal":
-        "Experimental mixed-path target: mklq_metal uses resident fp32 Metal single-target/two-target/three-target/probability-fill kernels, cost-gated resident full-register and marginal probability kernels for sampling, selected full-register and partial-register counts-only Metal device-generated draw plus sample-count accumulation, a measured-qubit probability-reduction kernel, and a resident measurement-collapse path with MKL-Q fp64 CPU-oracle fallback for unsupported paths; sequential stochastic draw/count accumulation remains host-side, not full Metal GPU backend evidence.",
+        "Experimental mixed-path target: mklq_metal uses resident fp32 Metal single-target/two-target/three-target/probability-fill kernels, cost-gated resident full-register and marginal probability kernels for sampling, selected full-register and partial-register counts-only Metal device-generated draw plus sample-count accumulation with a uniform-probability generated-count fast path, a measured-qubit probability-reduction kernel, and a resident measurement-collapse path with MKL-Q fp64 CPU-oracle fallback for unsupported paths; sequential stochastic draw/count accumulation remains host-side, not full Metal GPU backend evidence.",
 }
 METAL_EVIDENCE_BOUNDARY = (
     "benchmark harness static case-map label only; not a runtime counter, "

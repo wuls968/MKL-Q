@@ -195,12 +195,13 @@ completed local gates, and focused CRZ distance-sweep evidence retained from
   hardware-efficient ansatz composite CPU fast-path counter fixture and the
   resident full-register Metal sampling telemetry plus selected sample-count
   accumulation fixtures;
-- current tracked `metal_runtime_counter_probe`: 12 bounded reports, 485
-  expected, 485 selected, 0 missing, and 0 failures, including resident gate,
+- current tracked `metal_runtime_counter_probe`: 13 bounded reports, 535
+  expected, 535 selected, 0 missing, and 0 failures, including resident gate,
   probability/sampling, deterministic sampling bypass, direct and simulator
   coverage for selected full-register and partial-register counts-only Metal
-  generated-draw/count accumulation, remaining sequential host-side sampling
-  telemetry, native sampling phase timing,
+  generated-draw/count accumulation, the uniform-probability generated-count
+  fast path, remaining sequential host-side sampling telemetry, native sampling
+  phase timing,
   measurement/reset, fallback, and error-boundary fixtures.
 - clean CPU benchmark gate: passed with 32 q20 `qpp-cpu`/`mklq-cpu` rows,
   including `two-qubit-state`, `three-qubit-state`, `qft-like-state`,
