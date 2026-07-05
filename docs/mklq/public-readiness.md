@@ -160,26 +160,23 @@ compares the live core protection fields against that JSON reference.
 
 The latest public local validation evidence is recorded in
 [`validation.md`](validation.md), with the default public healthcheck refreshed
-on 2026-07-05, correctness and full-wrapper evidence retained from the latest
+on 2026-07-05, correctness and full-wrapper evidence refreshed in the latest
 completed local gates, and focused CRZ distance-sweep evidence retained from
 2026-07-01:
 
-- latest correctness refresh date: 2026-07-04;
+- latest correctness refresh date: 2026-07-05;
 - source state: the ignored raw healthcheck JSON records the exact local Git
   state for the latest public healthcheck gate, and the ignored correctness
   gate JSON records the latest correctness-gate state;
 - install-prefix build: passed;
 - default public healthcheck: passed with 31/31 steps passed;
-- full public healthcheck: latest wrapper attempt did not pass; planned count
-  35/35 steps. The last completed full run remains the prior 33-step structure
-  after adding the dedicated local macOS install-prefix signature repair step;
-  the repair step refreshed and verified 60 local install-prefix `.dylib`,
-  `.so`, and `bin/` Mach-O loadables/executables before correctness and public
-  example smoke gates;
+- full public healthcheck: passed with 35/35 steps passed; this includes the
+  install-prefix build, local macOS signature repair for 60 loadables,
+  correctness gate, benchmark harness tests, and public example smoke gate;
 - one-command correctness gate: passed with 4/4 steps passed, including
   `metal_runtime_counter_probe`;
 - public example smoke gate: passed with 30/30 steps passed;
-- current benchmark harness tests: `203 passed`;
+- current benchmark harness tests: `218 passed`;
 - current `cpu_sampling_counter_probe_parse`: 3 bounded reports, 21 expected,
   21 selected, 0 missing, and 0 failures, including full-register and marginal
   probability-fill counter ctests;
