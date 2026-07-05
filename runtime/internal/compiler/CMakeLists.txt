@@ -70,8 +70,18 @@ set(CUDAQ_MLIR_RUNTIME_LINK_LIBS
 )
 
 if(APPLE)
-  add_dependencies(cudaq-mlir-runtime OptCodeGen OptTransforms OptimBuilder cudaq-qir-verifier)
+  add_dependencies(cudaq-mlir-runtime
+    CCDialect
+    QECDialect
+    QuakeDialect
+    OptCodeGen
+    OptTransforms
+    OptimBuilder
+    cudaq-qir-verifier)
   target_link_libraries(cudaq-mlir-runtime PRIVATE
+    "$<TARGET_FILE:CCDialect>"
+    "$<TARGET_FILE:QECDialect>"
+    "$<TARGET_FILE:QuakeDialect>"
     "$<TARGET_FILE:OptCodeGen>"
     "$<TARGET_FILE:OptTransforms>"
     "$<TARGET_FILE:OptimBuilder>"
