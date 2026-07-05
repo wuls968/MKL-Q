@@ -504,7 +504,7 @@ draw/count placement:
 python3 benchmarks/mklq/check_metal_sampling_boundary_evidence.py
 ```
 
-The guard does not run benchmarks. It checks the tracked q20 and q22
+The guard does not run benchmarks. It checks the tracked q20, q22, and q24
 counts-only shot-scaling summaries for full-register and partial-register
 `mklq-metal` sampling rows at 256, 1024, 8192, and 65536 shots, verifies
 ignored raw payload boundaries, requires explicit selected Metal sample-count
@@ -874,6 +874,46 @@ The generated public index is tracked at
   ratios were 1.588x for full-register sampling and 1.113x for
   partial-register sampling, under the static guard threshold of 2.0 used for
   that historical boundary.
+- `reports/local-metal-partial-count-accumulation-sampling-q20-2026-07-05.summary.json`:
+  tracked sanitized summary for the ignored raw result
+  `results/local-metal-partial-count-accumulation-sampling-q20-2026-07-05.json`
+  (`sha256: e96c244a6ce3e7d40cca717659452df845ed1f24400b3cf8b2ce82fa43245e0e`).
+  Isolated `mklq-metal` rows for `sample-full-register` and
+  `sample-partial-register` at q20 with shot counts
+  `256,1024,8192,65536`, `repeats=2`, `warmups=1`, and `layers=8` on Apple
+  M5, 10 logical cores, 16 GB RAM, macOS 26.5.1. All 8 rows completed with
+  `status == "ok"` from a clean worktree. Treat this as local tuning evidence
+  for selected full-register and partial-register Metal sample-count
+  accumulation after host-generated draws, not as release readiness,
+  cross-machine certification, Metal RNG evidence, or a full on-device sampler.
+  The q20 high-shot versus low-shot median elapsed ratios were 1.284x for
+  full-register sampling and 0.836x for partial-register sampling.
+- `reports/local-metal-partial-count-accumulation-sampling-q22-2026-07-05.summary.json`:
+  tracked sanitized summary for the ignored raw result
+  `results/local-metal-partial-count-accumulation-sampling-q22-2026-07-05.json`
+  (`sha256: ad5e8ca8091146ce4f3bff82d3b0d755da912b8f69a1c5dd9aa3b02819eb9016`).
+  Isolated `mklq-metal` rows for `sample-full-register` and
+  `sample-partial-register` at q22 with shot counts
+  `256,1024,8192,65536`, `repeats=2`, `warmups=1`, and `layers=8` on Apple
+  M5, 10 logical cores, 16 GB RAM, macOS 26.5.1. All 8 rows completed with
+  `status == "ok"` from a clean worktree. Treat this as local tuning evidence
+  for selected full-register and partial-register Metal sample-count
+  accumulation after host-generated draws. The q22 high-shot versus low-shot
+  median elapsed ratios were 0.955x for full-register sampling and 1.152x for
+  partial-register sampling.
+- `reports/local-metal-partial-count-accumulation-sampling-q24-2026-07-05.summary.json`:
+  tracked sanitized summary for the ignored raw result
+  `results/local-metal-partial-count-accumulation-sampling-q24-2026-07-05.json`
+  (`sha256: be9062049a05c2bfcfa49e4071a58604d4cad3846588a3dcec42d248fe4e37dd`).
+  Isolated `mklq-metal` rows for `sample-full-register` and
+  `sample-partial-register` at q24 with shot counts
+  `256,1024,8192,65536`, `repeats=2`, `warmups=1`, and `layers=8` on Apple
+  M5, 10 logical cores, 16 GB RAM, macOS 26.5.1. All 8 rows completed with
+  `status == "ok"` from a clean worktree. Treat this as the current largest
+  tracked local Metal counts-only sampling boundary run, not as release or
+  cross-machine performance certification. The q24 high-shot versus low-shot
+  median elapsed ratios were 0.984x for full-register sampling and 0.941x for
+  partial-register sampling.
 - `reports/local-metal-count-accumulation-sampling-q20-2026-07-04.summary.json`:
   tracked sanitized summary for the ignored raw result
   `results/local-metal-count-accumulation-sampling-q20-2026-07-04.json`

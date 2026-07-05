@@ -19,11 +19,15 @@ CHECK_SCHEMA_VERSION = "mklq-metal-sampling-boundary-evidence-check-v1"
 SUMMARY_SCHEMA_VERSION = "mklq-benchmark-summary-v1"
 DEFAULT_EVIDENCE_KIND = "local_tuning_evidence"
 DEFAULT_REPORT_PATTERN = "*.summary.json"
-DEFAULT_SUMMARY_ID = "local-metal-count-accumulation-sampling-q20-2026-07-04"
-Q22_SUMMARY_ID = "local-metal-count-accumulation-sampling-q22-2026-07-04"
-DEFAULT_SUMMARY_IDS = (DEFAULT_SUMMARY_ID, Q22_SUMMARY_ID)
+DEFAULT_SUMMARY_ID = (
+    "local-metal-partial-count-accumulation-sampling-q20-2026-07-05")
+Q22_SUMMARY_ID = (
+    "local-metal-partial-count-accumulation-sampling-q22-2026-07-05")
+Q24_SUMMARY_ID = (
+    "local-metal-partial-count-accumulation-sampling-q24-2026-07-05")
+DEFAULT_SUMMARY_IDS = (DEFAULT_SUMMARY_ID, Q22_SUMMARY_ID, Q24_SUMMARY_ID)
 METAL_TARGET = "mklq-metal"
-DEFAULT_REQUIRED_QUBITS = (20, 22)
+DEFAULT_REQUIRED_QUBITS = (20, 22, 24)
 DEFAULT_REQUIRED_SHOTS = (256, 1024, 8192, 65536)
 DEFAULT_MAX_HIGH_TO_LOW_RATIO = 2.0
 

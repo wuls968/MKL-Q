@@ -220,12 +220,13 @@ completed local gates, and focused CRZ distance-sweep evidence retained from
   12 rows reporting `status == "ok"` and local median elapsed ratios of
   `47.20x`, `131.99x`, `163.42x`, `24.54x`, `87.34x`, and `90.91x` against
   `cb688b20c825a970965ffe41ca84757287abf847`.
-- Metal stochastic sampling boundary evidence: passed with tracked q20 and q22
+- Metal stochastic sampling boundary evidence: passed with tracked q20, q22,
+  and q24
   `mklq-metal` full-register and partial-register counts-only rows at 256,
-  1024, 8192, and 65536 shots. The q22 summary records 8 rows with
+  1024, 8192, and 65536 shots. The latest q24 summary records 8 rows with
   `status == "ok"` against
-  `9664f8557900d43fd044c8c3e2edc6e4faf2d2df`; the high-shot versus low-shot
-  median elapsed ratios were 1.588x for full-register sampling and 1.113x for
+  `b859075217a92c0a68b34605aaf9c78b0dfc1efa`; the high-shot versus low-shot
+  median elapsed ratios were 0.984x for full-register sampling and 0.941x for
   partial-register sampling.
 
 This evidence is local Apple Silicon evidence. It is useful for source bootstrap
@@ -237,7 +238,7 @@ The current public healthcheck also includes the static
 checks local tuning provenance, ignored raw payload paths, successful Metal
 rows, and wording that keeps the experimental mixed-path/host boundary clear.
 It also includes `check_metal_sampling_boundary_evidence.py` for the tracked
-q20 and q22 stochastic `mklq-metal` sampling summaries, requiring historical
+q20/q22/q24 stochastic `mklq-metal` sampling summaries, requiring historical
 host-side draw/count wording or selected Metal sample-count accumulation after
 host-generated draws, while rejecting Metal RNG or broad device-side sampler
 claims in those static summaries.
