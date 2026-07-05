@@ -1167,6 +1167,7 @@ def _public_healthcheck_config(module,
                                full=False,
                                include_harness_tests=True,
                                refresh_clean_cpu_benchmark=False,
+                               focused_install_build=False,
                                require_clean=False,
                                plan_only=False):
     return module.HealthcheckConfig(
@@ -1185,6 +1186,7 @@ def _public_healthcheck_config(module,
         full=full,
         include_harness_tests=include_harness_tests,
         refresh_clean_cpu_benchmark=refresh_clean_cpu_benchmark,
+        focused_install_build=focused_install_build,
         plan_only=plan_only,
     )
 
@@ -2545,6 +2547,90 @@ def test_mklq_public_healthcheck_rejects_unknown_only_step(tmp_path):
 
     with pytest.raises(ValueError, match="unknown healthcheck step"):
         module.build_steps(config)
+
+
+def test_mklq_public_healthcheck_focused_install_builds_selected_targets(
+        monkeypatch, tmp_path):
+    module = _load_public_healthcheck_module()
+    config = _public_healthcheck_config(module,
+                                        tmp_path,
+                                        full=True,
+                                        focused_install_build=True)
+    config.build_dir.mkdir()
+    (config.build_dir / "build.ninja").write_text("# ninja\n",
+                                                  encoding="utf-8")
+    available_targets = {
+        *module.FOCUSED_INSTALL_REQUIRED_TARGETS,
+        "CUDAQuantumMLIRCAPI",
+        "cudaq-comm-plugin",
+        "cudaq-em-qudit",
+        "cudaq-lsp-server",
+        "test_runtime_stim",
+        "test_qudit",
+    }
+    calls = []
+
+    def fake_command_output(root, args):
+        assert root == tmp_path
+        assert args == ["ninja", "-C", "build-python", "-t", "targets", "all"]
+        return "\n".join(f"{target}: phony" for target in available_targets)
+
+    def fake_run_command(config, command, env_overlay=None):
+        calls.append(command)
+        return {"returncode": 0, "command": command}
+
+    monkeypatch.setattr(module, "command_output", fake_command_output)
+    monkeypatch.setattr(module, "run_command", fake_run_command)
+
+    result = module.run_install_build(config)
+
+    assert result["status"] == "passed"
+    assert len(calls) == 2
+    build_command, install_command = calls
+    assert build_command[:4] == [
+        "cmake", "--build", "build-python", "--target"
+    ]
+    selected_targets = build_command[4:build_command.index("-j")]
+    assert "CUDAQuantumPythonModules" in selected_targets
+    assert "cudaq-comm-plugin" in selected_targets
+    assert "CUDAQuantumMLIRCAPI" in selected_targets
+    assert "cudaq-em-qudit" in selected_targets
+    assert "test_runtime_stim" not in selected_targets
+    assert "test_qudit" not in selected_targets
+    assert install_command == [
+        "cmake", "--install", "build-python", "--prefix",
+        str(config.install_prefix)
+    ]
+    assert result["details"]["mode"] == "focused"
+
+
+def test_mklq_public_healthcheck_focused_install_reports_missing_required_target(
+        monkeypatch, tmp_path):
+    module = _load_public_healthcheck_module()
+    config = _public_healthcheck_config(module,
+                                        tmp_path,
+                                        full=True,
+                                        focused_install_build=True)
+    config.build_dir.mkdir()
+    (config.build_dir / "build.ninja").write_text("# ninja\n",
+                                                  encoding="utf-8")
+    available_targets = set(module.FOCUSED_INSTALL_REQUIRED_TARGETS)
+    available_targets.remove("nvq++")
+    calls = []
+
+    monkeypatch.setattr(
+        module, "command_output",
+        lambda root, args: "\n".join(f"{target}: phony"
+                                     for target in available_targets))
+    monkeypatch.setattr(module, "run_command",
+                        lambda config, command, env_overlay=None: calls.append(
+                            command))
+
+    result = module.run_install_build(config)
+
+    assert result["status"] == "failed"
+    assert "nvq++" in result["details"]["missing_required_targets"]
+    assert calls == []
 
 
 def test_mklq_public_healthcheck_requires_metal_guard_in_pr_template():
@@ -4523,8 +4609,16 @@ def test_mklq_public_healthcheck_requires_self_hosted_ci_audit_metadata():
             "workflow_dispatch") in requirements
     assert (".github/workflows/mklq-apple-silicon-ci.yml",
             "run_full_gate") in requirements
+    assert (".github/workflows/mklq-apple-silicon-ci.yml",
+            "--focused-install-build") in requirements
+    assert (".github/workflows/mklq-apple-silicon-ci.yml",
+            "CUDAQ_ENABLE_PROJECTS=python") in requirements
     assert ("docs/mklq/apple-silicon-ci.md",
             "run_public_healthcheck.py --full --require-clean") in requirements
+    assert ("docs/mklq/apple-silicon-ci.md",
+            "--focused-install-build") in requirements
+    assert ("docs/mklq/apple-silicon-ci.md",
+            "CUDAQ_ENABLE_PROJECTS=python") in requirements
     assert ("README.md", "apple-silicon-ci.md") in requirements
     assert ("benchmarks/mklq/README.md",
             "Self-hosted Apple Silicon CI Audit") in requirements
@@ -5671,7 +5765,8 @@ Before dispatching the full gate, run --check-runners to query actions/runners.
 
 ## Validation Command
 
-Run run_public_healthcheck.py --full --require-clean and run_correctness_gate.py.
+Run run_public_healthcheck.py --full --require-clean --focused-install-build
+with CUDAQ_ENABLE_PROJECTS=python and run_correctness_gate.py.
 Keep raw JSON under benchmarks/mklq/results/.
 
 ## Activation Checklist
@@ -5732,7 +5827,9 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - run: |
+          cmake -S . -B build-python -G Ninja -D CUDAQ_ENABLE_PROJECTS=python
           python3 benchmarks/mklq/run_public_healthcheck.py --full --require-clean \\
+            --focused-install-build \\
             --output benchmarks/mklq/results/apple-silicon-ci-test.json
 """
 

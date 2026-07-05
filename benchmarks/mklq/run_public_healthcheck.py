@@ -34,6 +34,77 @@ EXPECTED_WORKFLOWS = [
     ".github/workflows/mklq-public-hygiene.yml",
 ]
 
+FOCUSED_INSTALL_REQUIRED_TARGETS = (
+    "CUDAQuantumPythonModules",
+    "cudaq",
+    "cudaq-target-conf",
+    "nvq++",
+    "nvqir-mklq_cpu",
+    "nvqir-mklq_metal",
+    "nvqir-qpp",
+    "test_mklq_cpu_backend",
+    "test_mklq_metal_backend",
+    "test_target_config",
+)
+
+FOCUSED_INSTALL_OPTIONAL_TARGETS = (
+    "CCDialect",
+    "CUDAQuantumMLIRCAPI",
+    "CUDAQuantumPythonCAPI",
+    "CustomPassPlugin",
+    "OptAnalysis",
+    "OptCodeGen",
+    "OptTransforms",
+    "OptimBuilder",
+    "QECDialect",
+    "QuakeDialect",
+    "cudaq-builder",
+    "cudaq-chemistry",
+    "cudaq-comm-plugin",
+    "cudaq-common",
+    "cudaq-em-default",
+    "cudaq-em-photonics",
+    "cudaq-em-qudit",
+    "cudaq-ensmallen",
+    "cudaq-fermioniq-qpu",
+    "cudaq-headers",
+    "cudaq-logger",
+    "cudaq-lsp-server",
+    "cudaq-mlir-runtime",
+    "cudaq-mlirgen",
+    "cudaq-nlopt",
+    "cudaq-operator",
+    "cudaq-opt",
+    "cudaq-orca-qpu",
+    "cudaq-pasqal-qpu",
+    "cudaq-platform-default",
+    "cudaq-platform-mqpu",
+    "cudaq-py-utils",
+    "cudaq-pyscf",
+    "cudaq-python-interop",
+    "cudaq-qir-verifier",
+    "cudaq-qpu-default",
+    "cudaq-quake",
+    "cudaq-rest-qpu",
+    "cudaq-serverhelper-anyon",
+    "cudaq-serverhelper-fermioniq",
+    "cudaq-serverhelper-infleqtion",
+    "cudaq-serverhelper-ionq",
+    "cudaq-serverhelper-iqm",
+    "cudaq-serverhelper-oqc",
+    "cudaq-serverhelper-pasqal",
+    "cudaq-serverhelper-qbraid",
+    "cudaq-serverhelper-qci",
+    "cudaq-serverhelper-quantinuum",
+    "cudaq-serverhelper-quantum_machines",
+    "cudaq-serverhelper-scaleway",
+    "cudaq-serverhelper-tii",
+    "cudaq-translate",
+    "fixup-linkage",
+    "nvqir-dm",
+    "nvqir-stim",
+)
+
 BENCHMARK_HELPERS = (
     "benchmarks/mklq/bench_mklq_targets.py",
     "benchmarks/mklq/bench_probability_kernels.py",
@@ -172,6 +243,7 @@ class HealthcheckConfig:
     full: bool
     include_harness_tests: bool
     refresh_clean_cpu_benchmark: bool
+    focused_install_build: bool
     plan_only: bool
     only_steps: tuple[str, ...] = ()
 
@@ -328,6 +400,10 @@ def public_metadata_requirements() -> list[tuple[str, str]]:
          "permissions:\n  contents: read"),
         (".github/workflows/mklq-apple-silicon-ci.yml", "--full"),
         (".github/workflows/mklq-apple-silicon-ci.yml", "--require-clean"),
+        (".github/workflows/mklq-apple-silicon-ci.yml",
+         "--focused-install-build"),
+        (".github/workflows/mklq-apple-silicon-ci.yml",
+         "CUDAQ_ENABLE_PROJECTS=python"),
         ("examples/mklq/README.md", "mklq-cpu"),
         ("examples/mklq/README.md", "mklq-metal"),
         ("examples/mklq/README.md", "nvq++"),
@@ -358,6 +434,8 @@ def public_metadata_requirements() -> list[tuple[str, str]]:
         ("docs/mklq/apple-silicon-ci.md", "actions/runners"),
         ("docs/mklq/apple-silicon-ci.md",
          "run_public_healthcheck.py --full --require-clean"),
+        ("docs/mklq/apple-silicon-ci.md", "--focused-install-build"),
+        ("docs/mklq/apple-silicon-ci.md", "CUDAQ_ENABLE_PROJECTS=python"),
         ("docs/mklq/apple-silicon-ci.md", "not release certification"),
         ("docs/mklq/upstream-sync.md", ".github/workflows/mklq-apple-silicon-ci.yml"),
         ("docs/mklq/upstream-sync.md", "Post-merge Gates"),
@@ -1430,7 +1508,94 @@ def run_harness_tests(config: HealthcheckConfig) -> dict[str, Any]:
         "benchmark harness tests failed", result)
 
 
+def ninja_target_names(config: HealthcheckConfig) -> set[str]:
+    build_ninja = config.build_dir / "build.ninja"
+    if not build_ninja.exists():
+        raise FileNotFoundError(
+            "--focused-install-build requires a Ninja build tree")
+    output = command_output(config.repo_root, [
+        "ninja",
+        "-C",
+        command_path(config.repo_root, config.build_dir),
+        "-t",
+        "targets",
+        "all",
+    ])
+    targets: set[str] = set()
+    for line in output.splitlines():
+        if ":" not in line:
+            continue
+        target = line.split(":", 1)[0].strip()
+        if target:
+            targets.add(target)
+    return targets
+
+
+def focused_install_targets(
+        config: HealthcheckConfig) -> tuple[list[str], list[str]]:
+    available = ninja_target_names(config)
+    missing = [
+        target for target in FOCUSED_INSTALL_REQUIRED_TARGETS
+        if target not in available
+    ]
+    selected = [
+        target for target in (
+            *FOCUSED_INSTALL_REQUIRED_TARGETS,
+            *FOCUSED_INSTALL_OPTIONAL_TARGETS,
+        ) if target in available
+    ]
+    return selected, missing
+
+
+def run_focused_install_build(config: HealthcheckConfig) -> dict[str, Any]:
+    try:
+        targets, missing = focused_install_targets(config)
+    except Exception as exc:  # noqa: BLE001 - report build-tree inspection failures.
+        return failed("focused install target discovery failed", {
+            "mode": "focused",
+            "error": f"{type(exc).__name__}: {exc}",
+        })
+    details: dict[str, Any] = {
+        "mode": "focused",
+        "required_targets": list(FOCUSED_INSTALL_REQUIRED_TARGETS),
+        "selected_targets": targets,
+        "missing_required_targets": missing,
+    }
+    if missing:
+        return failed("focused install required target(s) missing", details)
+
+    build_command = [
+        "cmake",
+        "--build",
+        command_path(config.repo_root, config.build_dir),
+        "--target",
+        *targets,
+        "-j",
+        str(config.jobs),
+    ]
+    build_result = run_command(config, build_command)
+    details["build"] = build_result
+    if build_result["returncode"] != 0:
+        return failed("focused install-prefix target build failed", details)
+
+    install_command = [
+        "cmake",
+        "--install",
+        command_path(config.repo_root, config.build_dir),
+        "--prefix",
+        str(config.install_prefix),
+    ]
+    install_result = run_command(config, install_command)
+    details["install"] = install_result
+    if install_result["returncode"] != 0:
+        return failed("focused install-prefix install failed", details)
+    return passed(details)
+
+
 def run_install_build(config: HealthcheckConfig) -> dict[str, Any]:
+    if config.focused_install_build:
+        return run_focused_install_build(config)
+
     command = [
         "cmake",
         "--build",
@@ -1680,6 +1845,7 @@ def run_healthcheck(config: HealthcheckConfig) -> dict[str, Any]:
             "full": config.full,
             "include_harness_tests": config.include_harness_tests,
             "refresh_clean_cpu_benchmark": config.refresh_clean_cpu_benchmark,
+            "focused_install_build": config.focused_install_build,
             "only_steps": list(config.only_steps),
         },
         "steps": step_plan(steps),
@@ -1741,6 +1907,7 @@ def make_config(args: argparse.Namespace) -> HealthcheckConfig:
         full=args.full,
         include_harness_tests=not args.skip_harness_tests,
         refresh_clean_cpu_benchmark=args.refresh_clean_cpu_benchmark,
+        focused_install_build=args.focused_install_build,
         plan_only=args.plan_only,
         only_steps=tuple(args.only_steps or ()),
     )
@@ -1794,6 +1961,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--refresh-clean-cpu-benchmark",
                         action="store_true",
                         help="Refresh clean CPU benchmark evidence. This may update tracked summary/docs files.")
+    parser.add_argument(
+        "--focused-install-build",
+        action="store_true",
+        help=("With --full, build a reviewed set of installable MKL-Q targets "
+              "and then run cmake --install instead of building the broad "
+              "install target. Intended for source-only Apple Silicon CI."))
     parser.add_argument("--plan-only",
                         action="store_true",
                         help="Print the healthcheck plan as JSON without running checks.")
