@@ -179,6 +179,13 @@ accumulation, including a uniform-probability generated-count fast path:
 python3 benchmarks/mklq/check_metal_sampling_boundary_evidence.py
 ```
 
+To verify the focused uniform-probability partial-register Metal sampling
+evidence for q20/q22/q24:
+
+```bash
+python3 benchmarks/mklq/check_metal_uniform_sampling_evidence.py
+```
+
 Current selected Metal runtime counter coverage, including full-register and
 partial-register counts-only Metal device-generated draw plus sample-count
 accumulation and the uniform-probability generated-count fast path, is checked

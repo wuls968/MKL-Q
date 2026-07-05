@@ -160,7 +160,7 @@ compares the live core protection fields against that JSON reference.
 
 The latest public local validation evidence is recorded in
 [`validation.md`](validation.md), with the default public healthcheck refreshed
-on 2026-07-04, correctness and full-wrapper evidence retained from the latest
+on 2026-07-05, correctness and full-wrapper evidence retained from the latest
 completed local gates, and focused CRZ distance-sweep evidence retained from
 2026-07-01:
 
@@ -169,9 +169,9 @@ completed local gates, and focused CRZ distance-sweep evidence retained from
   state for the latest public healthcheck gate, and the ignored correctness
   gate JSON records the latest correctness-gate state;
 - install-prefix build: passed;
-- default public healthcheck: passed with 30/30 steps passed;
+- default public healthcheck: passed with 31/31 steps passed;
 - full public healthcheck: latest wrapper attempt did not pass; planned count
-  34/34 steps. The last completed full run remains the prior 33-step structure
+  35/35 steps. The last completed full run remains the prior 33-step structure
   after adding the dedicated local macOS install-prefix signature repair step;
   the repair step refreshed and verified 60 local install-prefix `.dylib`,
   `.so`, and `bin/` Mach-O loadables/executables before correctness and public
@@ -243,6 +243,10 @@ q20/q22/q24 stochastic `mklq-metal` sampling summaries, requiring historical
 host-side draw/count wording or selected Metal sample-count accumulation with
 host-generated or device-generated draws, while rejecting broad device-side
 sampler claims in those static summaries.
+It also includes `check_metal_uniform_sampling_evidence.py` for the tracked
+q20/q22/q24 uniform-probability partial-register sampling summary, requiring
+12 measured qubits, 4096 marginal outcomes, the generated-count fast-path
+label, and local-only/non-release wording.
 It also includes `check_cpu_gate_counter_docs.py` and
 `check_metal_runtime_counter_docs.py`, which fail if the public CPU gate
 fast-path or Metal runtime counter summaries drift from the tracked bounded

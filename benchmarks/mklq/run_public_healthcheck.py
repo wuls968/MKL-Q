@@ -41,6 +41,7 @@ BENCHMARK_HELPERS = (
     "benchmarks/mklq/check_cpu_sampling_counter_docs.py",
     "benchmarks/mklq/check_metal_evidence.py",
     "benchmarks/mklq/check_metal_sampling_boundary_evidence.py",
+    "benchmarks/mklq/check_metal_uniform_sampling_evidence.py",
     "benchmarks/mklq/check_metal_runtime_counter_docs.py",
     "benchmarks/mklq/check_performance_evidence.py",
     "benchmarks/mklq/check_public_claims.py",
@@ -135,6 +136,8 @@ METAL_SAMPLING_BOUNDARY_SUMMARY_IDS = (
     "local-metal-partial-count-accumulation-sampling-q22-2026-07-05",
     "local-metal-partial-count-accumulation-sampling-q24-2026-07-05",
 )
+METAL_UNIFORM_SAMPLING_SUMMARY_ID = (
+    "local-metal-uniform-partial-sampling-q20-q24-2026-07-05")
 CLEAN_CPU_SUMMARY_ID = "local-clean-cpu-q20-2026-07-03-two-three"
 SAMPLING_SCALING_REQUIRED_RATIOS = (
     "sample_full_register_q18_1024_shots",
@@ -836,6 +839,26 @@ def run_metal_sampling_boundary_evidence_check(
     result = run_command(config, command)
     if result["returncode"] != 0:
         return failed("Metal sampling boundary evidence guard failed", result)
+    return passed(result)
+
+
+def run_metal_uniform_sampling_evidence_check(
+        config: HealthcheckConfig) -> dict[str, Any]:
+    script = config.repo_root / "benchmarks" / "mklq" / (
+        "check_metal_uniform_sampling_evidence.py")
+    command = [
+        config.python_executable,
+        str(script),
+        "--reports",
+        "benchmarks/mklq/reports",
+        "--pattern",
+        "*.summary.json",
+        "--summary-id",
+        METAL_UNIFORM_SAMPLING_SUMMARY_ID,
+    ]
+    result = run_command(config, command)
+    if result["returncode"] != 0:
+        return failed("Metal uniform sampling evidence guard failed", result)
     return passed(result)
 
 
@@ -1547,6 +1570,9 @@ def build_steps(config: HealthcheckConfig) -> list[Step]:
         Step("metal_sampling_boundary_evidence_guard",
              "Check Metal stochastic sampling host-boundary evidence.",
              run_metal_sampling_boundary_evidence_check),
+        Step("metal_uniform_sampling_evidence_guard",
+             "Check Metal uniform partial-register sampling evidence.",
+             run_metal_uniform_sampling_evidence_check),
         Step("cpu_gate_counter_probe_parse",
              "Parse bounded CPU gate fast-path counter evidence.",
              run_cpu_gate_counter_probe_parse),

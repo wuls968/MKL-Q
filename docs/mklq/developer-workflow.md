@@ -175,6 +175,7 @@ python3 benchmarks/mklq/check_public_claims.py
 python3 benchmarks/mklq/check_performance_evidence.py
 python3 benchmarks/mklq/check_metal_evidence.py
 python3 benchmarks/mklq/check_metal_sampling_boundary_evidence.py
+python3 benchmarks/mklq/check_metal_uniform_sampling_evidence.py
 python3 benchmarks/mklq/check_sampling_profile_evidence.py
 python3 benchmarks/mklq/check_cpu_gate_counter_docs.py
 python3 benchmarks/mklq/check_cpu_sampling_counter_docs.py
@@ -186,6 +187,7 @@ python3 -m py_compile \
   benchmarks/mklq/check_cpu_sampling_counter_docs.py \
   benchmarks/mklq/check_metal_evidence.py \
   benchmarks/mklq/check_metal_sampling_boundary_evidence.py \
+  benchmarks/mklq/check_metal_uniform_sampling_evidence.py \
   benchmarks/mklq/check_metal_runtime_counter_docs.py \
   benchmarks/mklq/check_performance_evidence.py \
   benchmarks/mklq/check_public_claims.py \
