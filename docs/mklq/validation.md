@@ -43,10 +43,14 @@ clean `main` without creating tags, releases, wheels, installers, or signed
 artifacts. The local full public healthcheck passed with 35/35 steps, the
 public release checklist audit passed with 7/7 checks, the preflight audit
 passed, and the public readiness audit passed with 13/13 checks. The live
-self-hosted runner inventory check was the only non-passing dry-run item:
-GitHub reported zero registered runners for `wuls968/MKL-Q`, so the manual
-self-hosted Apple Silicon full gate remains inactive until a runner with the
-required labels is registered and online.
+self-hosted runner inventory check was refreshed on 2026-07-06 and reported one
+online runner named `mklq-apple-silicon-a0000` with the required `self-hosted`,
+`macOS`, `ARM64`, and `mklq-apple-silicon` labels. The latest manual
+self-hosted Apple Silicon full gate passed on 2026-07-05 for
+`d92e4c1494f5aa43afb01d469fd76ad37e7fe800` in
+<https://github.com/wuls968/MKL-Q/actions/runs/28742962472>, with 35/35 public
+healthcheck steps passed and the Metal runtime counter probe reporting 50
+expected, 50 selected, 0 missing, and 50 passed.
 The clean CPU benchmark summary was refreshed separately against
 `dbebe3744f826ba4cbeed2b99708a2bdab03b11e` after promoting the two-qubit/SWAP
 and three-qubit custom gate rows into the clean local CPU benchmark evidence
@@ -296,7 +300,7 @@ ctest --test-dir build-python \
   --output-on-failure
 ```
 
-Result in the latest standalone correctness-gate refresh: `93/93 passed`.
+Result in the latest standalone correctness-gate refresh: `104/104 passed`.
 
 ```bash
 PYTHONPATH=/Users/a0000/Documents/MKL-Q/build-python/python \
@@ -337,19 +341,17 @@ python3 benchmarks/mklq/run_correctness_gate.py \
   --build-dir build-python
 ```
 
-Latest local result: passed on 2026-07-04 after adding the CPU phase-family,
-controlled phase, CPU sampling oracle, experimental `mklq-metal`
-partial-register bit-order plus qpp-cpu marginal sampling oracle fixtures, the
-requested-order Metal sampling counter oracle fixture, and host-side Metal
-sampling draw telemetry plus native sampling phase timing telemetry and the
-deterministic sequential/counts-only sampling bypass fixtures, and the resident
-full-register host draw/count telemetry fixtures. It reported 4 wrapper steps
-passed, 0 failed, and 0 skipped.
+Latest local/self-hosted result: passed on 2026-07-05 for
+`d92e4c1494f5aa43afb01d469fd76ad37e7fe800` in the manual Apple Silicon
+correctness workflow after the source submodule bootstrap, focused install
+build, macOS install-prefix signature repair, correctness gate, benchmark
+harness tests, and public example smoke gate all completed. It reported 4
+correctness-wrapper steps passed, 0 failed, and 0 skipped.
 The step-level results were:
 
 - `python_target_smoke`: `70 passed`.
 - `nvqpp_smoke`: `2 passed`.
-- `target_config_ctest`: `102/102 passed`, including the hardware-efficient
+- `target_config_ctest`: `104/104 passed`, including the hardware-efficient
   ansatz composite CPU fast-path counter fixture and the resident full-register
   Metal sampling telemetry plus selected sample-count accumulation fixtures.
 - `metal_runtime_counter_probe`: 50 expected, 50 selected, 0 missing, and 50

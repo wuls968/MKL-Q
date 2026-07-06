@@ -4,7 +4,7 @@ This page records the public repository readiness snapshot for MKL-Q. It is a
 source-only repository audit, not a release certification, package
 certification, Apple Silicon CI replacement, or performance certification.
 
-Snapshot date: 2026-07-05.
+Snapshot date: 2026-07-06.
 
 ## Scope
 
@@ -131,16 +131,19 @@ successful `MKL-Q public hygiene` run, the latest pushed commit has a
 successful `MKL-Q Apple Silicon correctness` run, and the public
 claim-boundary guard passes.
 
-The pushed readiness audit was revalidated on 2026-07-05 against the
-then-current protected `main` branch after the `MKL-Q public hygiene` and
-`MKL-Q Apple Silicon correctness` guard workflows completed successfully for
-the pushed head. The ignored local readiness payload
-`benchmarks/mklq/results/public-readiness-audit-2026-07-05.json` recorded
-13/13 checks passed, including repository identity, issue templates, labels,
-branch protection, latest pushed workflow status, public claim boundaries, and
-the source-only no-tags/no-releases boundary. Use the readiness commands below
-for exact latest commit and workflow run IDs; this tracked page records the
-stable source-only readiness boundary, not a moving run log.
+The pushed readiness audit was revalidated on 2026-07-06 against protected
+`main` at `d92e4c1494f5aa43afb01d469fd76ad37e7fe800`. The latest pushed
+`MKL-Q public hygiene` run
+<https://github.com/wuls968/MKL-Q/actions/runs/28742953934> and the latest
+manual `MKL-Q Apple Silicon correctness` run
+<https://github.com/wuls968/MKL-Q/actions/runs/28742962472> both completed
+successfully for that head. The ignored local readiness payload
+`/tmp/mklq-public-readiness-audit-2026-07-06.json` recorded 13/13 checks
+passed, including repository identity, issue templates, labels, branch
+protection, latest pushed workflow status, public claim boundaries, and the
+source-only no-tags/no-releases boundary. Use the readiness commands below for
+exact latest commit and workflow run IDs; this tracked page records the stable
+source-only readiness boundary, not a moving run log.
 
 ## Branch Protection
 
@@ -180,7 +183,14 @@ completed local gates, and focused CRZ distance-sweep evidence retained from
 - source-only release-candidate dry run: passed the local full public
   healthcheck, public release checklist audit, preflight audit, and public
   readiness audit on 2026-07-05; the live self-hosted runner inventory check
-  reported 0 registered runners and is not release evidence yet;
+  was refreshed on 2026-07-06 and reported one online runner named
+  `mklq-apple-silicon-a0000` with the required `self-hosted`, `macOS`, `ARM64`,
+  and `mklq-apple-silicon` labels;
+- latest manual self-hosted Apple Silicon full gate: passed on 2026-07-05 for
+  `d92e4c1494f5aa43afb01d469fd76ad37e7fe800` in
+  <https://github.com/wuls968/MKL-Q/actions/runs/28742962472>, with the full
+  public healthcheck reporting 35/35 steps passed and the Metal runtime
+  counter probe reporting 50 expected, 50 selected, 0 missing, and 50 passed;
 - public readiness audit: passed with 13/13 checks passed against the
   then-current protected `main` branch;
 - one-command correctness gate: passed with 4/4 steps passed, including
@@ -237,9 +247,9 @@ completed local gates, and focused CRZ distance-sweep evidence retained from
   median elapsed ratios were 0.984x for full-register sampling and 0.941x for
   partial-register sampling.
 
-This evidence is local Apple Silicon evidence. It is useful for source bootstrap
-confidence, but it is not hosted CI, release certification, or cross-machine
-performance certification.
+This evidence is local/self-hosted Apple Silicon evidence. It is useful for
+source bootstrap confidence, but it is not GitHub-hosted CI, release
+certification, or cross-machine performance certification.
 
 The current public healthcheck also includes the static
 `check_metal_evidence.py` guard for tracked `mklq-metal` summaries. That guard
@@ -293,11 +303,12 @@ certification.
 
 - `mklq-cpu` is the stable local Apple Silicon target.
 - `mklq-metal` is experimental and must not be described as default-ready.
-- Public GitHub Actions currently run source hygiene only.
-- Backend correctness still depends on local Apple Silicon validation.
-- The manual self-hosted Apple Silicon full gate is configured but not active
-  as release evidence while the live `actions/runners` inventory has no online
-  runner with the required labels.
+- Public branch protection currently requires source hygiene only.
+- Backend correctness is covered by local/self-hosted Apple Silicon validation,
+  not by GitHub-hosted CI.
+- The manual self-hosted Apple Silicon full gate has an online runner and a
+  latest successful dispatch, but it remains manual, not branch-protected, and
+  not release evidence.
 - No package manager or binary artifact support is published.
 - Upstream CUDA-Q syncs must follow [`upstream-sync.md`](upstream-sync.md).
 
@@ -317,6 +328,7 @@ gh repo view wuls968/MKL-Q \
   --json nameWithOwner,isFork,parent,defaultBranchRef,url,description,repositoryTopics,licenseInfo
 gh api repos/wuls968/MKL-Q/branches/main --jq '{name,protected,commit:.commit.sha}'
 gh run list --repo wuls968/MKL-Q --branch main --workflow 'MKL-Q public hygiene' --limit 1
+gh run list --repo wuls968/MKL-Q --branch main --workflow 'MKL-Q Apple Silicon correctness' --limit 1
 gh release list --repo wuls968/MKL-Q --limit 20
 ```
 
@@ -329,6 +341,9 @@ Expected result:
 - live issue labels match `.github/labels.yml`;
 - live branch protection matches `.github/branch-protection-main.json`;
 - the public claim-boundary guard passes;
+- the latest pushed commit has a successful manual
+  `MKL-Q Apple Silicon correctness` run before using self-hosted correctness
+  evidence in public readiness claims;
 - no release tags or GitHub Releases exist in the current source-only phase;
 - only intentional MKL-Q public docs, issue templates, branch protection config,
   and the lightweight workflow are tracked.
