@@ -94,6 +94,7 @@ jobs:
             cudaq \
             docs/mklq \
             docs/sphinx/examples/mklq \
+            docs/sphinx/targets \
             python \
             runtime \
             scripts \

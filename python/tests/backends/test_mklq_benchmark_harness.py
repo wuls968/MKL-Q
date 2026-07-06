@@ -6088,8 +6088,8 @@ workflow_dispatch, run_full_gate, default skip activation, no secrets,
 read-only access, permissions: contents: read, timeout-minutes, concurrency,
 broad push Dispatch guard validation, and no pull request triggers.
 The checkout uses a checkout timeout, manual sparse checkout, workspace cleanup,
-git sparse-checkout set, docs/sphinx/examples/mklq, explicit main refspec,
-+refs/heads/main:refs/remotes/origin/main,
+git sparse-checkout set, docs/sphinx/examples/mklq, docs/sphinx/targets,
+explicit main refspec, +refs/heads/main:refs/remotes/origin/main,
 +refs/heads/main:refs/remotes/upstream/main, and filter=blob:none. It restores
 history later with http.version=HTTP/1.1, --unshallow, and filter=blob:none.
 Before dispatching the full gate, run --check-runners to query actions/runners.
@@ -6163,7 +6163,7 @@ jobs:
           git init "${workspace}"
           cd "${workspace}"
           git sparse-checkout init --cone
-          git sparse-checkout set .github benchmarks cmake cudaq docs/mklq docs/sphinx/examples/mklq python runtime scripts targettests tpls unittests utils
+          git sparse-checkout set .github benchmarks cmake cudaq docs/mklq docs/sphinx/examples/mklq docs/sphinx/targets python runtime scripts targettests tpls unittests utils
           retry_git "origin main sparse fetch" git -c http.version=HTTP/1.1 fetch --depth=1 --filter=blob:none origin +refs/heads/main:refs/remotes/origin/main
       - name: Normalize Git remotes
         run: |
