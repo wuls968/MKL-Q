@@ -71,6 +71,7 @@ REQUIRED_COMMAND_TOKENS = (
 REQUIRED_REFERENCED_FILES = (
     "README.md",
     "docs/mklq/release-policy.md",
+    "docs/mklq/source-only-rc-v0.1.md",
     "docs/mklq/public-readiness.md",
     "docs/mklq/upstream-sync.md",
     "docs/mklq/validation.md",

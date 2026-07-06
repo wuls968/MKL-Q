@@ -58,6 +58,9 @@ Check:
   which local gates prove which target/backend behavior.
 - [ ] `docs/mklq/apple-silicon-ci.md` is linked from the README and explains
   the self-hosted Apple Silicon CI activation boundary.
+- [ ] `docs/mklq/source-only-rc-v0.1.md` is linked from the README and records
+  the current source-only v0.1 release-candidate boundary without creating a
+  tag, GitHub Release, wheel, PyPI package, installer, or signed artifact.
 - [ ] `docs/mklq/developer-workflow.md` is linked from the README and records
   the current local development, public hygiene, and PR workflow.
 - [ ] `docs/mklq/release-policy.md` is linked from the README and explains
@@ -182,6 +185,7 @@ Run the same classes of checks as `.github/workflows/mklq-public-hygiene.yml`:
 ```bash
 python3 benchmarks/mklq/run_preflight_audit.py --require-clean
 python3 benchmarks/mklq/run_public_release_checklist_audit.py
+python3 benchmarks/mklq/run_public_readiness_audit.py
 python3 benchmarks/mklq/run_self_hosted_ci_audit.py
 python3 benchmarks/mklq/run_public_healthcheck.py
 ```
@@ -250,6 +254,9 @@ python3 -m py_compile \
 Expected:
 
 - [ ] Public metadata keywords are present.
+- [ ] `docs/mklq/source-only-rc-v0.1.md` is present and keeps the
+  release-candidate label source-only, non-tagged, non-packaged, and
+  non-certifying.
 - [ ] `run_public_release_checklist_audit.py` passes and confirms this
   checklist still references the required source-only release gates.
 - [ ] `run_self_hosted_ci_audit.py` passes and confirms the Apple Silicon CI

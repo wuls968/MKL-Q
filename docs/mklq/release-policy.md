@@ -22,6 +22,12 @@ Use commit SHAs and the tracked source tree as the public reference. Do not
 describe a commit as an MKL-Q release unless this policy has been updated and
 the release gates below have passed.
 
+Documentation-only release-candidate labels such as
+`source-only-rc-v0.1` are allowed only when they point to the tracked
+source-only candidate entry point in
+[`source-only-rc-v0.1.md`](source-only-rc-v0.1.md). They are not release tags,
+GitHub Releases, binary artifacts, package versions, or release certification.
+
 ## Allowed Now
 
 These actions are allowed during the source-only phase:
@@ -30,6 +36,8 @@ These actions are allowed during the source-only phase:
 - Keep `wuls968/MKL-Q` as a fork of `NVIDIA/cuda-quantum`.
 - Publish source documentation under `docs/mklq/`.
 - Publish sanitized benchmark summaries under `benchmarks/mklq/reports/`.
+- Publish source-only release-candidate notes under `docs/mklq/` when they
+  preserve the no-tag, no-package, no-binary, non-certification boundary.
 - Run the lightweight public hygiene workflow.
 - Use local ignored JSON under `benchmarks/mklq/results/` for development
   evidence.

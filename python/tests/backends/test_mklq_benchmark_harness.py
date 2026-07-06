@@ -4809,6 +4809,7 @@ Expected result:
 - the latest pushed commit has a successful `MKL-Q Apple Silicon correctness` run;
 - live branch protection matches `.github/branch-protection-main.json`;
 - no release tags or GitHub Releases exist in the current source-only phase;
+- source-only-rc-v0.1.md records the source-only release-candidate boundary;
 - `mklq-metal` is experimental and must not be described as default-ready.
 """,
         encoding="utf-8")
@@ -5431,6 +5432,7 @@ def _write_release_checklist_audit_fixture(
     for relative in [
             "README.md",
             "docs/mklq/release-policy.md",
+            "docs/mklq/source-only-rc-v0.1.md",
             "docs/mklq/public-readiness.md",
             "docs/mklq/upstream-sync.md",
             "docs/mklq/validation.md",
@@ -5497,6 +5499,7 @@ git log --oneline -5
 
 - README.md
 - docs/mklq/release-policy.md
+- docs/mklq/source-only-rc-v0.1.md
 - docs/mklq/public-readiness.md
 - docs/mklq/upstream-sync.md
 - docs/mklq/validation.md

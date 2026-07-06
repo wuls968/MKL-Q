@@ -72,6 +72,10 @@ PUBLIC_READINESS_REQUIRED_PHRASES = [
         "no release tags or GitHub Releases exist in the current source-only phase",
     ),
     (
+        "source_only_rc",
+        "source-only-rc-v0.1.md",
+    ),
+    (
         "metal_experimental",
         "`mklq-metal` is experimental and must not be described as default-ready",
     ),
