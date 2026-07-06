@@ -45,10 +45,14 @@ jobs:
       MKLQ_PYTHON: /opt/anaconda3/bin/python3
     steps:
       - name: Check out source
+        timeout-minutes: 20
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
+          filter: blob:none
+          lfs: false
           persist-credentials: false
+          submodules: false
 
       - name: Select Python and install prefix
         shell: bash

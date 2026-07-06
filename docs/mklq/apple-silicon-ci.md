@@ -66,6 +66,12 @@ permissions: contents: read
 
 It also sets explicit `timeout-minutes` and `concurrency` values so a stuck
 build cannot consume the runner indefinitely and superseded runs cancel cleanly.
+The source checkout uses a checkout timeout, `fetch-depth: 0`,
+`filter: blob:none`, `lfs: false`, `submodules: false`, and
+`persist-credentials: false` so full-history evidence remains available without
+pulling unnecessary blobs, submodules, LFS objects, or credentials during the
+initial checkout. Submodules are bootstrapped later by the reviewed retrying
+step.
 For non-dispatch runs on `main`, only a small unconditional `Dispatch guard`
 job runs on `ubuntu-latest`; the self-hosted Apple Silicon job still requires
 `workflow_dispatch` with `run_full_gate=confirm`.
@@ -153,12 +159,12 @@ cmake -S . -B build-python -G Ninja \
 ```
 
 The tracked workflow invokes the same gate after selecting the effective Python,
-normalizing `origin` and `upstream`, fetching `origin/main` and
-`upstream/main`, bootstrapping the non-LLVM source submodules with shallow
-fetches, retrying transient submodule network failures up to three times,
-clearing the persistent runner build/install directories, and
-configuring a fresh `build-python` tree with `CUDAQ_ENABLE_PROJECTS=python` and
-`GIT_SUBMODULE=OFF`.
+checking out source with a partial clone filter and explicit checkout timeout,
+normalizing `origin` and `upstream`, fetching `origin/main` and `upstream/main`,
+bootstrapping the non-LLVM source submodules with shallow fetches, retrying
+transient submodule network failures up to three times, clearing the persistent
+runner build/install directories, and configuring a fresh `build-python` tree
+with `CUDAQ_ENABLE_PROJECTS=python` and `GIT_SUBMODULE=OFF`.
 The `--focused-install-build` option builds the reviewed installable MKL-Q
 targets and then runs `cmake --install`, avoiding unrelated upstream test
 binaries that are not part of this source-only Apple Silicon gate.
@@ -212,6 +218,9 @@ Before making the full self-hosted job automatic or branch-protected:
   the working directory.
 - Confirm the job uses `permissions: contents: read`.
 - Confirm the job has explicit `timeout-minutes` and `concurrency` settings.
+- Confirm checkout uses a partial clone `filter: blob:none`, has a checkout
+  timeout, leaves LFS and submodules disabled during checkout, and keeps
+  credentials out of the working tree.
 - Confirm source submodule bootstrapping is a visible step before CMake
   configure, uses limited retry for transient submodule network failures, and
   CMake uses `GIT_SUBMODULE=OFF`.
