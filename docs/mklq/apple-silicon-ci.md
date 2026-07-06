@@ -69,9 +69,9 @@ build cannot consume the runner indefinitely and superseded runs cancel cleanly.
 The source checkout uses a checkout timeout and a manual sparse checkout instead
 of `actions/checkout`: workspace cleanup is limited to `${GITHUB_WORKSPACE}`,
 then the job runs `git init`, configures `git sparse-checkout set` for the
-build, MKL-Q docs, benchmark harness, and `docs/sphinx/examples/mklq`, then
-fetches `origin/main` with `http.version=HTTP/1.1`, `--depth=1`, and
-`--filter=blob:none` using the explicit
+build, MKL-Q docs, benchmark harness, `docs/sphinx/examples/mklq`, and
+`docs/sphinx/targets`, then fetches `origin/main` with
+`http.version=HTTP/1.1`, `--depth=1`, and `--filter=blob:none` using the explicit
 `+refs/heads/main:refs/remotes/origin/main` refspec.
 The later remote-normalization step restores full-history evidence with retried
 fetch commands using `http.version=HTTP/1.1`, `--unshallow`, and
@@ -137,6 +137,7 @@ git sparse-checkout set \
   cudaq \
   docs/mklq \
   docs/sphinx/examples/mklq \
+  docs/sphinx/targets \
   python \
   runtime \
   scripts \
