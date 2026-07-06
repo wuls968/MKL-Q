@@ -48,8 +48,7 @@ jobs:
         timeout-minutes: 20
         uses: actions/checkout@v7
         with:
-          fetch-depth: 0
-          filter: blob:none
+          fetch-depth: 1
           lfs: false
           persist-credentials: false
           submodules: false
@@ -73,11 +72,47 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          retry_git() {
+            local label="$1"
+            shift
+            local attempt=1
+            local max_attempts=3
+            local delay_seconds=10
+            while true; do
+              echo "Running ${label} (attempt ${attempt}/${max_attempts})."
+              if "$@"; then
+                return 0
+              fi
+              local status="$?"
+              if [ "${attempt}" -ge "${max_attempts}" ]; then
+                echo "::error::${label} failed after ${attempt} attempts (exit ${status})." >&2
+                return "${status}"
+              fi
+              echo "::warning::${label} failed with exit ${status}; retrying in ${delay_seconds}s." >&2
+              sleep "${delay_seconds}"
+              attempt=$((attempt + 1))
+              delay_seconds=$((delay_seconds * 2))
+            done
+          }
+
           git remote set-url origin https://github.com/wuls968/MKL-Q.git
           git remote remove upstream 2>/dev/null || true
           git remote add upstream https://github.com/NVIDIA/cuda-quantum.git
-          git fetch --filter=blob:none origin main:refs/remotes/origin/main
-          git fetch --filter=blob:none upstream main:refs/remotes/upstream/main
+          if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then
+            retry_git "origin main unshallow" \
+              git -c http.version=HTTP/1.1 -c protocol.version=2 fetch \
+              --no-tags --prune --filter=blob:none --unshallow \
+              origin main:refs/remotes/origin/main
+          else
+            retry_git "origin main fetch" \
+              git -c http.version=HTTP/1.1 -c protocol.version=2 fetch \
+              --no-tags --prune --filter=blob:none \
+              origin main:refs/remotes/origin/main
+          fi
+          retry_git "upstream main fetch" \
+            git -c http.version=HTTP/1.1 -c protocol.version=2 fetch \
+            --no-tags --prune --filter=blob:none \
+            upstream main:refs/remotes/upstream/main
           if ! git rev-parse --verify main >/dev/null 2>&1; then
             git branch main origin/main
           elif [ "$(git rev-parse main)" != "$(git rev-parse origin/main)" ]; then

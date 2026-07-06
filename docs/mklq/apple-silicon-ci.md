@@ -66,12 +66,14 @@ permissions: contents: read
 
 It also sets explicit `timeout-minutes` and `concurrency` values so a stuck
 build cannot consume the runner indefinitely and superseded runs cancel cleanly.
-The source checkout uses a checkout timeout, `fetch-depth: 0`,
-`filter: blob:none`, `lfs: false`, `submodules: false`, and
-`persist-credentials: false` so full-history evidence remains available without
-pulling unnecessary blobs, submodules, LFS objects, or credentials during the
-initial checkout. Submodules are bootstrapped later by the reviewed retrying
-step.
+The source checkout uses a checkout timeout, shallow checkout with
+`fetch-depth: 1`, `lfs: false`, `submodules: false`, and
+`persist-credentials: false` so the initial current-tree checkout avoids
+promisor-remote lazy blob failures. The later remote-normalization step restores
+full-history evidence with retried fetch commands using
+`http.version=HTTP/1.1`, `--unshallow`, and `--filter=blob:none` before the
+public healthcheck verifies that the checkout is no longer shallow. Submodules
+are bootstrapped later by the reviewed retrying step.
 For non-dispatch runs on `main`, only a small unconditional `Dispatch guard`
 job runs on `ubuntu-latest`; the self-hosted Apple Silicon job still requires
 `workflow_dispatch` with `run_full_gate=confirm`.
@@ -90,8 +92,6 @@ install_prefix="${RUNNER_TEMP:-${HOME}}/cudaq-mklq-install"
 git remote set-url origin https://github.com/wuls968/MKL-Q.git
 git remote remove upstream 2>/dev/null || true
 git remote add upstream https://github.com/NVIDIA/cuda-quantum.git
-git fetch --filter=blob:none origin main:refs/remotes/origin/main
-git fetch --filter=blob:none upstream main:refs/remotes/upstream/main
 
 retry_git() {
   local label="$1"
@@ -115,6 +115,22 @@ retry_git() {
     delay_seconds=$((delay_seconds * 2))
   done
 }
+
+if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then
+  retry_git "origin main unshallow" \
+    git -c http.version=HTTP/1.1 -c protocol.version=2 fetch \
+    --no-tags --prune --filter=blob:none --unshallow \
+    origin main:refs/remotes/origin/main
+else
+  retry_git "origin main fetch" \
+    git -c http.version=HTTP/1.1 -c protocol.version=2 fetch \
+    --no-tags --prune --filter=blob:none \
+    origin main:refs/remotes/origin/main
+fi
+retry_git "upstream main fetch" \
+  git -c http.version=HTTP/1.1 -c protocol.version=2 fetch \
+  --no-tags --prune --filter=blob:none \
+  upstream main:refs/remotes/upstream/main
 
 retry_git "submodule sync" git submodule sync --recursive
 retry_git "non-LLVM submodule bootstrap" \
@@ -159,8 +175,9 @@ cmake -S . -B build-python -G Ninja \
 ```
 
 The tracked workflow invokes the same gate after selecting the effective Python,
-checking out source with a partial clone filter and explicit checkout timeout,
-normalizing `origin` and `upstream`, fetching `origin/main` and `upstream/main`,
+checking out the current tree with shallow checkout and an explicit checkout
+timeout, normalizing `origin` and `upstream`, unshallowing `origin/main` with
+`filter=blob:none` and `http.version=HTTP/1.1`, fetching `upstream/main`,
 bootstrapping the non-LLVM source submodules with shallow fetches, retrying
 transient submodule network failures up to three times, clearing the persistent
 runner build/install directories, and configuring a fresh `build-python` tree
@@ -218,9 +235,10 @@ Before making the full self-hosted job automatic or branch-protected:
   the working directory.
 - Confirm the job uses `permissions: contents: read`.
 - Confirm the job has explicit `timeout-minutes` and `concurrency` settings.
-- Confirm checkout uses a partial clone `filter: blob:none`, has a checkout
-  timeout, leaves LFS and submodules disabled during checkout, and keeps
-  credentials out of the working tree.
+- Confirm checkout uses shallow checkout with a checkout timeout, leaves LFS and
+  submodules disabled during checkout, keeps credentials out of the working
+  tree, and restores full-history evidence later with retried
+  `http.version=HTTP/1.1` unshallow fetches using `filter=blob:none`.
 - Confirm source submodule bootstrapping is a visible step before CMake
   configure, uses limited retry for transient submodule network failures, and
   CMake uses `GIT_SUBMODULE=OFF`.
