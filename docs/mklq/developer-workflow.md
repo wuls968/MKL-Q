@@ -167,6 +167,7 @@ Before pushing a public branch, run:
 ```bash
 python3 benchmarks/mklq/run_preflight_audit.py
 python3 benchmarks/mklq/run_public_release_checklist_audit.py
+python3 benchmarks/mklq/run_source_release_tag_audit.py --docs-only
 python3 benchmarks/mklq/run_self_hosted_ci_audit.py
 python3 benchmarks/mklq/run_public_healthcheck.py
 git diff --check
@@ -202,6 +203,7 @@ python3 -m py_compile \
   benchmarks/mklq/run_metal_runtime_counter_probe.py \
   benchmarks/mklq/run_preflight_audit.py \
   benchmarks/mklq/run_public_release_checklist_audit.py \
+  benchmarks/mklq/run_source_release_tag_audit.py \
   benchmarks/mklq/run_public_readiness_audit.py \
   benchmarks/mklq/run_public_healthcheck.py \
   benchmarks/mklq/run_self_hosted_ci_audit.py \
@@ -243,6 +245,20 @@ Run the full public release checklist before public release-style milestones:
 
 ```text
 docs/mklq/public-release-checklist.md
+```
+
+For planned source-only tag notes, run the docs-only tag audit on PR branches:
+
+```bash
+python3 benchmarks/mklq/run_source_release_tag_audit.py --docs-only
+```
+
+Run the full tag preflight audit only from clean `main` that matches
+`origin/main`, after the latest public hygiene and Apple Silicon correctness
+workflows have succeeded for that exact commit:
+
+```bash
+python3 benchmarks/mklq/run_source_release_tag_audit.py
 ```
 
 ## Commit And Push

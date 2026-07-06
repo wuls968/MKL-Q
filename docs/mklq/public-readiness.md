@@ -81,6 +81,7 @@ The public MKL-Q support boundary is documented in:
 - [`upstream-sync.md`](upstream-sync.md)
 - [`release-policy.md`](release-policy.md)
 - [`source-only-rc-v0.1.md`](source-only-rc-v0.1.md)
+- [`release-notes-v0.1.0-source.md`](release-notes-v0.1.0-source.md)
 - [`public-release-checklist.md`](public-release-checklist.md)
 - [`developer-workflow.md`](developer-workflow.md)
 - [`maintainer-runbook.md`](maintainer-runbook.md)
@@ -133,13 +134,13 @@ successful `MKL-Q Apple Silicon correctness` run, and the public
 claim-boundary guard passes.
 
 The tracked source-only readiness baseline was refreshed on 2026-07-06 against
-protected `main` at `1943490069d1ba0b253acfcf34fb973d0ab246ab`. The
+protected `main` at `206d392fc30019f6934965ec88ae18d30c87324d`. The
 `MKL-Q public hygiene` run
-<https://github.com/wuls968/MKL-Q/actions/runs/28782630758> and the manual
+<https://github.com/wuls968/MKL-Q/actions/runs/28784573258> and the manual
 `MKL-Q Apple Silicon correctness` full gate
-<https://github.com/wuls968/MKL-Q/actions/runs/28782675555> both completed
+<https://github.com/wuls968/MKL-Q/actions/runs/28784584186> both completed
 successfully for that head. The ignored local readiness payload
-`/tmp/mklq-public-readiness-audit-final-2026-07-06.json` recorded 13/13 checks
+`/tmp/mklq-public-readiness-audit-final-rc-v0.1-2026-07-06.json` recorded 13/13 checks
 passed, including repository identity, issue templates, labels, branch
 protection, latest pushed workflow status, public claim boundaries, and the
 source-only no-tags/no-releases boundary. Use the readiness commands below for
@@ -176,10 +177,11 @@ focused CRZ distance-sweep evidence retained from 2026-07-01:
   state for the latest public healthcheck gate, and the ignored correctness
   gate JSON records the latest correctness-gate state;
 - install-prefix build: passed;
-- default public healthcheck: passed with 31/31 steps passed;
-- full public healthcheck: passed with 35/35 steps passed; this includes the
-  install-prefix build, local macOS signature repair for 60 loadables,
-  correctness gate, benchmark harness tests, and public example smoke gate;
+- default public healthcheck: passed with 32/32 steps passed;
+- full public healthcheck: passed with 36/36 steps passed for the expanded
+  source-only tag-audit gate, including the install-prefix build, local macOS
+  signature repair for 60 loadables, correctness gate, benchmark harness tests,
+  and public example smoke gate;
 - source-only release-candidate dry run: passed the local full public
   healthcheck, public release checklist audit, preflight audit, and public
   readiness audit on 2026-07-05; the tracked source-only RC v0.1 entry point is
@@ -188,11 +190,13 @@ focused CRZ distance-sweep evidence retained from 2026-07-01:
   reported one online runner named `mklq-apple-silicon-a0000` with the
   required `self-hosted`, `macOS`, `ARM64`, and `mklq-apple-silicon` labels;
 - latest tracked manual self-hosted Apple Silicon full gate: passed on
-  2026-07-06 for `1943490069d1ba0b253acfcf34fb973d0ab246ab` in
-  <https://github.com/wuls968/MKL-Q/actions/runs/28782675555>, with the full
+  2026-07-06 for `206d392fc30019f6934965ec88ae18d30c87324d` in
+  <https://github.com/wuls968/MKL-Q/actions/runs/28784584186>, with the full
   public healthcheck reporting 35/35 steps passed, the correctness gate ctest
-  subset reporting 104/104 tests passed, and the benchmark harness reporting
-  220 passed;
+  subset reporting 104/104 tests passed, the Metal runtime counter probe
+  reporting 50/50 selected counter tests passed, the public example smoke gate
+  reporting 30/30 checks passed, and the benchmark harness reporting 220
+  passed;
 - public readiness audit: passed with 13/13 checks passed against the
   then-current protected `main` branch;
 - one-command correctness gate: passed with 4/4 steps passed, including

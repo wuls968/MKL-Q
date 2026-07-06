@@ -49,10 +49,15 @@ inventory check was refreshed on 2026-07-06 and reported one online runner
 named `mklq-apple-silicon-a0000` with the required `self-hosted`, `macOS`,
 `ARM64`, and `mklq-apple-silicon` labels. The latest tracked manual
 self-hosted Apple Silicon full gate passed on 2026-07-06 for
-`1943490069d1ba0b253acfcf34fb973d0ab246ab` in
-<https://github.com/wuls968/MKL-Q/actions/runs/28782675555>, with 35/35 public
+`206d392fc30019f6934965ec88ae18d30c87324d` in
+<https://github.com/wuls968/MKL-Q/actions/runs/28784584186>, with 35/35 public
 healthcheck steps passed, the correctness gate ctest subset reporting 104/104
-tests passed, and the benchmark harness reporting 220 passed.
+tests passed, the Metal runtime counter probe reporting 50/50 selected counter
+tests passed, the public example smoke gate reporting 30/30 checks passed, and
+the benchmark harness reporting 220 passed.
+The current public healthcheck plan adds a source-only tag draft audit. The
+default repository hygiene gate count is now 32/32 steps, and the expanded full
+gate has passed with 36/36 steps.
 The clean CPU benchmark summary was refreshed separately against
 `dbebe3744f826ba4cbeed2b99708a2bdab03b11e` after promoting the two-qubit/SWAP
 and three-qubit custom gate rows into the clean local CPU benchmark evidence
@@ -203,15 +208,16 @@ Raw wrapper output was written to ignored local paths
 `benchmarks/mklq/results/macos-install-signature-repair-2026-07-05.json`;
 these raw payloads are not tracked as public evidence.
 
-Latest default 2026-07-05 result: `31/31` steps passed.
-latest full 2026-07-06 result is `35/35` steps passed.
+Latest default 2026-07-06 result: `32/32` steps passed.
+Latest full 2026-07-06 result: `36/36` steps passed.
 
 - Install-prefix build: passed.
-- Default public healthcheck: passed on 2026-07-05, with 31 steps passed and
+- Default public healthcheck: passed on 2026-07-06, with 32 steps passed and
   0 failed.
-- Latest full public healthcheck: passed on 2026-07-06, with 35 steps passed
-  and 0 failed, including install-prefix build, local macOS signature repair,
-  correctness gate, benchmark harness tests, and public example smoke.
+- Latest full public healthcheck: passed on 2026-07-06, with 36 steps passed
+  and 0 failed, including the source-only tag draft audit, install-prefix
+  build, local macOS signature repair, correctness gate, benchmark harness
+  tests, and public example smoke.
 - One-command correctness gate: passed with 4 steps passed, 0 failed, and 0
   skipped, including the Metal runtime counter probe.
 - Public example smoke gate: passed, with 30 steps passed and 0 failed.
@@ -344,7 +350,7 @@ python3 benchmarks/mklq/run_correctness_gate.py \
 ```
 
 Latest local/self-hosted result: passed on 2026-07-06 for
-`1943490069d1ba0b253acfcf34fb973d0ab246ab` in the manual Apple Silicon
+`206d392fc30019f6934965ec88ae18d30c87324d` in the manual Apple Silicon
 correctness workflow after the source submodule bootstrap, focused install
 build, macOS install-prefix signature repair, correctness gate, benchmark
 harness tests, and public example smoke gate all completed. It reported 4
@@ -403,11 +409,12 @@ python3 benchmarks/mklq/run_correctness_gate.py \
 python3 benchmarks/mklq/run_public_healthcheck.py --full --require-clean
 ```
 
-Latest default 2026-07-05 result: `31/31` steps passed. The latest full
-2026-07-06 result is `35/35` steps passed. The full gate includes Git
+Latest default 2026-07-06 result: `32/32` steps passed. The latest full
+2026-07-06 result is `36/36` steps passed. The full gate includes Git
 repository hygiene, tracked-artifact checks, public metadata checks, the public
-release checklist audit, the upstream sync audit, the self-hosted Apple Silicon
-CI audit, sanitized benchmark summary parsing, the clean CPU performance
+release checklist audit, the source-only tag draft audit, the upstream sync
+audit, the self-hosted Apple Silicon CI audit, sanitized benchmark summary
+parsing, the clean CPU performance
 evidence guards, the Metal evidence boundary guard, the Metal stochastic
 sampling boundary guard, the Metal uniform sampling evidence guard, bounded CPU
 gate fast-path counter evidence parsing, bounded CPU sampling/probability counter evidence
@@ -420,11 +427,12 @@ signature repair, the one-command correctness gate, and the public example
 smoke gate.
 
 The ignored raw healthcheck JSON records the exact Git state for these local
-runs. The latest default healthcheck benchmark harness step reported
-`177 passed`. The latest full wrapper run reported `32 passed`, including
-install-prefix build, local signature repair, correctness, and example-smoke
-gates in the `--full --require-clean` wrapper. An earlier wrapper run before
-the signature-repair step was added failed when installed `nvq++` smoke
+runs. The current default healthcheck benchmark harness step reports
+`220 passed`. The latest full wrapper run reported 36 passed steps, including
+source-only tag draft audit, install-prefix build, local signature repair,
+correctness, and example-smoke gates in the `--full --require-clean` wrapper.
+An earlier wrapper run before the signature-repair step was added failed when
+installed `nvq++` smoke
 executables could not load a locally installed loadable with an invalid ad-hoc
 signature.
 

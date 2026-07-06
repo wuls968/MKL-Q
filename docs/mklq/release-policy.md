@@ -28,6 +28,14 @@ source-only candidate entry point in
 [`source-only-rc-v0.1.md`](source-only-rc-v0.1.md). They are not release tags,
 GitHub Releases, binary artifacts, package versions, or release certification.
 
+Draft source-only tag notes such as `mklq-v0.1.0-source` are allowed only as
+preflight documentation when they point to tracked notes such as
+[`release-notes-v0.1.0-source.md`](release-notes-v0.1.0-source.md), keep
+`CHANGELOG.md` source-only, and pass
+`python3 benchmarks/mklq/run_source_release_tag_audit.py --docs-only`. They do
+not authorize creating a tag. The full tag audit must pass on clean `main`
+after a reviewed release decision and before any tag is created.
+
 ## Allowed Now
 
 These actions are allowed during the source-only phase:
@@ -38,6 +46,8 @@ These actions are allowed during the source-only phase:
 - Publish sanitized benchmark summaries under `benchmarks/mklq/reports/`.
 - Publish source-only release-candidate notes under `docs/mklq/` when they
   preserve the no-tag, no-package, no-binary, non-certification boundary.
+- Publish draft source-only tag notes and changelog entries when they preserve
+  the no-tag, no-release, no-package, no-binary, non-certification boundary.
 - Run the lightweight public hygiene workflow.
 - Use local ignored JSON under `benchmarks/mklq/results/` for development
   evidence.
@@ -63,6 +73,10 @@ Before creating a release branch or tag, all of these must be true:
 - `docs/mklq/upstream-sync.md` has been followed if upstream was synced.
 - `docs/mklq/testing-matrix.md` covers the release gate and any new target
   behavior.
+- `docs/mklq/release-notes-v0.1.0-source.md` and `CHANGELOG.md` describe the
+  exact source-only scope without implying artifacts or package publication.
+- `python3 benchmarks/mklq/run_source_release_tag_audit.py` passes for the
+  exact clean `main` commit and proposed MKL-Q-specific tag name.
 - `python3 benchmarks/mklq/run_correctness_gate.py --install-prefix
   "${HOME}/.cudaq-mklq" --build-dir build-python` passes on Apple Silicon.
 - `cmake --build build-python --target install -j 6` passes for the intended

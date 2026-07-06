@@ -124,6 +124,11 @@ The source-only release policy and future release entry criteria are tracked in
 [`docs/mklq/release-policy.md`](docs/mklq/release-policy.md).
 The current source-only v0.1 release-candidate entry point is tracked in
 [`docs/mklq/source-only-rc-v0.1.md`](docs/mklq/source-only-rc-v0.1.md).
+The planned source-only v0.1.0 tag draft is tracked in
+[`docs/mklq/release-notes-v0.1.0-source.md`](docs/mklq/release-notes-v0.1.0-source.md),
+with milestone history in [`CHANGELOG.md`](CHANGELOG.md). This is tag
+preflight material only; no tag, GitHub Release, wheel, PyPI package,
+installer, or signed artifact has been created.
 The public support boundary and current non-goals are listed in
 [`docs/mklq/known-limitations.md`](docs/mklq/known-limitations.md).
 The source-only public release checklist is tracked in
@@ -213,6 +218,12 @@ workflow, and source-only tag/release boundary, run:
 
 ```bash
 python3 benchmarks/mklq/run_public_readiness_audit.py
+```
+
+To audit the planned `mklq-v0.1.0-source` tag draft without creating a tag, run:
+
+```bash
+python3 benchmarks/mklq/run_source_release_tag_audit.py
 ```
 
 ## Upstream And License

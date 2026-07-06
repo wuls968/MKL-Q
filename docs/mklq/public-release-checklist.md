@@ -61,6 +61,10 @@ Check:
 - [ ] `docs/mklq/source-only-rc-v0.1.md` is linked from the README and records
   the current source-only v0.1 release-candidate boundary without creating a
   tag, GitHub Release, wheel, PyPI package, installer, or signed artifact.
+- [ ] `docs/mklq/release-notes-v0.1.0-source.md` and `CHANGELOG.md` are linked
+  from the README and describe the planned `mklq-v0.1.0-source` source-only tag
+  without creating the tag or implying any GitHub Release, wheel, PyPI package,
+  installer, or signed artifact.
 - [ ] `docs/mklq/developer-workflow.md` is linked from the README and records
   the current local development, public hygiene, and PR workflow.
 - [ ] `docs/mklq/release-policy.md` is linked from the README and explains
@@ -185,6 +189,7 @@ Run the same classes of checks as `.github/workflows/mklq-public-hygiene.yml`:
 ```bash
 python3 benchmarks/mklq/run_preflight_audit.py --require-clean
 python3 benchmarks/mklq/run_public_release_checklist_audit.py
+python3 benchmarks/mklq/run_source_release_tag_audit.py --docs-only
 python3 benchmarks/mklq/run_public_readiness_audit.py
 python3 benchmarks/mklq/run_self_hosted_ci_audit.py
 python3 benchmarks/mklq/run_public_healthcheck.py
@@ -236,6 +241,7 @@ python3 -m py_compile \
   benchmarks/mklq/run_metal_runtime_counter_probe.py \
   benchmarks/mklq/run_preflight_audit.py \
   benchmarks/mklq/run_public_release_checklist_audit.py \
+  benchmarks/mklq/run_source_release_tag_audit.py \
   benchmarks/mklq/run_public_readiness_audit.py \
   benchmarks/mklq/run_public_healthcheck.py \
   benchmarks/mklq/run_self_hosted_ci_audit.py \
@@ -259,6 +265,9 @@ Expected:
   non-certifying.
 - [ ] `run_public_release_checklist_audit.py` passes and confirms this
   checklist still references the required source-only release gates.
+- [ ] `run_source_release_tag_audit.py --docs-only` passes for PR/public
+  hygiene checks, and the full `run_source_release_tag_audit.py` passes on
+  clean `main` before any decision to create `mklq-v0.1.0-source`.
 - [ ] `run_self_hosted_ci_audit.py` passes and confirms the Apple Silicon CI
   workflow keeps only the lightweight push guard automatic while the
   self-hosted full job remains manual, read-only, source-only, and disabled by

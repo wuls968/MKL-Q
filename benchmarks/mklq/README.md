@@ -352,6 +352,33 @@ and `public_report_references` warning. It writes ignored JSON under
 `benchmarks/mklq/results/`. It does not run builds, benchmarks, GitHub Actions,
 or backend correctness tests.
 
+## Source Release Tag Audit
+
+Use the source release tag audit before changing planned source-only tag notes
+or checking the planned `mklq-v0.1.0-source` boundary:
+
+```bash
+python3 benchmarks/mklq/run_source_release_tag_audit.py --docs-only
+```
+
+The docs-only mode is safe for PR branches and public hygiene jobs. It checks
+the candidate tag naming convention, `CHANGELOG.md`,
+`docs/mklq/release-notes-v0.1.0-source.md`, release policy, public checklist,
+README links, and tracked artifact hygiene without querying live GitHub run
+state.
+
+Run the full mode only from clean `main` after pushing:
+
+```bash
+python3 benchmarks/mklq/run_source_release_tag_audit.py
+```
+
+Full mode additionally verifies `HEAD == origin/main`, confirms the candidate
+tag does not exist locally or on `origin`, checks that no GitHub Releases exist,
+and requires the latest public hygiene and Apple Silicon correctness workflow
+runs to succeed for the exact commit. The audit never creates tags, GitHub
+Releases, packages, or artifacts.
+
 ## Upstream Sync Audit
 
 Use the upstream sync audit before interpreting or merging changes from
