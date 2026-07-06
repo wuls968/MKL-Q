@@ -71,12 +71,13 @@ of `actions/checkout`: workspace cleanup is limited to `${GITHUB_WORKSPACE}`,
 then the job runs `git init`, configures `git sparse-checkout set` for the
 build, MKL-Q docs, benchmark harness, and `docs/sphinx/examples/mklq`, then
 fetches `origin/main` with `http.version=HTTP/1.1`, `--depth=1`, and
-`--filter=blob:none`.
+`--filter=blob:none` using the explicit
+`+refs/heads/main:refs/remotes/origin/main` refspec.
 The later remote-normalization step restores full-history evidence with retried
 fetch commands using `http.version=HTTP/1.1`, `--unshallow`, and
-`--filter=blob:none` before the public healthcheck verifies that the checkout is
-no longer shallow. Submodules are bootstrapped later by the reviewed retrying
-step.
+`--filter=blob:none` with explicit `origin/main` and `upstream/main` refspecs
+before the public healthcheck verifies that the checkout is no longer shallow.
+Submodules are bootstrapped later by the reviewed retrying step.
 For non-dispatch runs on `main`, only a small unconditional `Dispatch guard`
 job runs on `ubuntu-latest`; the self-hosted Apple Silicon job still requires
 `workflow_dispatch` with `run_full_gate=confirm`.
@@ -145,8 +146,8 @@ git sparse-checkout set \
   utils
 retry_git "origin main sparse fetch" \
   git -c http.version=HTTP/1.1 -c protocol.version=2 fetch \
-  --no-tags --prune --filter=blob:none --depth=1 \
-  origin main:refs/remotes/origin/main
+  --no-tags --filter=blob:none --depth=1 \
+  origin +refs/heads/main:refs/remotes/origin/main
 git checkout --force -B main origin/main
 
 git remote set-url origin https://github.com/wuls968/MKL-Q.git
@@ -155,18 +156,18 @@ git remote add upstream https://github.com/NVIDIA/cuda-quantum.git
 if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then
   retry_git "origin main unshallow" \
     git -c http.version=HTTP/1.1 -c protocol.version=2 fetch \
-    --no-tags --prune --filter=blob:none --unshallow \
-    origin main:refs/remotes/origin/main
+    --no-tags --filter=blob:none --unshallow \
+    origin +refs/heads/main:refs/remotes/origin/main
 else
   retry_git "origin main fetch" \
     git -c http.version=HTTP/1.1 -c protocol.version=2 fetch \
-    --no-tags --prune --filter=blob:none \
-    origin main:refs/remotes/origin/main
+    --no-tags --filter=blob:none \
+    origin +refs/heads/main:refs/remotes/origin/main
 fi
 retry_git "upstream main fetch" \
   git -c http.version=HTTP/1.1 -c protocol.version=2 fetch \
-  --no-tags --prune --filter=blob:none \
-  upstream main:refs/remotes/upstream/main
+  --no-tags --filter=blob:none \
+  upstream +refs/heads/main:refs/remotes/upstream/main
 
 retry_git "submodule sync" git submodule sync --recursive
 retry_git "non-LLVM submodule bootstrap" \
@@ -213,7 +214,8 @@ cmake -S . -B build-python -G Ninja \
 The tracked workflow invokes the same gate after preparing a manual sparse
 checkout with an explicit checkout timeout, selecting the effective Python,
 normalizing `origin` and `upstream`, unshallowing `origin/main` with
-`filter=blob:none` and `http.version=HTTP/1.1`, fetching `upstream/main`,
+`filter=blob:none`, `http.version=HTTP/1.1`, and an explicit main refspec,
+fetching `upstream/main` with an explicit main refspec,
 bootstrapping the non-LLVM source submodules with shallow fetches, retrying
 transient submodule network failures up to three times, clearing the persistent
 runner build/install directories, and configuring a fresh `build-python` tree
