@@ -6087,9 +6087,10 @@ Do not enable this heavy workflow by default. The workflow uses
 workflow_dispatch, run_full_gate, default skip activation, no secrets,
 read-only access, permissions: contents: read, timeout-minutes, concurrency,
 broad push Dispatch guard validation, and no pull request triggers.
-The checkout uses a checkout timeout, shallow checkout, fetch-depth: 1,
-lfs: false, submodules: false, and persist-credentials: false. It restores
-history later with http.version=HTTP/1.1, --unshallow, and filter=blob:none.
+The checkout uses a checkout timeout, manual sparse checkout, workspace cleanup,
+git sparse-checkout set, docs/sphinx/examples/mklq, and filter=blob:none. It
+restores history later with http.version=HTTP/1.1, --unshallow, and
+filter=blob:none.
 Before dispatching the full gate, run --check-runners to query actions/runners.
 
 ## Validation Command
@@ -6153,13 +6154,16 @@ jobs:
     runs-on: [self-hosted, macOS, ARM64, mklq-apple-silicon]
     timeout-minutes: 180
     steps:
-      - uses: actions/checkout@v7
+      - name: Prepare sparse source checkout
         timeout-minutes: 20
-        with:
-          fetch-depth: 1
-          lfs: false
-          persist-credentials: false
-          submodules: false
+        run: |
+          workspace="${GITHUB_WORKSPACE:?}"
+          find "${workspace}" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+          git init "${workspace}"
+          cd "${workspace}"
+          git sparse-checkout init --cone
+          git sparse-checkout set .github benchmarks cmake cudaq docs/mklq docs/sphinx/examples/mklq python runtime scripts targettests tpls unittests utils
+          retry_git "origin main sparse fetch" git -c http.version=HTTP/1.1 fetch --depth=1 --filter=blob:none origin main:refs/remotes/origin/main
       - name: Normalize Git remotes
         run: |
           retry_git() {
@@ -6341,7 +6345,7 @@ def test_mklq_self_hosted_ci_audit_rejects_enabled_heavy_workflow(
         "details"]["unexpected_workflows"]
 
 
-def test_mklq_self_hosted_ci_audit_rejects_checkout_partial_clone_filter(
+def test_mklq_self_hosted_ci_audit_rejects_actions_checkout_regression(
         monkeypatch, tmp_path):
     module = _load_self_hosted_ci_audit_module()
     _write_self_hosted_ci_audit_fixture(tmp_path, _self_hosted_ci_doc_text())
@@ -6349,11 +6353,11 @@ def test_mklq_self_hosted_ci_audit_rejects_checkout_partial_clone_filter(
                      "mklq-apple-silicon-ci.yml")
     workflow_path.write_text(
         workflow_path.read_text(encoding="utf-8").replace(
-            "          fetch-depth: 1\n"
-            "          lfs: false\n",
-            "          fetch-depth: 1\n"
+            "      - name: Prepare sparse source checkout\n",
+            "      - uses: actions/checkout@v7\n"
+            "        with:\n"
             "          filter: blob:none\n"
-            "          lfs: false\n"),
+            "      - name: Prepare sparse source checkout\n"),
         encoding="utf-8")
     monkeypatch.setattr(
         module, "command_output",
@@ -6367,10 +6371,13 @@ def test_mklq_self_hosted_ci_audit_rejects_checkout_partial_clone_filter(
     assert report["summary"]["status"] == "failed"
     checks = {check["name"]: check for check in report["checks"]}
     assert checks["workflow_boundary"]["status"] == "failed"
-    assert any(
-        item["token"] == "filter: blob:none checkout input"
+    forbidden_tokens = {
+        item["token"]
         for item in checks["workflow_boundary"]["details"]
-        ["manual_forbidden_lines"])
+        ["manual_forbidden_lines"]
+    }
+    assert "actions/checkout" in forbidden_tokens
+    assert "filter: blob:none checkout input" in forbidden_tokens
 
 
 def test_mklq_self_hosted_ci_audit_rejects_lightweight_heavy_command(

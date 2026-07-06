@@ -66,14 +66,17 @@ permissions: contents: read
 
 It also sets explicit `timeout-minutes` and `concurrency` values so a stuck
 build cannot consume the runner indefinitely and superseded runs cancel cleanly.
-The source checkout uses a checkout timeout, shallow checkout with
-`fetch-depth: 1`, `lfs: false`, `submodules: false`, and
-`persist-credentials: false` so the initial current-tree checkout avoids
-promisor-remote lazy blob failures. The later remote-normalization step restores
-full-history evidence with retried fetch commands using
-`http.version=HTTP/1.1`, `--unshallow`, and `--filter=blob:none` before the
-public healthcheck verifies that the checkout is no longer shallow. Submodules
-are bootstrapped later by the reviewed retrying step.
+The source checkout uses a checkout timeout and a manual sparse checkout instead
+of `actions/checkout`: workspace cleanup is limited to `${GITHUB_WORKSPACE}`,
+then the job runs `git init`, configures `git sparse-checkout set` for the
+build, MKL-Q docs, benchmark harness, and `docs/sphinx/examples/mklq`, then
+fetches `origin/main` with `http.version=HTTP/1.1`, `--depth=1`, and
+`--filter=blob:none`.
+The later remote-normalization step restores full-history evidence with retried
+fetch commands using `http.version=HTTP/1.1`, `--unshallow`, and
+`--filter=blob:none` before the public healthcheck verifies that the checkout is
+no longer shallow. Submodules are bootstrapped later by the reviewed retrying
+step.
 For non-dispatch runs on `main`, only a small unconditional `Dispatch guard`
 job runs on `ubuntu-latest`; the self-hosted Apple Silicon job still requires
 `workflow_dispatch` with `run_full_gate=confirm`.
@@ -89,9 +92,6 @@ local public healthcheck:
 ```bash
 python_bin="${MKLQ_PYTHON:-$(command -v python3)}"
 install_prefix="${RUNNER_TEMP:-${HOME}}/cudaq-mklq-install"
-git remote set-url origin https://github.com/wuls968/MKL-Q.git
-git remote remove upstream 2>/dev/null || true
-git remote add upstream https://github.com/NVIDIA/cuda-quantum.git
 
 retry_git() {
   local label="$1"
@@ -116,6 +116,42 @@ retry_git() {
   done
 }
 
+workspace="${GITHUB_WORKSPACE:?}"
+if [ "${workspace}" = "/" ]; then
+  echo "Refusing to clean filesystem root." >&2
+  exit 1
+fi
+mkdir -p "${workspace}"
+find "${workspace}" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+
+git init "${workspace}"
+cd "${workspace}"
+git remote add origin https://github.com/wuls968/MKL-Q.git
+git remote add upstream https://github.com/NVIDIA/cuda-quantum.git
+git sparse-checkout init --cone
+git sparse-checkout set \
+  .github \
+  benchmarks \
+  cmake \
+  cudaq \
+  docs/mklq \
+  docs/sphinx/examples/mklq \
+  python \
+  runtime \
+  scripts \
+  targettests \
+  tpls \
+  unittests \
+  utils
+retry_git "origin main sparse fetch" \
+  git -c http.version=HTTP/1.1 -c protocol.version=2 fetch \
+  --no-tags --prune --filter=blob:none --depth=1 \
+  origin main:refs/remotes/origin/main
+git checkout --force -B main origin/main
+
+git remote set-url origin https://github.com/wuls968/MKL-Q.git
+git remote remove upstream 2>/dev/null || true
+git remote add upstream https://github.com/NVIDIA/cuda-quantum.git
 if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then
   retry_git "origin main unshallow" \
     git -c http.version=HTTP/1.1 -c protocol.version=2 fetch \
@@ -174,9 +210,9 @@ cmake -S . -B build-python -G Ninja \
   --build-dir build-python
 ```
 
-The tracked workflow invokes the same gate after selecting the effective Python,
-checking out the current tree with shallow checkout and an explicit checkout
-timeout, normalizing `origin` and `upstream`, unshallowing `origin/main` with
+The tracked workflow invokes the same gate after preparing a manual sparse
+checkout with an explicit checkout timeout, selecting the effective Python,
+normalizing `origin` and `upstream`, unshallowing `origin/main` with
 `filter=blob:none` and `http.version=HTTP/1.1`, fetching `upstream/main`,
 bootstrapping the non-LLVM source submodules with shallow fetches, retrying
 transient submodule network failures up to three times, clearing the persistent
@@ -235,10 +271,10 @@ Before making the full self-hosted job automatic or branch-protected:
   the working directory.
 - Confirm the job uses `permissions: contents: read`.
 - Confirm the job has explicit `timeout-minutes` and `concurrency` settings.
-- Confirm checkout uses shallow checkout with a checkout timeout, leaves LFS and
-  submodules disabled during checkout, keeps credentials out of the working
-  tree, and restores full-history evidence later with retried
-  `http.version=HTTP/1.1` unshallow fetches using `filter=blob:none`.
+- Confirm checkout uses manual sparse checkout with a checkout timeout, cleans
+  only `${GITHUB_WORKSPACE}`, does not use `actions/checkout`, keeps credentials
+  out of the working tree, and restores full-history evidence later with
+  retried `http.version=HTTP/1.1` unshallow fetches using `filter=blob:none`.
 - Confirm source submodule bootstrapping is a visible step before CMake
   configure, uses limited retry for transient submodule network failures, and
   CMake uses `GIT_SUBMODULE=OFF`.
