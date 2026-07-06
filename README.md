@@ -122,6 +122,8 @@ The upstream CUDA-Q sync procedure is tracked in
 [`docs/mklq/upstream-sync.md`](docs/mklq/upstream-sync.md).
 The source-only release policy and future release entry criteria are tracked in
 [`docs/mklq/release-policy.md`](docs/mklq/release-policy.md).
+The current source-only v0.1 release-candidate entry point is tracked in
+[`docs/mklq/source-only-rc-v0.1.md`](docs/mklq/source-only-rc-v0.1.md).
 The public support boundary and current non-goals are listed in
 [`docs/mklq/known-limitations.md`](docs/mklq/known-limitations.md).
 The source-only public release checklist is tracked in
