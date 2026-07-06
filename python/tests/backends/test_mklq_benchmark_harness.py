@@ -5780,7 +5780,8 @@ Before dispatching the full gate, run --check-runners to query actions/runners.
 
 Run run_public_healthcheck.py --full --require-clean --focused-install-build
 with CUDAQ_ENABLE_PROJECTS=python and GIT_SUBMODULE=OFF after source submodule
-bootstrapping, then run_correctness_gate.py.
+bootstrapping, retrying transient submodule network failures, then
+run_correctness_gate.py.
 Keep raw JSON under benchmarks/mklq/results/.
 
 ## Activation Checklist
@@ -5842,7 +5843,11 @@ jobs:
           persist-credentials: false
       - name: Bootstrap source submodules
         run: |
+          retry_git() {
+            local max_attempts=3
+          }
           git submodule sync --recursive
+          retry_git "submodule sync" git submodule sync --recursive
           git -c submodule.tpls/llvm.update=none submodule update --init --depth 1 tpls/qpp
       - run: |
           cmake -S . -B build-python -G Ninja -D CUDAQ_ENABLE_PROJECTS=python -D GIT_SUBMODULE=OFF

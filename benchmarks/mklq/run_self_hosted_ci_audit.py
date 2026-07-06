@@ -65,6 +65,7 @@ REQUIRED_TOKENS = (
     "CUDAQ_ENABLE_PROJECTS=python",
     "GIT_SUBMODULE=OFF",
     "source submodule bootstrapping",
+    "retrying transient submodule network failures",
     "run_correctness_gate.py",
     "benchmarks/mklq/results/",
     "no tags",
@@ -110,6 +111,8 @@ APPLE_WORKFLOW_REQUIRED_TOKENS = (
     "--focused-install-build",
     "CUDAQ_ENABLE_PROJECTS=python",
     "Bootstrap source submodules",
+    "retry_git",
+    "max_attempts=3",
     "GIT_SUBMODULE=OFF",
     "benchmarks/mklq/results/",
 )

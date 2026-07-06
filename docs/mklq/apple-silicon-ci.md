@@ -86,8 +86,33 @@ git remote remove upstream 2>/dev/null || true
 git remote add upstream https://github.com/NVIDIA/cuda-quantum.git
 git fetch --filter=blob:none origin main:refs/remotes/origin/main
 git fetch --filter=blob:none upstream main:refs/remotes/upstream/main
-git submodule sync --recursive
-git -c submodule.tpls/llvm.update=none submodule update \
+
+retry_git() {
+  local label="$1"
+  shift
+  local attempt=1
+  local max_attempts=3
+  local delay_seconds=10
+  while true; do
+    echo "Running ${label} (attempt ${attempt}/${max_attempts})."
+    if "$@"; then
+      return 0
+    fi
+    local status="$?"
+    if [ "${attempt}" -ge "${max_attempts}" ]; then
+      echo "${label} failed after ${attempt} attempts (exit ${status})." >&2
+      return "${status}"
+    fi
+    echo "${label} failed with exit ${status}; retrying in ${delay_seconds}s." >&2
+    sleep "${delay_seconds}"
+    attempt=$((attempt + 1))
+    delay_seconds=$((delay_seconds * 2))
+  done
+}
+
+retry_git "submodule sync" git submodule sync --recursive
+retry_git "non-LLVM submodule bootstrap" \
+  git -c submodule.tpls/llvm.update=none submodule update \
   --init \
   --depth 1 \
   --jobs 6 \
@@ -103,7 +128,8 @@ git -c submodule.tpls/llvm.update=none submodule update \
   tpls/spdlog \
   tpls/xtensor \
   tpls/xtl
-git -C tpls/nanobind submodule update \
+retry_git "nanobind robin_map submodule bootstrap" \
+  git -C tpls/nanobind submodule update \
   --init \
   --depth 1 \
   ext/robin_map
@@ -129,7 +155,8 @@ cmake -S . -B build-python -G Ninja \
 The tracked workflow invokes the same gate after selecting the effective Python,
 normalizing `origin` and `upstream`, fetching `origin/main` and
 `upstream/main`, bootstrapping the non-LLVM source submodules with shallow
-fetches, clearing the persistent runner build/install directories, and
+fetches, retrying transient submodule network failures up to three times,
+clearing the persistent runner build/install directories, and
 configuring a fresh `build-python` tree with `CUDAQ_ENABLE_PROJECTS=python` and
 `GIT_SUBMODULE=OFF`.
 The `--focused-install-build` option builds the reviewed installable MKL-Q
@@ -186,7 +213,8 @@ Before making the full self-hosted job automatic or branch-protected:
 - Confirm the job uses `permissions: contents: read`.
 - Confirm the job has explicit `timeout-minutes` and `concurrency` settings.
 - Confirm source submodule bootstrapping is a visible step before CMake
-  configure and CMake uses `GIT_SUBMODULE=OFF`.
+  configure, uses limited retry for transient submodule network failures, and
+  CMake uses `GIT_SUBMODULE=OFF`.
 - Confirm the command is
   `run_public_healthcheck.py --full --require-clean --focused-install-build` or
   a stricter reviewed replacement.
