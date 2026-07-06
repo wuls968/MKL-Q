@@ -44,14 +44,68 @@ jobs:
       MKLQ_BUILD_DIR: build-python
       MKLQ_PYTHON: /opt/anaconda3/bin/python3
     steps:
-      - name: Check out source
+      - name: Prepare sparse source checkout
         timeout-minutes: 20
-        uses: actions/checkout@v7
-        with:
-          fetch-depth: 1
-          lfs: false
-          persist-credentials: false
-          submodules: false
+        shell: bash
+        run: |
+          set -euo pipefail
+          retry_git() {
+            local label="$1"
+            shift
+            local attempt=1
+            local max_attempts=3
+            local delay_seconds=10
+            while true; do
+              echo "Running ${label} (attempt ${attempt}/${max_attempts})."
+              if "$@"; then
+                return 0
+              fi
+              local status="$?"
+              if [ "${attempt}" -ge "${max_attempts}" ]; then
+                echo "::error::${label} failed after ${attempt} attempts (exit ${status})." >&2
+                return "${status}"
+              fi
+              echo "::warning::${label} failed with exit ${status}; retrying in ${delay_seconds}s." >&2
+              sleep "${delay_seconds}"
+              attempt=$((attempt + 1))
+              delay_seconds=$((delay_seconds * 2))
+            done
+          }
+
+          workspace="${GITHUB_WORKSPACE:?}"
+          if [ "${workspace}" = "/" ]; then
+            echo "::error::Refusing to clean filesystem root." >&2
+            exit 1
+          fi
+          mkdir -p "${workspace}"
+          find "${workspace}" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+
+          git init "${workspace}"
+          cd "${workspace}"
+          git config --local gc.auto 0
+          git config --local advice.detachedHead false
+          git remote add origin https://github.com/wuls968/MKL-Q.git
+          git remote add upstream https://github.com/NVIDIA/cuda-quantum.git
+          git sparse-checkout init --cone
+          git sparse-checkout set \
+            .github \
+            benchmarks \
+            cmake \
+            cudaq \
+            docs/mklq \
+            docs/sphinx/examples/mklq \
+            python \
+            runtime \
+            scripts \
+            targettests \
+            tpls \
+            unittests \
+            utils
+          retry_git "origin main sparse fetch" \
+            git -c http.version=HTTP/1.1 -c protocol.version=2 fetch \
+            --no-tags --prune --filter=blob:none --depth=1 \
+            origin main:refs/remotes/origin/main
+          git checkout --force -B main origin/main
 
       - name: Select Python and install prefix
         shell: bash
