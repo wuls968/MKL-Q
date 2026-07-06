@@ -375,9 +375,13 @@ python3 benchmarks/mklq/run_source_release_tag_audit.py
 
 Full mode additionally verifies `HEAD == origin/main`, confirms the candidate
 tag does not exist locally or on `origin`, checks that no GitHub Releases exist,
-and requires the latest public hygiene and Apple Silicon correctness workflow
-runs to succeed for the exact commit. The audit never creates tags, GitHub
-Releases, packages, or artifacts.
+requires the latest public hygiene workflow to succeed for the exact commit,
+and requires a successful manual `workflow_dispatch` run of
+`MKL-Q Apple Silicon correctness` for the exact commit with the
+`Manual Apple Silicon correctness gate` job present and successful. The
+automatic `main` push `Dispatch guard` does not satisfy this source tag
+preflight. The audit never creates tags, GitHub Releases, packages, or
+artifacts.
 
 ## Upstream Sync Audit
 

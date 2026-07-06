@@ -254,8 +254,9 @@ python3 benchmarks/mklq/run_source_release_tag_audit.py --docs-only
 ```
 
 Run the full tag preflight audit only from clean `main` that matches
-`origin/main`, after the latest public hygiene and Apple Silicon correctness
-workflows have succeeded for that exact commit:
+`origin/main`, after the latest public hygiene workflow has succeeded and a
+maintainer has explicitly dispatched `MKL-Q Apple Silicon correctness` with
+`run_full_gate=confirm` for that exact commit:
 
 ```bash
 python3 benchmarks/mklq/run_source_release_tag_audit.py
