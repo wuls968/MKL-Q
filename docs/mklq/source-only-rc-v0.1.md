@@ -26,16 +26,18 @@ certification.
 The current verified public baseline was collected on 2026-07-06:
 
 - Verified branch head:
-  `1943490069d1ba0b253acfcf34fb973d0ab246ab`
+  `206d392fc30019f6934965ec88ae18d30c87324d`
 - Public hygiene workflow:
-  <https://github.com/wuls968/MKL-Q/actions/runs/28782630758>
+  <https://github.com/wuls968/MKL-Q/actions/runs/28784573258>
 - Manual Apple Silicon full gate:
-  <https://github.com/wuls968/MKL-Q/actions/runs/28782675555>
+  <https://github.com/wuls968/MKL-Q/actions/runs/28784584186>
 - Public readiness audit output:
-  `/tmp/mklq-public-readiness-audit-final-2026-07-06.json`
+  `/tmp/mklq-public-readiness-audit-final-rc-v0.1-2026-07-06.json`
 - Public readiness audit result: 13/13 checks passed
 - Full public healthcheck result: 35/35 steps passed
 - Correctness gate ctest subset: 104/104 tests passed
+- Metal runtime counter probe: 50/50 selected counter tests passed
+- Public example smoke: 30/30 checks passed
 - Benchmark harness tests: 220 passed
 
 This tracked page is an evidence index, not a live status endpoint. Before

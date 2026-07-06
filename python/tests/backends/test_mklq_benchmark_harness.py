@@ -175,6 +175,18 @@ def _load_public_release_checklist_audit_module():
     return module
 
 
+def _load_source_release_tag_audit_module():
+    repo_root = Path(__file__).resolve().parents[3]
+    script = repo_root / "benchmarks" / "mklq" / (
+        "run_source_release_tag_audit.py")
+    spec = importlib.util.spec_from_file_location(
+        "run_source_release_tag_audit", script)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    return module
+
+
 def _load_self_hosted_ci_audit_module():
     repo_root = Path(__file__).resolve().parents[3]
     script = repo_root / "benchmarks" / "mklq" / "run_self_hosted_ci_audit.py"
@@ -1225,6 +1237,7 @@ def test_mklq_public_healthcheck_plan_lists_escalating_gates(tmp_path):
         "tracked_artifacts",
         "public_metadata",
         "public_release_checklist_audit",
+        "source_release_tag_audit",
         "upstream_sync_audit",
         "self_hosted_ci_audit",
         "public_claim_boundary",
@@ -1271,6 +1284,8 @@ def test_mklq_public_healthcheck_plans_crz_distance_guard(tmp_path):
     assert steps.index("public_metadata") < steps.index(
         "public_release_checklist_audit")
     assert steps.index("public_release_checklist_audit") < steps.index(
+        "source_release_tag_audit")
+    assert steps.index("source_release_tag_audit") < steps.index(
         "upstream_sync_audit")
     assert steps.index("upstream_sync_audit") < steps.index(
         "self_hosted_ci_audit")
@@ -1580,6 +1595,25 @@ def test_mklq_public_healthcheck_runs_release_checklist_audit(monkeypatch,
     assert result["status"] == "passed"
     assert seen["command"][1].endswith(
         "run_public_release_checklist_audit.py")
+
+
+def test_mklq_public_healthcheck_runs_source_release_tag_audit(monkeypatch,
+                                                               tmp_path):
+    module = _load_public_healthcheck_module()
+    config = _public_healthcheck_config(module, tmp_path)
+    seen = {}
+
+    def fake_run_command(config, command, env_overlay=None):
+        seen["command"] = command
+        return {"returncode": 0, "command": command}
+
+    monkeypatch.setattr(module, "run_command", fake_run_command)
+
+    result = module.run_source_release_tag_audit(config)
+
+    assert result["status"] == "passed"
+    assert seen["command"][1].endswith("run_source_release_tag_audit.py")
+    assert "--docs-only" in seen["command"]
 
 
 def test_mklq_public_healthcheck_runs_upstream_sync_audit(monkeypatch,
@@ -5431,8 +5465,10 @@ def _write_release_checklist_audit_fixture(
                                                 encoding="utf-8")
     for relative in [
             "README.md",
+            "CHANGELOG.md",
             "docs/mklq/release-policy.md",
             "docs/mklq/source-only-rc-v0.1.md",
+            "docs/mklq/release-notes-v0.1.0-source.md",
             "docs/mklq/public-readiness.md",
             "docs/mklq/upstream-sync.md",
             "docs/mklq/validation.md",
@@ -5447,6 +5483,7 @@ def _write_release_checklist_audit_fixture(
             "benchmarks/mklq/run_preflight_audit.py",
             "benchmarks/mklq/run_upstream_sync_audit.py",
             "benchmarks/mklq/run_public_release_checklist_audit.py",
+            "benchmarks/mklq/run_source_release_tag_audit.py",
             "benchmarks/mklq/run_public_healthcheck.py",
             "benchmarks/mklq/run_public_readiness_audit.py",
             "benchmarks/mklq/repair_macos_install_signatures.py",
@@ -5498,8 +5535,10 @@ git log --oneline -5
 ## Public Metadata
 
 - README.md
+- CHANGELOG.md
 - docs/mklq/release-policy.md
 - docs/mklq/source-only-rc-v0.1.md
+- docs/mklq/release-notes-v0.1.0-source.md
 - docs/mklq/public-readiness.md
 - docs/mklq/upstream-sync.md
 - docs/mklq/validation.md
@@ -5557,6 +5596,8 @@ Non-dispatch validation uses only the Dispatch guard.
 ```bash
 python3 benchmarks/mklq/run_preflight_audit.py --require-clean
 python3 benchmarks/mklq/run_public_release_checklist_audit.py
+python3 benchmarks/mklq/run_source_release_tag_audit.py
+python3 benchmarks/mklq/run_source_release_tag_audit.py --docs-only
 python3 benchmarks/mklq/run_public_healthcheck.py
 python3 benchmarks/mklq/run_public_healthcheck.py --full --require-clean
 python3 benchmarks/mklq/run_self_hosted_ci_audit.py
@@ -5608,6 +5649,7 @@ Before pushing a public branch, run:
 ```bash
 python3 benchmarks/mklq/run_preflight_audit.py
 python3 benchmarks/mklq/run_public_release_checklist_audit.py
+python3 benchmarks/mklq/run_source_release_tag_audit.py --docs-only
 python3 benchmarks/mklq/run_public_healthcheck.py
 python3 benchmarks/mklq/run_self_hosted_ci_audit.py
 python3 benchmarks/mklq/repair_macos_install_signatures.py
@@ -5627,6 +5669,7 @@ python3 -m py_compile \
   benchmarks/mklq/run_cpu_gate_counter_probe.py \
   benchmarks/mklq/run_cpu_scaling_benchmark.py \
   benchmarks/mklq/run_sampling_scaling_benchmark.py \
+  benchmarks/mklq/run_source_release_tag_audit.py \
   benchmarks/mklq/run_upstream_sync_audit.py \
   benchmarks/mklq/summarize_cpu_gate_counters.py \
   benchmarks/mklq/summarize_cpu_sampling_counters.py \
@@ -5752,6 +5795,185 @@ def test_mklq_public_release_checklist_audit_rejects_missing_preflight_boundary(
     assert checks["preflight_reference_boundaries"]["status"] == "failed"
     assert "public_report_references" in (
         checks["preflight_reference_boundaries"]["details"]["missing"])
+
+
+def _write_source_release_tag_audit_fixture(root: Path):
+    docs = root / "docs" / "mklq"
+    benchmarks = root / "benchmarks" / "mklq"
+    docs.mkdir(parents=True)
+    benchmarks.mkdir(parents=True)
+    (root / "README.md").write_text(
+        "CHANGELOG.md release-notes-v0.1.0-source.md "
+        "run_source_release_tag_audit.py\n",
+        encoding="utf-8")
+    (root / "CHANGELOG.md").write_text(
+        """
+# MKL-Q Changelog
+
+## mklq-v0.1.0-source - Planned Source-Only Tag
+
+The tag has not been created.
+No GitHub Release.
+No wheel, PyPI package, installer.
+See docs/mklq/release-notes-v0.1.0-source.md.
+""",
+        encoding="utf-8")
+    (docs / "release-notes-v0.1.0-source.md").write_text(
+        """
+# MKL-Q v0.1.0 Source-Only Release Notes
+
+planned `mklq-v0.1.0-source` source-only tag.
+source-only tag candidate.
+not a GitHub Release.
+No wheels or PyPI package.
+No binary installer.
+mklq-cpu.
+mklq-metal.
+experimental.
+run_source_release_tag_audit.py.
+run_public_healthcheck.py --full --require-clean.
+run_public_readiness_audit.py.
+28784584186.
+206d392fc30019f6934965ec88ae18d30c87324d.
+""",
+        encoding="utf-8")
+    (docs / "release-policy.md").write_text(
+        """
+mklq-vX.Y.Z.
+Create or push release tags.
+reviewed release plan.
+source-only-rc-v0.1.
+""",
+        encoding="utf-8")
+    (docs / "public-release-checklist.md").write_text(
+        """
+run_source_release_tag_audit.py.
+mklq-v0.1.0-source.
+release-notes-v0.1.0-source.md.
+CHANGELOG.md.
+Do not create tags.
+""",
+        encoding="utf-8")
+    (docs / "source-only-rc-v0.1.md").write_text(
+        "206d392fc30019f6934965ec88ae18d30c87324d 28784584186\n",
+        encoding="utf-8")
+    (docs / "public-readiness.md").write_text(
+        "206d392fc30019f6934965ec88ae18d30c87324d 28784584186\n",
+        encoding="utf-8")
+
+
+def _source_release_tag_audit_config(module, tmp_path, *, docs_only=False):
+    return module.AuditConfig(
+        repo_root=tmp_path,
+        repo="wuls968/MKL-Q",
+        tag="mklq-v0.1.0-source",
+        workflow="MKL-Q public hygiene",
+        output=tmp_path / "results" / "source-release-tag-audit.json",
+        docs_only=docs_only,
+    )
+
+
+def test_mklq_source_release_tag_audit_docs_only_builds_passing_report(
+        monkeypatch, tmp_path):
+    module = _load_source_release_tag_audit_module()
+    _write_source_release_tag_audit_fixture(tmp_path)
+    calls = []
+
+    def fake_command_output(cwd, command):
+        calls.append(command)
+        if command == ["git", "tag", "-l", "mklq-v0.1.0-source"]:
+            return ""
+        if command == ["git", "ls-files"]:
+            return "\n".join([
+                "README.md",
+                "CHANGELOG.md",
+                "docs/mklq/release-notes-v0.1.0-source.md",
+            ])
+        raise AssertionError(command)
+
+    monkeypatch.setattr(module, "command_output", fake_command_output)
+    config = _source_release_tag_audit_config(module, tmp_path, docs_only=True)
+
+    report = module.build_report(config)
+
+    assert report["schema_version"] == "mklq-source-release-tag-audit-v1"
+    assert report["docs_only"] is True
+    assert report["summary"] == {"status": "passed", "passed": 5, "failed": 0}
+    assert not any(call and call[0] == "gh" for call in calls)
+
+
+def test_mklq_source_release_tag_audit_full_builds_passing_report(monkeypatch,
+                                                                  tmp_path):
+    module = _load_source_release_tag_audit_module()
+    _write_source_release_tag_audit_fixture(tmp_path)
+
+    def fake_command_output(cwd, command):
+        if command == [
+                "git", "ls-remote", "--tags", "origin",
+                "refs/tags/mklq-v0.1.0-source"
+        ]:
+            return ""
+        if command == ["git", "tag", "-l", "mklq-v0.1.0-source"]:
+            return ""
+        if command == ["git", "status", "--short", "--branch"]:
+            return "## main...origin/main"
+        if command == ["git", "rev-parse", "--is-shallow-repository"]:
+            return "false"
+        if command == ["git", "rev-parse", "HEAD"]:
+            return "206d392fc30019f6934965ec88ae18d30c87324d"
+        if command == ["git", "ls-remote", "origin", "refs/heads/main"]:
+            return "206d392fc30019f6934965ec88ae18d30c87324d\trefs/heads/main"
+        if command == ["git", "ls-files"]:
+            return "\n".join([
+                "README.md",
+                "CHANGELOG.md",
+                "docs/mklq/release-notes-v0.1.0-source.md",
+            ])
+        if command[:3] == ["gh", "release", "list"]:
+            return ""
+        if command[:3] == ["gh", "run", "list"]:
+            return json.dumps([{
+                "status": "completed",
+                "conclusion": "success",
+                "headSha": "206d392fc30019f6934965ec88ae18d30c87324d",
+                "url": "https://github.com/wuls968/MKL-Q/actions/runs/1",
+            }])
+        raise AssertionError(command)
+
+    monkeypatch.setattr(module, "command_output", fake_command_output)
+    config = _source_release_tag_audit_config(module, tmp_path)
+
+    report = module.build_report(config)
+
+    assert report["docs_only"] is False
+    assert report["summary"] == {"status": "passed", "passed": 8, "failed": 0}
+
+
+def test_mklq_source_release_tag_audit_rejects_missing_notes_token(
+        monkeypatch, tmp_path):
+    module = _load_source_release_tag_audit_module()
+    _write_source_release_tag_audit_fixture(tmp_path)
+    (tmp_path / "docs" / "mklq" /
+     "release-notes-v0.1.0-source.md").write_text(
+         "mklq-v0.1.0-source\n", encoding="utf-8")
+
+    def fake_command_output(cwd, command):
+        if command == ["git", "tag", "-l", "mklq-v0.1.0-source"]:
+            return ""
+        if command == ["git", "ls-files"]:
+            return "README.md\nCHANGELOG.md\n"
+        raise AssertionError(command)
+
+    monkeypatch.setattr(module, "command_output", fake_command_output)
+    config = _source_release_tag_audit_config(module, tmp_path, docs_only=True)
+
+    report = module.build_report(config)
+
+    assert report["summary"]["status"] == "failed"
+    checks = {check["name"]: check for check in report["checks"]}
+    assert checks["release_notes"]["status"] == "failed"
+    assert "No wheels or PyPI package" in checks["release_notes"]["details"][
+        "missing"]
 
 
 def _self_hosted_ci_doc_text() -> str:

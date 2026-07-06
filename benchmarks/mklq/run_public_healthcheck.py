@@ -128,6 +128,7 @@ BENCHMARK_HELPERS = (
     "benchmarks/mklq/run_metal_runtime_counter_probe.py",
     "benchmarks/mklq/run_preflight_audit.py",
     "benchmarks/mklq/run_public_release_checklist_audit.py",
+    "benchmarks/mklq/run_source_release_tag_audit.py",
     "benchmarks/mklq/run_public_readiness_audit.py",
     "benchmarks/mklq/run_public_healthcheck.py",
     "benchmarks/mklq/run_self_hosted_ci_audit.py",
@@ -389,6 +390,9 @@ def public_metadata_requirements() -> list[tuple[str, str]]:
         ("README.md", "mklq-metal"),
         ("README.md", "source-only"),
         ("README.md", "source-only-rc-v0.1.md"),
+        ("README.md", "release-notes-v0.1.0-source.md"),
+        ("README.md", "CHANGELOG.md"),
+        ("README.md", "run_source_release_tag_audit.py"),
         ("README.md", "cudaq"),
         ("README.md", "examples/mklq"),
         ("README.md", "apple-silicon-ci.md"),
@@ -448,7 +452,19 @@ def public_metadata_requirements() -> list[tuple[str, str]]:
         ("docs/mklq/upstream-sync.md", "run_upstream_sync_audit.py"),
         ("docs/mklq/release-policy.md", "source-only"),
         ("docs/mklq/release-policy.md", "source-only-rc-v0.1"),
+        ("docs/mklq/release-policy.md", "mklq-v0.1.0-source"),
+        ("docs/mklq/release-policy.md", "run_source_release_tag_audit.py"),
         ("docs/mklq/release-policy.md", "not release tags"),
+        ("docs/mklq/release-notes-v0.1.0-source.md",
+         "planned `mklq-v0.1.0-source` source-only tag"),
+        ("docs/mklq/release-notes-v0.1.0-source.md",
+         "not a GitHub Release"),
+        ("docs/mklq/release-notes-v0.1.0-source.md",
+         "No wheels or PyPI package"),
+        ("docs/mklq/release-notes-v0.1.0-source.md",
+         "run_source_release_tag_audit.py"),
+        ("CHANGELOG.md", "mklq-v0.1.0-source"),
+        ("CHANGELOG.md", "tag has not been created"),
         ("docs/mklq/source-only-rc-v0.1.md", "source-only release-candidate"),
         ("docs/mklq/source-only-rc-v0.1.md", "not a Git tag"),
         ("docs/mklq/source-only-rc-v0.1.md", "No Artifact Policy"),
@@ -456,6 +472,10 @@ def public_metadata_requirements() -> list[tuple[str, str]]:
         ("docs/mklq/source-only-rc-v0.1.md", "experimental and mixed-path"),
         ("docs/mklq/public-release-checklist.md", "GitHub Verification"),
         ("docs/mklq/public-release-checklist.md", "source-only-rc-v0.1.md"),
+        ("docs/mklq/public-release-checklist.md",
+         "release-notes-v0.1.0-source.md"),
+        ("docs/mklq/public-release-checklist.md",
+         "run_source_release_tag_audit.py"),
         ("docs/mklq/public-release-checklist.md", "mklq-apple-silicon-ci.yml"),
         ("docs/mklq/public-release-checklist.md", "run_public_release_checklist_audit.py"),
         ("docs/mklq/public-release-checklist.md", "check_performance_evidence.py"),
@@ -483,6 +503,7 @@ def public_metadata_requirements() -> list[tuple[str, str]]:
         ("docs/mklq/developer-workflow.md", "check_metal_runtime_counter_docs.py"),
         ("docs/mklq/developer-workflow.md", "run_preflight_audit.py"),
         ("docs/mklq/developer-workflow.md", "run_public_release_checklist_audit.py"),
+        ("docs/mklq/developer-workflow.md", "run_source_release_tag_audit.py"),
         ("docs/mklq/developer-workflow.md", "run_public_healthcheck.py"),
         ("docs/mklq/developer-workflow.md", "--only-step public_metadata"),
         ("docs/mklq/developer-workflow.md",
@@ -537,6 +558,8 @@ def public_metadata_requirements() -> list[tuple[str, str]]:
         ("benchmarks/mklq/README.md", "public docs or workflows"),
         ("benchmarks/mklq/README.md", "untracked report files"),
         ("benchmarks/mklq/README.md", "Public Release Checklist Audit"),
+        ("benchmarks/mklq/README.md", "Source Release Tag Audit"),
+        ("benchmarks/mklq/README.md", "run_source_release_tag_audit.py"),
         ("benchmarks/mklq/README.md", "Upstream Sync Audit"),
         ("benchmarks/mklq/README.md", "Self-hosted Apple Silicon CI Audit"),
         ("benchmarks/mklq/README.md", "run_self_hosted_ci_audit.py"),
@@ -566,6 +589,7 @@ def public_metadata_requirements() -> list[tuple[str, str]]:
         ("docs/mklq/testing-matrix.md", "check_metal_runtime_counter_docs.py"),
         ("docs/mklq/testing-matrix.md", "run_preflight_audit.py"),
         ("docs/mklq/testing-matrix.md", "run_public_release_checklist_audit.py"),
+        ("docs/mklq/testing-matrix.md", "run_source_release_tag_audit.py"),
         ("docs/mklq/testing-matrix.md", "run_self_hosted_ci_audit.py"),
         ("docs/mklq/testing-matrix.md", "run_upstream_sync_audit.py"),
         ("docs/mklq/testing-matrix.md",
@@ -602,6 +626,7 @@ def banned_tokens() -> list[str]:
 def public_metadata_paths(root: Path) -> list[Path]:
     paths = [
         root / "README.md",
+        root / "CHANGELOG.md",
         root / "CITATION.cff",
         root / "Contributing.md",
         root / "SECURITY.md",
@@ -678,6 +703,25 @@ def run_public_release_checklist_audit(
     result = run_command(config, command)
     if result["returncode"] != 0:
         return failed("public release checklist audit failed", result)
+    return passed(result)
+
+
+def run_source_release_tag_audit(config: HealthcheckConfig) -> dict[str, Any]:
+    script = config.repo_root / "benchmarks" / "mklq" / (
+        "run_source_release_tag_audit.py")
+    command = [
+        config.python_executable,
+        str(script),
+        "--repo-root",
+        str(config.repo_root),
+        "--docs-only",
+        "--output",
+        str(config.repo_root / "benchmarks" / "mklq" / "results" /
+            f"source-release-tag-audit-{config.stamp}.json"),
+    ]
+    result = run_command(config, command)
+    if result["returncode"] != 0:
+        return failed("source release tag audit failed", result)
     return passed(result)
 
 
@@ -1709,6 +1753,9 @@ def build_steps(config: HealthcheckConfig) -> list[Step]:
         Step("public_release_checklist_audit",
              "Audit public release checklist coverage.",
              run_public_release_checklist_audit),
+        Step("source_release_tag_audit",
+             "Audit planned source-only tag docs and boundaries.",
+             run_source_release_tag_audit),
         Step("upstream_sync_audit",
              "Dry-run audit upstream sync topology and risk classification.",
              run_upstream_sync_audit),
