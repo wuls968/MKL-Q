@@ -5833,6 +5833,9 @@ experimental.
 run_source_release_tag_audit.py.
 run_public_healthcheck.py --full --require-clean.
 run_public_readiness_audit.py.
+workflow_dispatch.
+run_full_gate=confirm.
+Dispatch guard is not sufficient.
 28784584186.
 206d392fc30019f6934965ec88ae18d30c87324d.
 """,
@@ -5843,6 +5846,7 @@ mklq-vX.Y.Z.
 Create or push release tags.
 reviewed release plan.
 source-only-rc-v0.1.
+run_full_gate=confirm.
 """,
         encoding="utf-8")
     (docs / "public-release-checklist.md").write_text(
@@ -5852,6 +5856,7 @@ mklq-v0.1.0-source.
 release-notes-v0.1.0-source.md.
 CHANGELOG.md.
 Do not create tags.
+run_full_gate=confirm.
 """,
         encoding="utf-8")
     (docs / "source-only-rc-v0.1.md").write_text(
@@ -5931,13 +5936,41 @@ def test_mklq_source_release_tag_audit_full_builds_passing_report(monkeypatch,
             ])
         if command[:3] == ["gh", "release", "list"]:
             return ""
-        if command[:3] == ["gh", "run", "list"]:
+        if command[:3] == ["gh", "run", "list"
+                           ] and "MKL-Q public hygiene" in command:
             return json.dumps([{
                 "status": "completed",
                 "conclusion": "success",
                 "headSha": "206d392fc30019f6934965ec88ae18d30c87324d",
+                "event": "push",
                 "url": "https://github.com/wuls968/MKL-Q/actions/runs/1",
             }])
+        if command[:3] == ["gh", "run", "list"
+                           ] and "--event" in command:
+            assert "workflow_dispatch" in command
+            assert "206d392fc30019f6934965ec88ae18d30c87324d" in command
+            return json.dumps([{
+                "databaseId": 2,
+                "status": "completed",
+                "conclusion": "success",
+                "headSha": "206d392fc30019f6934965ec88ae18d30c87324d",
+                "event": "workflow_dispatch",
+                "url": "https://github.com/wuls968/MKL-Q/actions/runs/2",
+            }])
+        if command[:4] == ["gh", "run", "view", "2"]:
+            return json.dumps({
+                "databaseId": 2,
+                "status": "completed",
+                "conclusion": "success",
+                "headSha": "206d392fc30019f6934965ec88ae18d30c87324d",
+                "event": "workflow_dispatch",
+                "url": "https://github.com/wuls968/MKL-Q/actions/runs/2",
+                "jobs": [{
+                    "name": "Manual Apple Silicon correctness gate",
+                    "status": "completed",
+                    "conclusion": "success",
+                }],
+            })
         raise AssertionError(command)
 
     monkeypatch.setattr(module, "command_output", fake_command_output)
@@ -5947,6 +5980,64 @@ def test_mklq_source_release_tag_audit_full_builds_passing_report(monkeypatch,
 
     assert report["docs_only"] is False
     assert report["summary"] == {"status": "passed", "passed": 8, "failed": 0}
+    checks = {check["name"]: check for check in report["checks"]}
+    assert checks["latest_manual_apple_full_gate"]["details"]["event"] == (
+        "workflow_dispatch")
+
+
+def test_mklq_source_release_tag_audit_full_rejects_missing_manual_gate(
+        monkeypatch, tmp_path):
+    module = _load_source_release_tag_audit_module()
+    _write_source_release_tag_audit_fixture(tmp_path)
+
+    def fake_command_output(cwd, command):
+        if command == [
+                "git", "ls-remote", "--tags", "origin",
+                "refs/tags/mklq-v0.1.0-source"
+        ]:
+            return ""
+        if command == ["git", "tag", "-l", "mklq-v0.1.0-source"]:
+            return ""
+        if command == ["git", "status", "--short", "--branch"]:
+            return "## main...origin/main"
+        if command == ["git", "rev-parse", "--is-shallow-repository"]:
+            return "false"
+        if command == ["git", "rev-parse", "HEAD"]:
+            return "206d392fc30019f6934965ec88ae18d30c87324d"
+        if command == ["git", "ls-remote", "origin", "refs/heads/main"]:
+            return "206d392fc30019f6934965ec88ae18d30c87324d\trefs/heads/main"
+        if command == ["git", "ls-files"]:
+            return "\n".join([
+                "README.md",
+                "CHANGELOG.md",
+                "docs/mklq/release-notes-v0.1.0-source.md",
+            ])
+        if command[:3] == ["gh", "release", "list"]:
+            return ""
+        if command[:3] == ["gh", "run", "list"
+                           ] and "MKL-Q public hygiene" in command:
+            return json.dumps([{
+                "status": "completed",
+                "conclusion": "success",
+                "headSha": "206d392fc30019f6934965ec88ae18d30c87324d",
+                "event": "push",
+            }])
+        if command[:3] == ["gh", "run", "list"
+                           ] and "--event" in command:
+            assert "workflow_dispatch" in command
+            return "[]"
+        raise AssertionError(command)
+
+    monkeypatch.setattr(module, "command_output", fake_command_output)
+    config = _source_release_tag_audit_config(module, tmp_path)
+
+    report = module.build_report(config)
+
+    assert report["summary"]["status"] == "failed"
+    checks = {check["name"]: check for check in report["checks"]}
+    assert checks["latest_manual_apple_full_gate"]["status"] == "failed"
+    assert "manual Apple Silicon full gate" in checks[
+        "latest_manual_apple_full_gate"]["message"]
 
 
 def test_mklq_source_release_tag_audit_rejects_missing_notes_token(
@@ -6424,6 +6515,43 @@ def test_mklq_preflight_audit_builds_passing_report(monkeypatch, tmp_path):
     assert checks["ignored_local_artifacts"]["details"]["ignored_count"] == 3
     assert checks["branch_protection"]["status"] == "passed"
     assert any(call[:2] == ["gh", "api"] for call in calls)
+
+
+def test_mklq_preflight_audit_retries_live_command(monkeypatch, tmp_path):
+    module = _load_preflight_audit_module()
+    calls = []
+
+    def fake_check_output(command, cwd, text, stderr):
+        calls.append(command)
+        if len(calls) == 1:
+            raise subprocess.CalledProcessError(1, command, output="EOF")
+        return '{"protected": true}\n'
+
+    monkeypatch.setattr(module.subprocess, "check_output", fake_check_output)
+    monkeypatch.setattr(module.time, "sleep", lambda seconds: None)
+
+    result = module.command_output(
+        tmp_path, ["gh", "api", "repos/wuls968/MKL-Q/branches/main"])
+
+    assert result == '{"protected": true}'
+    assert len(calls) == 2
+
+
+def test_mklq_preflight_audit_does_not_retry_local_command(monkeypatch,
+                                                            tmp_path):
+    module = _load_preflight_audit_module()
+    calls = []
+
+    def fake_check_output(command, cwd, text, stderr):
+        calls.append(command)
+        raise subprocess.CalledProcessError(1, command, output="fatal")
+
+    monkeypatch.setattr(module.subprocess, "check_output", fake_check_output)
+
+    with pytest.raises(subprocess.CalledProcessError):
+        module.command_output(tmp_path, ["git", "status", "--short", "--branch"])
+
+    assert len(calls) == 1
 
 
 def test_mklq_preflight_audit_retries_transient_git_locks(monkeypatch,

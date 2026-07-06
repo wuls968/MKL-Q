@@ -21,6 +21,8 @@ from typing import Any
 
 
 SCHEMA_VERSION = "mklq-preflight-audit-v1"
+LIVE_COMMAND_ATTEMPTS = 3
+LIVE_COMMAND_RETRY_DELAY_SECONDS = 1.0
 DEFAULT_REPO = "wuls968/MKL-Q"
 EXPECTED_ORIGIN = "https://github.com/wuls968/MKL-Q.git"
 EXPECTED_UPSTREAM = "https://github.com/NVIDIA/cuda-quantum.git"
@@ -55,11 +57,36 @@ def output_default(stamp: str) -> Path:
     return Path("benchmarks/mklq/results") / f"preflight-audit-{stamp}.json"
 
 
+def is_retryable_live_command(command: list[str]) -> bool:
+    if not command:
+        return False
+    if command[0] == "gh":
+        return True
+    return command[:2] == ["git", "ls-remote"]
+
+
 def command_output(cwd: Path, command: list[str]) -> str:
-    return subprocess.check_output(command,
-                                   cwd=cwd,
-                                   text=True,
-                                   stderr=subprocess.STDOUT).rstrip("\n")
+    attempts = LIVE_COMMAND_ATTEMPTS if is_retryable_live_command(command) else 1
+    for attempt in range(1, attempts + 1):
+        try:
+            return subprocess.check_output(command,
+                                           cwd=cwd,
+                                           text=True,
+                                           stderr=subprocess.STDOUT).rstrip("\n")
+        except subprocess.CalledProcessError:
+            if attempt == attempts:
+                raise
+            time.sleep(LIVE_COMMAND_RETRY_DELAY_SECONDS)
+    raise RuntimeError("unreachable command retry state")
+
+
+def command_error_details(exc: BaseException,
+                          repo: str) -> dict[str, Any]:
+    details: dict[str, Any] = {"error": str(exc), "repo": repo}
+    output = getattr(exc, "output", None)
+    if output:
+        details["output"] = output
+    return details
 
 
 def passed(name: str, details: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -282,7 +309,7 @@ def check_branch_protection(config: PreflightConfig) -> dict[str, Any]:
             ]), {})
     except (FileNotFoundError, subprocess.CalledProcessError) as exc:
         return failed("branch_protection", "GitHub branch protection check failed",
-                      {"error": str(exc), "repo": config.repo})
+                      command_error_details(exc, config.repo))
 
     required = protection.get("required_status_checks") or {}
     contexts = set(required.get("contexts") or [])

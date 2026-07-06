@@ -267,7 +267,9 @@ Expected:
   checklist still references the required source-only release gates.
 - [ ] `run_source_release_tag_audit.py --docs-only` passes for PR/public
   hygiene checks, and the full `run_source_release_tag_audit.py` passes on
-  clean `main` before any decision to create `mklq-v0.1.0-source`.
+  clean `main` after a successful manual `workflow_dispatch`
+  `run_full_gate=confirm` Apple Silicon full gate for the exact commit, before
+  any decision to create `mklq-v0.1.0-source`.
 - [ ] `run_self_hosted_ci_audit.py` passes and confirms the Apple Silicon CI
   workflow keeps only the lightweight push guard automatic while the
   self-hosted full job remains manual, read-only, source-only, and disabled by

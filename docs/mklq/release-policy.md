@@ -77,6 +77,10 @@ Before creating a release branch or tag, all of these must be true:
   exact source-only scope without implying artifacts or package publication.
 - `python3 benchmarks/mklq/run_source_release_tag_audit.py` passes for the
   exact clean `main` commit and proposed MKL-Q-specific tag name.
+- `MKL-Q Apple Silicon correctness` has a successful manual
+  `workflow_dispatch` run with `run_full_gate=confirm` for the exact commit;
+  the automatic `main` push `Dispatch guard` is not sufficient for source tag
+  preflight.
 - `python3 benchmarks/mklq/run_correctness_gate.py --install-prefix
   "${HOME}/.cudaq-mklq" --build-dir build-python` passes on Apple Silicon.
 - `cmake --build build-python --target install -j 6` passes for the intended

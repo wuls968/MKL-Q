@@ -62,7 +62,9 @@ python3 benchmarks/mklq/run_public_healthcheck.py --full --require-clean
 python3 benchmarks/mklq/run_public_readiness_audit.py
 ```
 
-The manual Apple Silicon full gate must also pass on the pushed `main` commit:
+The manual Apple Silicon full gate must also pass on the pushed `main` commit.
+The automatic `main` push Dispatch guard is not sufficient for source tag
+preflight:
 
 ```bash
 python3 benchmarks/mklq/run_self_hosted_ci_audit.py --check-runners \

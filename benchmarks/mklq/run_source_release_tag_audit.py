@@ -25,6 +25,7 @@ DEFAULT_REPO = "wuls968/MKL-Q"
 DEFAULT_TAG = "mklq-v0.1.0-source"
 DEFAULT_WORKFLOW = "MKL-Q public hygiene"
 APPLE_WORKFLOW = "MKL-Q Apple Silicon correctness"
+APPLE_FULL_GATE_JOB = "Manual Apple Silicon correctness gate"
 LIVE_COMMAND_ATTEMPTS = 3
 LIVE_COMMAND_RETRY_DELAY_SECONDS = 1.0
 TAG_PATTERN = re.compile(r"^mklq-v\d+\.\d+\.\d+-source$")
@@ -49,6 +50,9 @@ RELEASE_NOTE_REQUIRED_TOKENS = (
     "run_source_release_tag_audit.py",
     "run_public_healthcheck.py --full --require-clean",
     "run_public_readiness_audit.py",
+    "workflow_dispatch",
+    "run_full_gate=confirm",
+    "Dispatch guard is not sufficient",
     "28784584186",
     "206d392fc30019f6934965ec88ae18d30c87324d",
 )
@@ -67,6 +71,7 @@ POLICY_REQUIRED_TOKENS = (
     "Create or push release tags",
     "reviewed release plan",
     "source-only-rc-v0.1",
+    "run_full_gate=confirm",
 )
 
 CHECKLIST_REQUIRED_TOKENS = (
@@ -75,6 +80,7 @@ CHECKLIST_REQUIRED_TOKENS = (
     "release-notes-v0.1.0-source.md",
     "CHANGELOG.md",
     "Do not create tags",
+    "run_full_gate=confirm",
 )
 
 README_REQUIRED_TOKENS = (
@@ -353,6 +359,86 @@ def latest_workflow(config: AuditConfig, workflow: str) -> dict[str, Any]:
                       f"latest_{workflow_key(workflow)}", details)
 
 
+def latest_manual_apple_full_gate(config: AuditConfig) -> dict[str, Any]:
+    head = command_output(config.repo_root, ["git", "rev-parse", "HEAD"])
+    payload = command_output(config.repo_root, [
+        "gh",
+        "run",
+        "list",
+        "--repo",
+        config.repo,
+        "--branch",
+        "main",
+        "--workflow",
+        APPLE_WORKFLOW,
+        "--event",
+        "workflow_dispatch",
+        "--commit",
+        head,
+        "--limit",
+        "5",
+        "--json",
+        "status,conclusion,headSha,url,createdAt,event,databaseId,name",
+    ])
+    runs = json.loads(payload or "[]")
+    details: dict[str, Any] = {"candidate_runs": runs}
+    failures: list[str] = []
+    if not runs:
+        failures.append(
+            "no manual Apple Silicon full gate workflow_dispatch run found")
+        return failed("latest_manual_apple_full_gate",
+                      "; ".join(failures), details)
+
+    viewed_runs: list[dict[str, Any]] = []
+    for run in runs:
+        run_id = str(run.get("databaseId", ""))
+        if not run_id:
+            viewed_runs.append({"run": run, "failure": "missing databaseId"})
+            continue
+        view_payload = command_output(config.repo_root, [
+            "gh",
+            "run",
+            "view",
+            run_id,
+            "--repo",
+            config.repo,
+            "--json",
+            "status,conclusion,headSha,url,createdAt,event,databaseId,name,jobs",
+        ])
+        view = json.loads(view_payload or "{}")
+        viewed_runs.append(view)
+        run_failures: list[str] = []
+        if view.get("event") != "workflow_dispatch":
+            run_failures.append("run is not workflow_dispatch")
+        if view.get("status") != "completed":
+            run_failures.append("run is not completed")
+        if view.get("conclusion") != "success":
+            run_failures.append("run did not succeed")
+        if view.get("headSha") != head:
+            run_failures.append("run does not match local HEAD")
+        matching_jobs = [
+            job for job in view.get("jobs", [])
+            if job.get("name") == APPLE_FULL_GATE_JOB
+        ]
+        if not matching_jobs:
+            run_failures.append(
+                f"{APPLE_FULL_GATE_JOB} job was not present")
+        elif not any(job.get("status") == "completed"
+                     and job.get("conclusion") == "success"
+                     for job in matching_jobs):
+            run_failures.append(
+                f"{APPLE_FULL_GATE_JOB} job did not succeed")
+        if not run_failures:
+            return passed("latest_manual_apple_full_gate", view)
+
+    details["viewed_runs"] = viewed_runs
+    failures.append(
+        "no manual Apple Silicon full gate workflow_dispatch run succeeded "
+        "for local HEAD")
+    return failed("latest_manual_apple_full_gate", "; ".join(failures),
+                  details)
+
+
 def workflow_key(workflow: str) -> str:
     return workflow.lower().replace("mkl-q ", "").replace(" ", "_")
 
@@ -376,7 +462,7 @@ def build_report(config: AuditConfig) -> dict[str, Any]:
         checks.insert(1, check_local_git(resolved))
         checks.extend([
             latest_workflow(resolved, resolved.workflow),
-            latest_workflow(resolved, APPLE_WORKFLOW),
+            latest_manual_apple_full_gate(resolved),
         ])
     return {
         "schema_version": SCHEMA_VERSION,
