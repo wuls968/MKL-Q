@@ -125,7 +125,8 @@ cross-machine performance certification.
   `noise_model` usage is boundary-tested to fail fast.
 - No claim that `mklq-metal` is fully Metal-native or always faster than
   `mklq-cpu`.
-- No hosted CI coverage for Apple Silicon simulator correctness gates.
+- No GitHub-hosted or branch-protected Apple Silicon simulator correctness CI;
+  the current Apple Silicon full gate is manual and self-hosted.
 - No public binary compatibility guarantee beyond source-level CUDA-Q API
   compatibility in the tested local build.
 - No hardware QPU validation.
