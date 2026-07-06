@@ -6087,8 +6087,9 @@ Do not enable this heavy workflow by default. The workflow uses
 workflow_dispatch, run_full_gate, default skip activation, no secrets,
 read-only access, permissions: contents: read, timeout-minutes, concurrency,
 broad push Dispatch guard validation, and no pull request triggers.
-The checkout uses a checkout timeout, partial clone filter: blob:none,
-lfs: false, submodules: false, and persist-credentials: false.
+The checkout uses a checkout timeout, shallow checkout, fetch-depth: 1,
+lfs: false, submodules: false, and persist-credentials: false. It restores
+history later with http.version=HTTP/1.1, --unshallow, and filter=blob:none.
 Before dispatching the full gate, run --check-runners to query actions/runners.
 
 ## Validation Command
@@ -6155,11 +6156,19 @@ jobs:
       - uses: actions/checkout@v7
         timeout-minutes: 20
         with:
-          fetch-depth: 0
-          filter: blob:none
+          fetch-depth: 1
           lfs: false
           persist-credentials: false
           submodules: false
+      - name: Normalize Git remotes
+        run: |
+          retry_git() {
+            local max_attempts=3
+          }
+          if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then
+            retry_git "origin main unshallow" git -c http.version=HTTP/1.1 fetch --unshallow --filter=blob:none origin main:refs/remotes/origin/main
+          fi
+          retry_git "upstream main fetch" git -c http.version=HTTP/1.1 fetch --filter=blob:none upstream main:refs/remotes/upstream/main
       - name: Bootstrap source submodules
         run: |
           retry_git() {
@@ -6330,6 +6339,38 @@ def test_mklq_self_hosted_ci_audit_rejects_enabled_heavy_workflow(
     assert checks["workflow_boundary"]["status"] == "failed"
     assert ".github/workflows/apple.yml" in checks["workflow_boundary"][
         "details"]["unexpected_workflows"]
+
+
+def test_mklq_self_hosted_ci_audit_rejects_checkout_partial_clone_filter(
+        monkeypatch, tmp_path):
+    module = _load_self_hosted_ci_audit_module()
+    _write_self_hosted_ci_audit_fixture(tmp_path, _self_hosted_ci_doc_text())
+    workflow_path = (tmp_path / ".github" / "workflows" /
+                     "mklq-apple-silicon-ci.yml")
+    workflow_path.write_text(
+        workflow_path.read_text(encoding="utf-8").replace(
+            "          fetch-depth: 1\n"
+            "          lfs: false\n",
+            "          fetch-depth: 1\n"
+            "          filter: blob:none\n"
+            "          lfs: false\n"),
+        encoding="utf-8")
+    monkeypatch.setattr(
+        module, "command_output",
+        lambda root, args: _self_hosted_workflow_list())
+    config = module.AuditConfig(repo_root=tmp_path,
+                                output=tmp_path / "results" /
+                                "self-hosted-ci-audit.json")
+
+    report = module.build_report(config)
+
+    assert report["summary"]["status"] == "failed"
+    checks = {check["name"]: check for check in report["checks"]}
+    assert checks["workflow_boundary"]["status"] == "failed"
+    assert any(
+        item["token"] == "filter: blob:none checkout input"
+        for item in checks["workflow_boundary"]["details"]
+        ["manual_forbidden_lines"])
 
 
 def test_mklq_self_hosted_ci_audit_rejects_lightweight_heavy_command(
