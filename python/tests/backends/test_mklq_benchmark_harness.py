@@ -6087,6 +6087,8 @@ Do not enable this heavy workflow by default. The workflow uses
 workflow_dispatch, run_full_gate, default skip activation, no secrets,
 read-only access, permissions: contents: read, timeout-minutes, concurrency,
 broad push Dispatch guard validation, and no pull request triggers.
+The checkout uses a checkout timeout, partial clone filter: blob:none,
+lfs: false, submodules: false, and persist-credentials: false.
 Before dispatching the full gate, run --check-runners to query actions/runners.
 
 ## Validation Command
@@ -6151,9 +6153,13 @@ jobs:
     timeout-minutes: 180
     steps:
       - uses: actions/checkout@v7
+        timeout-minutes: 20
         with:
           fetch-depth: 0
+          filter: blob:none
+          lfs: false
           persist-credentials: false
+          submodules: false
       - name: Bootstrap source submodules
         run: |
           retry_git() {
