@@ -6088,9 +6088,10 @@ workflow_dispatch, run_full_gate, default skip activation, no secrets,
 read-only access, permissions: contents: read, timeout-minutes, concurrency,
 broad push Dispatch guard validation, and no pull request triggers.
 The checkout uses a checkout timeout, manual sparse checkout, workspace cleanup,
-git sparse-checkout set, docs/sphinx/examples/mklq, and filter=blob:none. It
-restores history later with http.version=HTTP/1.1, --unshallow, and
-filter=blob:none.
+git sparse-checkout set, docs/sphinx/examples/mklq, explicit main refspec,
++refs/heads/main:refs/remotes/origin/main,
++refs/heads/main:refs/remotes/upstream/main, and filter=blob:none. It restores
+history later with http.version=HTTP/1.1, --unshallow, and filter=blob:none.
 Before dispatching the full gate, run --check-runners to query actions/runners.
 
 ## Validation Command
@@ -6163,16 +6164,16 @@ jobs:
           cd "${workspace}"
           git sparse-checkout init --cone
           git sparse-checkout set .github benchmarks cmake cudaq docs/mklq docs/sphinx/examples/mklq python runtime scripts targettests tpls unittests utils
-          retry_git "origin main sparse fetch" git -c http.version=HTTP/1.1 fetch --depth=1 --filter=blob:none origin main:refs/remotes/origin/main
+          retry_git "origin main sparse fetch" git -c http.version=HTTP/1.1 fetch --depth=1 --filter=blob:none origin +refs/heads/main:refs/remotes/origin/main
       - name: Normalize Git remotes
         run: |
           retry_git() {
             local max_attempts=3
           }
           if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then
-            retry_git "origin main unshallow" git -c http.version=HTTP/1.1 fetch --unshallow --filter=blob:none origin main:refs/remotes/origin/main
+            retry_git "origin main unshallow" git -c http.version=HTTP/1.1 fetch --unshallow --filter=blob:none origin +refs/heads/main:refs/remotes/origin/main
           fi
-          retry_git "upstream main fetch" git -c http.version=HTTP/1.1 fetch --filter=blob:none upstream main:refs/remotes/upstream/main
+          retry_git "upstream main fetch" git -c http.version=HTTP/1.1 fetch --filter=blob:none upstream +refs/heads/main:refs/remotes/upstream/main
       - name: Bootstrap source submodules
         run: |
           retry_git() {

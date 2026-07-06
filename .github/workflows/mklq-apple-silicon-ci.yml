@@ -103,8 +103,8 @@ jobs:
             utils
           retry_git "origin main sparse fetch" \
             git -c http.version=HTTP/1.1 -c protocol.version=2 fetch \
-            --no-tags --prune --filter=blob:none --depth=1 \
-            origin main:refs/remotes/origin/main
+            --no-tags --filter=blob:none --depth=1 \
+            origin +refs/heads/main:refs/remotes/origin/main
           git checkout --force -B main origin/main
 
       - name: Select Python and install prefix
@@ -155,18 +155,18 @@ jobs:
           if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then
             retry_git "origin main unshallow" \
               git -c http.version=HTTP/1.1 -c protocol.version=2 fetch \
-              --no-tags --prune --filter=blob:none --unshallow \
-              origin main:refs/remotes/origin/main
+              --no-tags --filter=blob:none --unshallow \
+              origin +refs/heads/main:refs/remotes/origin/main
           else
             retry_git "origin main fetch" \
               git -c http.version=HTTP/1.1 -c protocol.version=2 fetch \
-              --no-tags --prune --filter=blob:none \
-              origin main:refs/remotes/origin/main
+              --no-tags --filter=blob:none \
+              origin +refs/heads/main:refs/remotes/origin/main
           fi
           retry_git "upstream main fetch" \
             git -c http.version=HTTP/1.1 -c protocol.version=2 fetch \
-            --no-tags --prune --filter=blob:none \
-            upstream main:refs/remotes/upstream/main
+            --no-tags --filter=blob:none \
+            upstream +refs/heads/main:refs/remotes/upstream/main
           if ! git rev-parse --verify main >/dev/null 2>&1; then
             git branch main origin/main
           elif [ "$(git rev-parse main)" != "$(git rev-parse origin/main)" ]; then
