@@ -23,7 +23,8 @@ certification.
 
 ## Current Verified Baseline
 
-The documented verified public baseline was collected on 2026-07-07:
+The documented verified public baseline was collected on 2026-07-07 as a
+historical evidence snapshot:
 
 - Verified branch head:
   `2f0a72443dc8f8a01e801d6954d69ea2b063f83b`

@@ -133,8 +133,9 @@ successful `MKL-Q public hygiene` run, the latest pushed commit has a
 successful `MKL-Q Apple Silicon correctness` run, and the public
 claim-boundary guard passes.
 
-The documented source-only readiness baseline was refreshed on 2026-07-07 against
-protected `main` at `2f0a72443dc8f8a01e801d6954d69ea2b063f83b`. The
+The documented source-only readiness baseline was refreshed on 2026-07-07 as a
+historical evidence snapshot from protected `main` at
+`2f0a72443dc8f8a01e801d6954d69ea2b063f83b`. The
 `MKL-Q public hygiene` run
 <https://github.com/wuls968/MKL-Q/actions/runs/28834453115> and the manual
 `MKL-Q Apple Silicon correctness` full gate
@@ -191,7 +192,7 @@ focused CRZ distance-sweep evidence retained from 2026-07-01:
 - live self-hosted runner inventory check: refreshed on 2026-07-06 and
   reported one online runner named `mklq-apple-silicon-a0000` with the
   required `self-hosted`, `macOS`, `ARM64`, and `mklq-apple-silicon` labels;
-- latest tracked manual self-hosted Apple Silicon full gate: passed on
+- tracked source-only RC manual self-hosted Apple Silicon full gate: passed on
   2026-07-07 for `2f0a72443dc8f8a01e801d6954d69ea2b063f83b` in
   <https://github.com/wuls968/MKL-Q/actions/runs/28834480337>, with the full
   public healthcheck reporting 36/36 steps passed, the correctness gate ctest
