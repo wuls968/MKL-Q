@@ -76,14 +76,14 @@ gh run watch <run-id> --repo wuls968/MKL-Q --exit-status
 
 ## Current Evidence Snapshot
 
-As of 2026-07-06, the documented verified source-only baseline on `main` is:
+As of 2026-07-07, the documented verified source-only baseline on `main` is:
 
-- Commit: `7902659bce562702147a4ae2862818861f8992c8`
+- Commit: `2f0a72443dc8f8a01e801d6954d69ea2b063f83b`
 - Public hygiene workflow:
-  <https://github.com/wuls968/MKL-Q/actions/runs/28800917068>
+  <https://github.com/wuls968/MKL-Q/actions/runs/28834453115>
 - Manual Apple Silicon full gate:
-  <https://github.com/wuls968/MKL-Q/actions/runs/28800993186>
-- Source tag preflight audit: 8/8 checks passed
+  <https://github.com/wuls968/MKL-Q/actions/runs/28834480337>
+- Source tag preflight audit: 9/9 checks passed
 - Full public healthcheck: 36/36 steps passed
 - Correctness gate: 4/4 steps passed
 - Metal runtime counter probe: 50/50 selected counter tests passed

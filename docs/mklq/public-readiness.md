@@ -133,16 +133,16 @@ successful `MKL-Q public hygiene` run, the latest pushed commit has a
 successful `MKL-Q Apple Silicon correctness` run, and the public
 claim-boundary guard passes.
 
-The documented source-only readiness baseline was refreshed on 2026-07-06 against
-protected `main` at `7902659bce562702147a4ae2862818861f8992c8`. The
+The documented source-only readiness baseline was refreshed on 2026-07-07 against
+protected `main` at `2f0a72443dc8f8a01e801d6954d69ea2b063f83b`. The
 `MKL-Q public hygiene` run
-<https://github.com/wuls968/MKL-Q/actions/runs/28800917068> and the manual
+<https://github.com/wuls968/MKL-Q/actions/runs/28834453115> and the manual
 `MKL-Q Apple Silicon correctness` full gate
-<https://github.com/wuls968/MKL-Q/actions/runs/28800993186> both completed
+<https://github.com/wuls968/MKL-Q/actions/runs/28834480337> both completed
 successfully for that head. The ignored local readiness payload
 `/tmp/mklq-public-readiness-audit-final-rc-v0.1-2026-07-06.json` recorded 13/13 checks
-passed, and `/tmp/mklq-source-release-tag-post-apple-gate-2026-07-06.json`
-recorded 8/8 source tag preflight checks passed, including repository identity,
+passed, and `/tmp/mklq-source-release-tag-post-refresh-baseline-2026-07-07.json`
+recorded 9/9 source tag preflight checks passed, including repository identity,
 issue templates, labels, branch protection, latest pushed workflow status,
 public claim boundaries, the manual Apple Silicon full gate, and the
 source-only no-tags/no-releases boundary. Use the readiness commands below for
@@ -192,8 +192,8 @@ focused CRZ distance-sweep evidence retained from 2026-07-01:
   reported one online runner named `mklq-apple-silicon-a0000` with the
   required `self-hosted`, `macOS`, `ARM64`, and `mklq-apple-silicon` labels;
 - latest tracked manual self-hosted Apple Silicon full gate: passed on
-  2026-07-06 for `7902659bce562702147a4ae2862818861f8992c8` in
-  <https://github.com/wuls968/MKL-Q/actions/runs/28800993186>, with the full
+  2026-07-07 for `2f0a72443dc8f8a01e801d6954d69ea2b063f83b` in
+  <https://github.com/wuls968/MKL-Q/actions/runs/28834480337>, with the full
   public healthcheck reporting 36/36 steps passed, the correctness gate ctest
   subset reporting 104/104 tests passed, the Metal runtime counter probe
   reporting 50/50 selected counter tests passed, the public example smoke gate

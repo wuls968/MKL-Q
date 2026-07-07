@@ -23,20 +23,20 @@ certification.
 
 ## Current Verified Baseline
 
-The documented verified public baseline was collected on 2026-07-06:
+The documented verified public baseline was collected on 2026-07-07:
 
 - Verified branch head:
-  `7902659bce562702147a4ae2862818861f8992c8`
+  `2f0a72443dc8f8a01e801d6954d69ea2b063f83b`
 - Public hygiene workflow:
-  <https://github.com/wuls968/MKL-Q/actions/runs/28800917068>
+  <https://github.com/wuls968/MKL-Q/actions/runs/28834453115>
 - Manual Apple Silicon full gate:
-  <https://github.com/wuls968/MKL-Q/actions/runs/28800993186>
+  <https://github.com/wuls968/MKL-Q/actions/runs/28834480337>
 - Public readiness audit output:
   `/tmp/mklq-public-readiness-audit-final-rc-v0.1-2026-07-06.json`
 - Public readiness audit result: 13/13 checks passed
 - Source tag preflight audit output:
-  `/tmp/mklq-source-release-tag-post-apple-gate-2026-07-06.json`
-- Source tag preflight audit result: 8/8 checks passed
+  `/tmp/mklq-source-release-tag-post-refresh-baseline-2026-07-07.json`
+- Source tag preflight audit result: 9/9 checks passed
 - Full public healthcheck result: 36/36 steps passed
 - Correctness gate ctest subset: 104/104 tests passed
 - Metal runtime counter probe: 50/50 selected counter tests passed

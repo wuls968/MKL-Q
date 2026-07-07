@@ -5836,8 +5836,24 @@ run_public_readiness_audit.py.
 workflow_dispatch.
 run_full_gate=confirm.
 Dispatch guard is not sufficient.
-28800993186.
-7902659bce562702147a4ae2862818861f8992c8.
+Current Evidence Snapshot.
+documented verified source-only baseline.
+Source tag preflight audit.
+Full public healthcheck.
+Public readiness audit.
+
+## Current Evidence Snapshot
+
+As of 2026-07-07, the documented verified source-only baseline on `main` is:
+
+- Commit: `2f0a72443dc8f8a01e801d6954d69ea2b063f83b`
+- Public hygiene workflow:
+  <https://github.com/wuls968/MKL-Q/actions/runs/28834453115>
+- Manual Apple Silicon full gate:
+  <https://github.com/wuls968/MKL-Q/actions/runs/28834480337>
+- Source tag preflight audit: 9/9 checks passed
+- Full public healthcheck: 36/36 steps passed
+- Public readiness audit: 13/13 checks passed
 """,
         encoding="utf-8")
     (docs / "release-policy.md").write_text(
@@ -5860,10 +5876,36 @@ run_full_gate=confirm.
 """,
         encoding="utf-8")
     (docs / "source-only-rc-v0.1.md").write_text(
-        "7902659bce562702147a4ae2862818861f8992c8 28800993186\n",
+        """
+## Current Verified Baseline
+
+The documented verified public baseline was collected on 2026-07-07:
+
+- Verified branch head:
+  `2f0a72443dc8f8a01e801d6954d69ea2b063f83b`
+- Public hygiene workflow:
+  <https://github.com/wuls968/MKL-Q/actions/runs/28834453115>
+- Manual Apple Silicon full gate:
+  <https://github.com/wuls968/MKL-Q/actions/runs/28834480337>
+- Source tag preflight audit result: 9/9 checks passed
+- Full public healthcheck result: 36/36 steps passed
+- Benchmark harness tests: 228 passed
+""",
         encoding="utf-8")
     (docs / "public-readiness.md").write_text(
-        "7902659bce562702147a4ae2862818861f8992c8 28800993186\n",
+        """
+The documented source-only readiness baseline was refreshed on 2026-07-07
+against protected `main` at `2f0a72443dc8f8a01e801d6954d69ea2b063f83b`.
+The `MKL-Q public hygiene` run
+<https://github.com/wuls968/MKL-Q/actions/runs/28834453115> and the manual
+`MKL-Q Apple Silicon correctness` full gate
+<https://github.com/wuls968/MKL-Q/actions/runs/28834480337> both completed
+successfully for that head. The source tag preflight checks passed, including
+the manual Apple Silicon full gate and the source-only no-tags/no-releases
+boundary.
+
+## Branch Protection
+""",
         encoding="utf-8")
 
 
@@ -5903,7 +5945,7 @@ def test_mklq_source_release_tag_audit_docs_only_builds_passing_report(
 
     assert report["schema_version"] == "mklq-source-release-tag-audit-v1"
     assert report["docs_only"] is True
-    assert report["summary"] == {"status": "passed", "passed": 5, "failed": 0}
+    assert report["summary"] == {"status": "passed", "passed": 6, "failed": 0}
     assert not any(call and call[0] == "gh" for call in calls)
 
 
@@ -5925,9 +5967,9 @@ def test_mklq_source_release_tag_audit_full_builds_passing_report(monkeypatch,
         if command == ["git", "rev-parse", "--is-shallow-repository"]:
             return "false"
         if command == ["git", "rev-parse", "HEAD"]:
-            return "7902659bce562702147a4ae2862818861f8992c8"
+            return "2f0a72443dc8f8a01e801d6954d69ea2b063f83b"
         if command == ["git", "ls-remote", "origin", "refs/heads/main"]:
-            return "7902659bce562702147a4ae2862818861f8992c8\trefs/heads/main"
+            return "2f0a72443dc8f8a01e801d6954d69ea2b063f83b\trefs/heads/main"
         if command == ["git", "ls-files"]:
             return "\n".join([
                 "README.md",
@@ -5941,19 +5983,19 @@ def test_mklq_source_release_tag_audit_full_builds_passing_report(monkeypatch,
             return json.dumps([{
                 "status": "completed",
                 "conclusion": "success",
-                "headSha": "7902659bce562702147a4ae2862818861f8992c8",
+                "headSha": "2f0a72443dc8f8a01e801d6954d69ea2b063f83b",
                 "event": "push",
                 "url": "https://github.com/wuls968/MKL-Q/actions/runs/1",
             }])
         if command[:3] == ["gh", "run", "list"
                            ] and "--event" in command:
             assert "workflow_dispatch" in command
-            assert "7902659bce562702147a4ae2862818861f8992c8" in command
+            assert "2f0a72443dc8f8a01e801d6954d69ea2b063f83b" in command
             return json.dumps([{
                 "databaseId": 2,
                 "status": "completed",
                 "conclusion": "success",
-                "headSha": "7902659bce562702147a4ae2862818861f8992c8",
+                "headSha": "2f0a72443dc8f8a01e801d6954d69ea2b063f83b",
                 "event": "workflow_dispatch",
                 "url": "https://github.com/wuls968/MKL-Q/actions/runs/2",
             }])
@@ -5962,7 +6004,7 @@ def test_mklq_source_release_tag_audit_full_builds_passing_report(monkeypatch,
                 "databaseId": 2,
                 "status": "completed",
                 "conclusion": "success",
-                "headSha": "7902659bce562702147a4ae2862818861f8992c8",
+                "headSha": "2f0a72443dc8f8a01e801d6954d69ea2b063f83b",
                 "event": "workflow_dispatch",
                 "url": "https://github.com/wuls968/MKL-Q/actions/runs/2",
                 "jobs": [{
@@ -5979,7 +6021,7 @@ def test_mklq_source_release_tag_audit_full_builds_passing_report(monkeypatch,
     report = module.build_report(config)
 
     assert report["docs_only"] is False
-    assert report["summary"] == {"status": "passed", "passed": 8, "failed": 0}
+    assert report["summary"] == {"status": "passed", "passed": 9, "failed": 0}
     checks = {check["name"]: check for check in report["checks"]}
     assert checks["latest_manual_apple_full_gate"]["details"]["event"] == (
         "workflow_dispatch")
@@ -6003,9 +6045,9 @@ def test_mklq_source_release_tag_audit_full_rejects_missing_manual_gate(
         if command == ["git", "rev-parse", "--is-shallow-repository"]:
             return "false"
         if command == ["git", "rev-parse", "HEAD"]:
-            return "7902659bce562702147a4ae2862818861f8992c8"
+            return "2f0a72443dc8f8a01e801d6954d69ea2b063f83b"
         if command == ["git", "ls-remote", "origin", "refs/heads/main"]:
-            return "7902659bce562702147a4ae2862818861f8992c8\trefs/heads/main"
+            return "2f0a72443dc8f8a01e801d6954d69ea2b063f83b\trefs/heads/main"
         if command == ["git", "ls-files"]:
             return "\n".join([
                 "README.md",
@@ -6019,7 +6061,7 @@ def test_mklq_source_release_tag_audit_full_rejects_missing_manual_gate(
             return json.dumps([{
                 "status": "completed",
                 "conclusion": "success",
-                "headSha": "7902659bce562702147a4ae2862818861f8992c8",
+                "headSha": "2f0a72443dc8f8a01e801d6954d69ea2b063f83b",
                 "event": "push",
             }])
         if command[:3] == ["gh", "run", "list"

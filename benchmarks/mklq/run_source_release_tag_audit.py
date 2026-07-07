@@ -29,6 +29,8 @@ APPLE_FULL_GATE_JOB = "Manual Apple Silicon correctness gate"
 LIVE_COMMAND_ATTEMPTS = 3
 LIVE_COMMAND_RETRY_DELAY_SECONDS = 1.0
 TAG_PATTERN = re.compile(r"^mklq-v\d+\.\d+\.\d+-source$")
+COMMIT_PATTERN = re.compile(r"\b[0-9a-f]{40}\b")
+RUN_URL_PATTERN = re.compile(r"github\.com/wuls968/MKL-Q/actions/runs/(\d+)")
 
 RELEASE_NOTES_PATH = Path("docs/mklq/release-notes-v0.1.0-source.md")
 CHANGELOG_PATH = Path("CHANGELOG.md")
@@ -53,8 +55,11 @@ RELEASE_NOTE_REQUIRED_TOKENS = (
     "workflow_dispatch",
     "run_full_gate=confirm",
     "Dispatch guard is not sufficient",
-    "28800993186",
-    "7902659bce562702147a4ae2862818861f8992c8",
+    "Current Evidence Snapshot",
+    "documented verified source-only baseline",
+    "Source tag preflight audit",
+    "Full public healthcheck",
+    "Public readiness audit",
 )
 
 CHANGELOG_REQUIRED_TOKENS = (
@@ -88,6 +93,29 @@ README_REQUIRED_TOKENS = (
     "release-notes-v0.1.0-source.md",
     "run_source_release_tag_audit.py",
 )
+
+SOURCE_RC_REQUIRED_TOKENS = (
+    "documented verified public baseline",
+    "Public hygiene workflow",
+    "Manual Apple Silicon full gate",
+    "Source tag preflight audit result",
+    "Full public healthcheck result",
+    "Benchmark harness tests",
+)
+
+PUBLIC_READINESS_REQUIRED_TOKENS = (
+    "documented source-only readiness baseline",
+    "MKL-Q public hygiene",
+    "MKL-Q Apple Silicon correctness",
+    "source tag preflight checks passed",
+    "manual Apple Silicon full gate",
+    "source-only no-tags/no-releases boundary",
+)
+
+BASELINE_SECTIONS = {
+    RELEASE_NOTES_PATH: "Current Evidence Snapshot",
+    SOURCE_RC_PATH: "Current Verified Baseline",
+}
 
 
 @dataclass(frozen=True)
@@ -142,6 +170,35 @@ def missing_tokens(text: str, tokens: tuple[str, ...]) -> list[str]:
         token for token in tokens
         if normalize_whitespace(token) not in normalized
     ]
+
+
+def markdown_section(text: str, heading: str) -> str:
+    marker = f"## {heading}"
+    start = text.find(marker)
+    if start == -1:
+        return ""
+    body_start = text.find("\n", start)
+    if body_start == -1:
+        return text[start:]
+    next_heading = text.find("\n## ", body_start + 1)
+    return text[body_start + 1:] if next_heading == -1 else text[
+        body_start + 1:next_heading]
+
+
+def public_readiness_baseline_section(text: str) -> str:
+    marker = "The documented source-only readiness baseline"
+    start = text.find(marker)
+    if start == -1:
+        return ""
+    next_heading = text.find("\n## ", start)
+    return text[start:] if next_heading == -1 else text[start:next_heading]
+
+
+def extract_documented_baseline(section: str) -> dict[str, Any]:
+    return {
+        "commits": sorted(set(COMMIT_PATTERN.findall(section))),
+        "run_ids": sorted(set(RUN_URL_PATTERN.findall(section))),
+    }
 
 
 def passed(name: str, details: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -266,10 +323,8 @@ def check_policy_and_checklist(config: AuditConfig) -> dict[str, Any]:
         RELEASE_POLICY_PATH: POLICY_REQUIRED_TOKENS,
         PUBLIC_CHECKLIST_PATH: CHECKLIST_REQUIRED_TOKENS,
         README_PATH: README_REQUIRED_TOKENS,
-        SOURCE_RC_PATH: ("7902659bce562702147a4ae2862818861f8992c8",
-                         "28800993186"),
-        PUBLIC_READINESS_PATH: ("7902659bce562702147a4ae2862818861f8992c8",
-                                "28800993186"),
+        SOURCE_RC_PATH: SOURCE_RC_REQUIRED_TOKENS,
+        PUBLIC_READINESS_PATH: PUBLIC_READINESS_REQUIRED_TOKENS,
     }
     failures: list[str] = []
     details: dict[str, Any] = {"files": {}}
@@ -290,6 +345,85 @@ def check_policy_and_checklist(config: AuditConfig) -> dict[str, Any]:
                   "; ".join(failures),
                   details) if failures else passed("policy_and_checklist",
                                                    details)
+
+
+def check_documented_baseline_consistency(config: AuditConfig) -> dict[str, Any]:
+    failures: list[str] = []
+    details: dict[str, Any] = {"files": {}}
+
+    for relative, heading in BASELINE_SECTIONS.items():
+        path = config.repo_root / relative
+        if not path.exists():
+            failures.append(f"{relative.as_posix()}: file is missing")
+            details["files"][relative.as_posix()] = {
+                "section": heading,
+                "commits": [],
+                "run_ids": [],
+                "missing": "file",
+            }
+            continue
+        text = path.read_text(encoding="utf-8")
+        section = markdown_section(text, heading)
+        parsed = extract_documented_baseline(section)
+        parsed["section"] = heading
+        details["files"][relative.as_posix()] = parsed
+        if not section:
+            failures.append(f"{relative.as_posix()}: baseline section is missing")
+        if len(parsed["commits"]) != 1:
+            failures.append(
+                f"{relative.as_posix()}: expected exactly one baseline commit")
+        if len(parsed["run_ids"]) < 2:
+            failures.append(
+                f"{relative.as_posix()}: expected public hygiene and Apple run IDs"
+            )
+
+    readiness_path = config.repo_root / PUBLIC_READINESS_PATH
+    if not readiness_path.exists():
+        failures.append(f"{PUBLIC_READINESS_PATH.as_posix()}: file is missing")
+        details["files"][PUBLIC_READINESS_PATH.as_posix()] = {
+            "section": "documented readiness baseline paragraph",
+            "commits": [],
+            "run_ids": [],
+            "missing": "file",
+        }
+    else:
+        text = readiness_path.read_text(encoding="utf-8")
+        section = public_readiness_baseline_section(text)
+        parsed = extract_documented_baseline(section)
+        parsed["section"] = "documented readiness baseline paragraph"
+        details["files"][PUBLIC_READINESS_PATH.as_posix()] = parsed
+        if not section:
+            failures.append(
+                f"{PUBLIC_READINESS_PATH.as_posix()}: baseline paragraph is missing"
+            )
+        if len(parsed["commits"]) != 1:
+            failures.append(
+                f"{PUBLIC_READINESS_PATH.as_posix()}: expected exactly one baseline commit"
+            )
+        if len(parsed["run_ids"]) < 2:
+            failures.append(
+                f"{PUBLIC_READINESS_PATH.as_posix()}: expected public hygiene and Apple run IDs"
+            )
+
+    commit_sets = {
+        path: tuple(values.get("commits", []))
+        for path, values in details["files"].items()
+    }
+    run_sets = {
+        path: tuple(values.get("run_ids", []))
+        for path, values in details["files"].items()
+    }
+    details["commit_sets"] = commit_sets
+    details["run_id_sets"] = run_sets
+    if len(set(commit_sets.values())) > 1:
+        failures.append("documented baseline commits are inconsistent")
+    if len(set(run_sets.values())) > 1:
+        failures.append("documented baseline run IDs are inconsistent")
+
+    return failed("documented_baseline_consistency",
+                  "; ".join(failures),
+                  details) if failures else passed(
+                      "documented_baseline_consistency", details)
 
 
 def check_no_release_artifacts(config: AuditConfig) -> dict[str, Any]:
@@ -456,6 +590,7 @@ def build_report(config: AuditConfig) -> dict[str, Any]:
         check_release_notes(resolved),
         check_changelog(resolved),
         check_policy_and_checklist(resolved),
+        check_documented_baseline_consistency(resolved),
         check_no_release_artifacts(resolved),
     ]
     if not resolved.docs_only:
