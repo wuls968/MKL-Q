@@ -198,6 +198,10 @@ public:
 
   std::vector<std::complex<double>> stateVectorForTest() const { return state; }
 
+  std::size_t twoQubitBlockApplicationsForTest() const {
+    return twoQubitBlockApplications;
+  }
+
   std::size_t swapApplicationsForTest() const { return swapApplications; }
 
   std::size_t threeQubitRowSparseApplicationsForTest() const {
@@ -255,6 +259,60 @@ applySingleQubitMatrixForTest(const std::vector<std::complex<double>> &input,
     const auto oneAmplitude = input[oneIndex];
     expected[zeroIndex] = matrix[0] * zeroAmplitude + matrix[1] * oneAmplitude;
     expected[oneIndex] = matrix[2] * zeroAmplitude + matrix[3] * oneAmplitude;
+  }
+
+  return expected;
+}
+
+static std::vector<std::complex<double>>
+applyTwoQubitMatrixForTest(const std::vector<std::complex<double>> &input,
+                           const std::vector<std::size_t> &targets,
+                           const std::vector<std::complex<double>> &matrix,
+                           const std::vector<std::size_t> &controls = {}) {
+  auto expected = input;
+  std::vector<std::size_t> targetMasks;
+  targetMasks.reserve(targets.size());
+  for (auto target : targets)
+    targetMasks.push_back(1ULL << target);
+
+  const auto indexWithTargetBits = [&](std::size_t base,
+                                       std::size_t targetBits) {
+    auto result = base;
+    for (std::size_t bit = 0; bit < targetMasks.size(); ++bit)
+      if (targetBits & (1ULL << bit))
+        result |= targetMasks[bit];
+    return result;
+  };
+
+  const auto blockCount = input.size() >> targets.size();
+  for (std::size_t block = 0; block < blockCount; ++block) {
+    const auto base =
+        MklqCpuCircuitSimulatorTester::indexWithTwoZeroBitsForTest(
+            block, targets[0], targets[1]);
+
+    if (!std::all_of(controls.begin(), controls.end(), [&](auto control) {
+          return (base & (1ULL << control)) != 0;
+        }))
+      continue;
+
+    const auto index0 = base;
+    const auto index1 = indexWithTargetBits(base, 1);
+    const auto index2 = indexWithTargetBits(base, 2);
+    const auto index3 = indexWithTargetBits(base, 3);
+    const std::array<std::complex<double>, 4> amplitudes{
+        input[index0], input[index1], input[index2], input[index3]};
+
+    expected[index0] = matrix[0] * amplitudes[0] + matrix[1] * amplitudes[1] +
+                       matrix[2] * amplitudes[2] + matrix[3] * amplitudes[3];
+    expected[index1] = matrix[4] * amplitudes[0] + matrix[5] * amplitudes[1] +
+                       matrix[6] * amplitudes[2] + matrix[7] * amplitudes[3];
+    expected[index2] = matrix[8] * amplitudes[0] + matrix[9] * amplitudes[1] +
+                       matrix[10] * amplitudes[2] +
+                       matrix[11] * amplitudes[3];
+    expected[index3] = matrix[12] * amplitudes[0] +
+                       matrix[13] * amplitudes[1] +
+                       matrix[14] * amplitudes[2] +
+                       matrix[15] * amplitudes[3];
   }
 
   return expected;
@@ -1682,7 +1740,34 @@ CUDAQ_TEST(MKLQCpuTester, SwapFastPathAppliesUncontrolledTwoQubitGate) {
   expectNear(state[1], {0.5, 0.25});
   expectNear(state[2], {2.0, -1.0});
   expectNear(state[3], {-3.0, 0.5});
+  EXPECT_EQ(sim.twoQubitBlockApplicationsForTest(), 0);
   EXPECT_EQ(sim.swapApplicationsForTest(), 1);
+}
+
+CUDAQ_TEST(MKLQCpuTester, GenericTwoQubitBlockPathAppliesCustomGate) {
+  const std::vector<std::complex<double>> initial{
+      {1.0, 0.0},   {2.0, -1.0}, {0.5, 0.25}, {-3.0, 0.5},
+      {0.25, -0.5}, {1.5, 0.5},  {-2.0, 1.0}, {0.75, -1.25},
+  };
+  const std::vector<std::complex<double>> phasedISwap{
+      {1.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0},
+      {0.0, 0.0}, {0.0, 0.0}, {0.0, 1.0}, {0.0, 0.0},
+      {0.0, 0.0}, {0.0, 1.0}, {0.0, 0.0}, {0.0, 0.0},
+      {0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {-1.0, 0.0},
+  };
+
+  MklqCpuCircuitSimulatorTester sim;
+  sim.setStateForTest(initial);
+
+  sim.applyCustomOperation(phasedISwap, {0}, {1, 2}, "phased_iswap");
+  sim.flushGateQueue();
+
+  expectStateNear(sim.stateVectorForTest(),
+                  applyTwoQubitMatrixForTest(initial, {1, 2}, phasedISwap,
+                                             {0}));
+  EXPECT_EQ(sim.twoQubitBlockApplicationsForTest(), 1);
+  EXPECT_EQ(sim.swapApplicationsForTest(), 0);
+  EXPECT_EQ(sim.specializedSingleQubitApplicationsForTest(), 0);
 }
 
 CUDAQ_TEST(MKLQCpuTester, ControlledSwapUsesGenericTwoQubitPath) {
@@ -1707,6 +1792,7 @@ CUDAQ_TEST(MKLQCpuTester, ControlledSwapUsesGenericTwoQubitPath) {
   expectNear(state[3], {5.0, 0.0});
   expectNear(state[5], {3.0, 0.0});
   expectNear(state[7], {7.0, 0.0});
+  EXPECT_EQ(sim.twoQubitBlockApplicationsForTest(), 1);
   EXPECT_EQ(sim.swapApplicationsForTest(), 0);
 }
 
@@ -1733,6 +1819,7 @@ CUDAQ_TEST(MKLQCpuTester, CustomOperationNamedSwapUsesGenericTwoQubitPath) {
   expectNear(state[1], {2.0, -1.0});
   expectNear(state[2], {0.5, 0.25});
   expectNear(state[3], {-3.0, 0.5});
+  EXPECT_EQ(sim.twoQubitBlockApplicationsForTest(), 1);
   EXPECT_EQ(sim.swapApplicationsForTest(), 0);
 }
 

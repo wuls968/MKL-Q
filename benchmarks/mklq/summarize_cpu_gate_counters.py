@@ -51,7 +51,7 @@ CATEGORY_RULES = (
         "SingleControlBuiltInSingleQubit",
     )),
     ("phase_fast_path", ("CzFastPath",)),
-    ("two_qubit_fast_path", ("SwapFastPath",)),
+    ("two_qubit_fast_path", ("GenericTwoQubitBlockPath", "SwapFastPath")),
     ("three_qubit_fast_path", ("RowSparseThreeQubit",)),
     ("single_qubit_fast_path", (
         "XFastPath",
