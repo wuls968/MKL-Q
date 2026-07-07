@@ -48,15 +48,15 @@ source-only v0.1 release-candidate entry point is
 inventory check was refreshed on 2026-07-06 and reported one online runner
 named `mklq-apple-silicon-a0000` with the required `self-hosted`, `macOS`,
 `ARM64`, and `mklq-apple-silicon` labels. The latest tracked manual
-self-hosted Apple Silicon full gate passed on 2026-07-06 for
-`7902659bce562702147a4ae2862818861f8992c8` in
-<https://github.com/wuls968/MKL-Q/actions/runs/28800993186>, with 36/36 public
+self-hosted Apple Silicon full gate passed on 2026-07-07 for
+`2f0a72443dc8f8a01e801d6954d69ea2b063f83b` in
+<https://github.com/wuls968/MKL-Q/actions/runs/28834480337>, with 36/36 public
 healthcheck steps passed, the correctness gate ctest subset reporting 104/104
 tests passed, the Metal runtime counter probe reporting 50/50 selected counter
 tests passed, the public example smoke gate reporting 30/30 checks passed, and
 the benchmark harness reporting 228 passed. The post-gate source tag preflight
-audit passed with 8/8 checks in
-`/tmp/mklq-source-release-tag-post-apple-gate-2026-07-06.json` without creating
+audit passed with 9/9 checks in
+`/tmp/mklq-source-release-tag-post-refresh-baseline-2026-07-07.json` without creating
 tags, releases, wheels, installers, or signed artifacts.
 The current public healthcheck plan adds a source-only tag draft audit. The
 default repository hygiene gate count is now 32/32 steps, and the expanded full
@@ -352,8 +352,8 @@ python3 benchmarks/mklq/run_correctness_gate.py \
   --build-dir build-python
 ```
 
-Latest local/self-hosted result: passed on 2026-07-06 for
-`7902659bce562702147a4ae2862818861f8992c8` in the manual Apple Silicon
+Latest local/self-hosted result: passed on 2026-07-07 for
+`2f0a72443dc8f8a01e801d6954d69ea2b063f83b` in the manual Apple Silicon
 correctness workflow after the source submodule bootstrap, focused install
 build, macOS install-prefix signature repair, correctness gate, benchmark
 harness tests, and public example smoke gate all completed. It reported 4
