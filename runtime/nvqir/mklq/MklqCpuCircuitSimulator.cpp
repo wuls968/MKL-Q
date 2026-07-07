@@ -227,6 +227,7 @@ protected:
   mutable std::size_t specializedSingleQubitApplications = 0;
   mutable std::size_t specializedSingleControlQubitApplications = 0;
   mutable std::size_t accelerateProbabilityFillApplications = 0;
+  mutable std::size_t twoQubitBlockApplications = 0;
   mutable std::size_t swapApplications = 0;
   mutable std::size_t denseDrawCountBuffers = 0;
   mutable std::size_t sparseDrawCountMaps = 0;
@@ -1092,6 +1093,10 @@ protected:
       state[index3] = matrix[12] * amplitude0 + matrix[13] * amplitude1 +
                       matrix[14] * amplitude2 + matrix[15] * amplitude3;
     }
+
+#if defined(MKLQ_ENABLE_TEST_ACCESSORS)
+    ++twoQubitBlockApplications;
+#endif
   }
 
   void applyBitFlipGate(const std::vector<std::size_t> &controls,

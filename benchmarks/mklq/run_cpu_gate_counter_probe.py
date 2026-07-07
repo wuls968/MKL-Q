@@ -37,6 +37,7 @@ COUNTER_TEST_SUFFIXES = (
     "HardwareEfficientAnsatzCompositeUsesDedicatedFastPaths",
     "MultiControlBuiltInSingleQubitGatesKeepGenericSpecializedPath",
     "CzFastPathAppliesControlledZGate",
+    "GenericTwoQubitBlockPathAppliesCustomGate",
     "SwapFastPathAppliesUncontrolledTwoQubitGate",
     "RowSparseThreeQubitCustomOperationUsesDedicatedFastPath",
 )

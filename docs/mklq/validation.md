@@ -133,10 +133,12 @@ cross-machine performance certification.
 A previous 2026-07-04 validation pass also reran the full
 install/build/signature-repair/correctness/example gate on the current MKL-Q
 branch after adding the local macOS install-prefix signature repair step.
-The current tracked CPU gate counter evidence includes three bounded reports for
+The current tracked CPU gate counter evidence includes four bounded reports for
 selected single-qubit, controlled single-qubit, single-control X/CNOT,
 single-control H/Y/Rx/Ry, single-control Rz phase, two-qubit, three-qubit, and
-composite fast-path counter ctests. The 2026-07-03 CPU gate counter refresh
+composite fast-path counter ctests. The 2026-07-07 CPU gate counter refresh
+adds a generic two-qubit 4x4 block-update counter fixture next to the existing
+dedicated SWAP permutation fixture. The 2026-07-03 CPU gate counter refresh
 covers per-gate single-control H/Y/Rx/Ry direct target/control pair fixtures,
 on top of the 2026-07-02 single-control X/CNOT direct pair refresh and the
 earlier single-control Rz direct phase path. The current tracked CPU
@@ -412,7 +414,7 @@ python3 benchmarks/mklq/run_correctness_gate.py \
 python3 benchmarks/mklq/run_public_healthcheck.py --full --require-clean
 ```
 
-Latest default 2026-07-06 result: `32/32` steps passed. The latest full
+Latest default 2026-07-07 result: `32/32` steps passed. The latest full
 2026-07-06 result is `36/36` steps passed. The full gate includes Git
 repository hygiene, tracked-artifact checks, public metadata checks, the public
 release checklist audit, the source-only tag draft audit, the upstream sync
@@ -431,7 +433,7 @@ smoke gate.
 
 The ignored raw healthcheck JSON records the exact Git state for these local
 runs. The current default healthcheck benchmark harness step reports
-`228 passed`. The latest full wrapper run reported 36 passed steps, including
+`229 passed`. The latest full wrapper run reported 36 passed steps, including
 source-only tag draft audit, install-prefix build, local signature repair,
 correctness, and example-smoke gates in the `--full --require-clean` wrapper.
 An earlier wrapper run before the signature-repair step was added failed when
