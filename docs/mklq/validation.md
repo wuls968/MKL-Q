@@ -49,12 +49,15 @@ inventory check was refreshed on 2026-07-06 and reported one online runner
 named `mklq-apple-silicon-a0000` with the required `self-hosted`, `macOS`,
 `ARM64`, and `mklq-apple-silicon` labels. The latest tracked manual
 self-hosted Apple Silicon full gate passed on 2026-07-06 for
-`206d392fc30019f6934965ec88ae18d30c87324d` in
-<https://github.com/wuls968/MKL-Q/actions/runs/28784584186>, with 35/35 public
+`7902659bce562702147a4ae2862818861f8992c8` in
+<https://github.com/wuls968/MKL-Q/actions/runs/28800993186>, with 36/36 public
 healthcheck steps passed, the correctness gate ctest subset reporting 104/104
 tests passed, the Metal runtime counter probe reporting 50/50 selected counter
 tests passed, the public example smoke gate reporting 30/30 checks passed, and
-the benchmark harness reporting 220 passed.
+the benchmark harness reporting 228 passed. The post-gate source tag preflight
+audit passed with 8/8 checks in
+`/tmp/mklq-source-release-tag-post-apple-gate-2026-07-06.json` without creating
+tags, releases, wheels, installers, or signed artifacts.
 The current public healthcheck plan adds a source-only tag draft audit. The
 default repository hygiene gate count is now 32/32 steps, and the expanded full
 gate has passed with 36/36 steps.
@@ -221,7 +224,7 @@ Latest full 2026-07-06 result: `36/36` steps passed.
 - One-command correctness gate: passed with 4 steps passed, 0 failed, and 0
   skipped, including the Metal runtime counter probe.
 - Public example smoke gate: passed, with 30 steps passed and 0 failed.
-- Current `benchmark_harness_tests`: `220 passed`.
+- Current `benchmark_harness_tests`: `228 passed`.
 - Current `cpu_gate_counter_probe_parse`: 3 bounded reports, 37 expected,
   37 selected, 0 missing, and 0 failures, including single-control X/CNOT,
   per-gate single-control H/Y/Rx/Ry direct pair fixtures, single-control Rz
@@ -350,7 +353,7 @@ python3 benchmarks/mklq/run_correctness_gate.py \
 ```
 
 Latest local/self-hosted result: passed on 2026-07-06 for
-`206d392fc30019f6934965ec88ae18d30c87324d` in the manual Apple Silicon
+`7902659bce562702147a4ae2862818861f8992c8` in the manual Apple Silicon
 correctness workflow after the source submodule bootstrap, focused install
 build, macOS install-prefix signature repair, correctness gate, benchmark
 harness tests, and public example smoke gate all completed. It reported 4
@@ -428,7 +431,7 @@ smoke gate.
 
 The ignored raw healthcheck JSON records the exact Git state for these local
 runs. The current default healthcheck benchmark harness step reports
-`220 passed`. The latest full wrapper run reported 36 passed steps, including
+`228 passed`. The latest full wrapper run reported 36 passed steps, including
 source-only tag draft audit, install-prefix build, local signature repair,
 correctness, and example-smoke gates in the `--full --require-clean` wrapper.
 An earlier wrapper run before the signature-repair step was added failed when

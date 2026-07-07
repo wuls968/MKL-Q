@@ -5836,8 +5836,8 @@ run_public_readiness_audit.py.
 workflow_dispatch.
 run_full_gate=confirm.
 Dispatch guard is not sufficient.
-28784584186.
-206d392fc30019f6934965ec88ae18d30c87324d.
+28800993186.
+7902659bce562702147a4ae2862818861f8992c8.
 """,
         encoding="utf-8")
     (docs / "release-policy.md").write_text(
@@ -5860,10 +5860,10 @@ run_full_gate=confirm.
 """,
         encoding="utf-8")
     (docs / "source-only-rc-v0.1.md").write_text(
-        "206d392fc30019f6934965ec88ae18d30c87324d 28784584186\n",
+        "7902659bce562702147a4ae2862818861f8992c8 28800993186\n",
         encoding="utf-8")
     (docs / "public-readiness.md").write_text(
-        "206d392fc30019f6934965ec88ae18d30c87324d 28784584186\n",
+        "7902659bce562702147a4ae2862818861f8992c8 28800993186\n",
         encoding="utf-8")
 
 
@@ -5925,9 +5925,9 @@ def test_mklq_source_release_tag_audit_full_builds_passing_report(monkeypatch,
         if command == ["git", "rev-parse", "--is-shallow-repository"]:
             return "false"
         if command == ["git", "rev-parse", "HEAD"]:
-            return "206d392fc30019f6934965ec88ae18d30c87324d"
+            return "7902659bce562702147a4ae2862818861f8992c8"
         if command == ["git", "ls-remote", "origin", "refs/heads/main"]:
-            return "206d392fc30019f6934965ec88ae18d30c87324d\trefs/heads/main"
+            return "7902659bce562702147a4ae2862818861f8992c8\trefs/heads/main"
         if command == ["git", "ls-files"]:
             return "\n".join([
                 "README.md",
@@ -5941,19 +5941,19 @@ def test_mklq_source_release_tag_audit_full_builds_passing_report(monkeypatch,
             return json.dumps([{
                 "status": "completed",
                 "conclusion": "success",
-                "headSha": "206d392fc30019f6934965ec88ae18d30c87324d",
+                "headSha": "7902659bce562702147a4ae2862818861f8992c8",
                 "event": "push",
                 "url": "https://github.com/wuls968/MKL-Q/actions/runs/1",
             }])
         if command[:3] == ["gh", "run", "list"
                            ] and "--event" in command:
             assert "workflow_dispatch" in command
-            assert "206d392fc30019f6934965ec88ae18d30c87324d" in command
+            assert "7902659bce562702147a4ae2862818861f8992c8" in command
             return json.dumps([{
                 "databaseId": 2,
                 "status": "completed",
                 "conclusion": "success",
-                "headSha": "206d392fc30019f6934965ec88ae18d30c87324d",
+                "headSha": "7902659bce562702147a4ae2862818861f8992c8",
                 "event": "workflow_dispatch",
                 "url": "https://github.com/wuls968/MKL-Q/actions/runs/2",
             }])
@@ -5962,7 +5962,7 @@ def test_mklq_source_release_tag_audit_full_builds_passing_report(monkeypatch,
                 "databaseId": 2,
                 "status": "completed",
                 "conclusion": "success",
-                "headSha": "206d392fc30019f6934965ec88ae18d30c87324d",
+                "headSha": "7902659bce562702147a4ae2862818861f8992c8",
                 "event": "workflow_dispatch",
                 "url": "https://github.com/wuls968/MKL-Q/actions/runs/2",
                 "jobs": [{
@@ -6003,9 +6003,9 @@ def test_mklq_source_release_tag_audit_full_rejects_missing_manual_gate(
         if command == ["git", "rev-parse", "--is-shallow-repository"]:
             return "false"
         if command == ["git", "rev-parse", "HEAD"]:
-            return "206d392fc30019f6934965ec88ae18d30c87324d"
+            return "7902659bce562702147a4ae2862818861f8992c8"
         if command == ["git", "ls-remote", "origin", "refs/heads/main"]:
-            return "206d392fc30019f6934965ec88ae18d30c87324d\trefs/heads/main"
+            return "7902659bce562702147a4ae2862818861f8992c8\trefs/heads/main"
         if command == ["git", "ls-files"]:
             return "\n".join([
                 "README.md",
@@ -6019,7 +6019,7 @@ def test_mklq_source_release_tag_audit_full_rejects_missing_manual_gate(
             return json.dumps([{
                 "status": "completed",
                 "conclusion": "success",
-                "headSha": "206d392fc30019f6934965ec88ae18d30c87324d",
+                "headSha": "7902659bce562702147a4ae2862818861f8992c8",
                 "event": "push",
             }])
         if command[:3] == ["gh", "run", "list"

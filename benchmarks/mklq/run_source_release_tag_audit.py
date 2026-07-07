@@ -53,8 +53,8 @@ RELEASE_NOTE_REQUIRED_TOKENS = (
     "workflow_dispatch",
     "run_full_gate=confirm",
     "Dispatch guard is not sufficient",
-    "28784584186",
-    "206d392fc30019f6934965ec88ae18d30c87324d",
+    "28800993186",
+    "7902659bce562702147a4ae2862818861f8992c8",
 )
 
 CHANGELOG_REQUIRED_TOKENS = (
@@ -266,10 +266,10 @@ def check_policy_and_checklist(config: AuditConfig) -> dict[str, Any]:
         RELEASE_POLICY_PATH: POLICY_REQUIRED_TOKENS,
         PUBLIC_CHECKLIST_PATH: CHECKLIST_REQUIRED_TOKENS,
         README_PATH: README_REQUIRED_TOKENS,
-        SOURCE_RC_PATH: ("206d392fc30019f6934965ec88ae18d30c87324d",
-                         "28784584186"),
-        PUBLIC_READINESS_PATH: ("206d392fc30019f6934965ec88ae18d30c87324d",
-                                "28784584186"),
+        SOURCE_RC_PATH: ("7902659bce562702147a4ae2862818861f8992c8",
+                         "28800993186"),
+        PUBLIC_READINESS_PATH: ("7902659bce562702147a4ae2862818861f8992c8",
+                                "28800993186"),
     }
     failures: list[str] = []
     details: dict[str, Any] = {"files": {}}

@@ -23,27 +23,31 @@ certification.
 
 ## Current Verified Baseline
 
-The current verified public baseline was collected on 2026-07-06:
+The documented verified public baseline was collected on 2026-07-06:
 
 - Verified branch head:
-  `206d392fc30019f6934965ec88ae18d30c87324d`
+  `7902659bce562702147a4ae2862818861f8992c8`
 - Public hygiene workflow:
-  <https://github.com/wuls968/MKL-Q/actions/runs/28784573258>
+  <https://github.com/wuls968/MKL-Q/actions/runs/28800917068>
 - Manual Apple Silicon full gate:
-  <https://github.com/wuls968/MKL-Q/actions/runs/28784584186>
+  <https://github.com/wuls968/MKL-Q/actions/runs/28800993186>
 - Public readiness audit output:
   `/tmp/mklq-public-readiness-audit-final-rc-v0.1-2026-07-06.json`
 - Public readiness audit result: 13/13 checks passed
-- Full public healthcheck result: 35/35 steps passed
+- Source tag preflight audit output:
+  `/tmp/mklq-source-release-tag-post-apple-gate-2026-07-06.json`
+- Source tag preflight audit result: 8/8 checks passed
+- Full public healthcheck result: 36/36 steps passed
 - Correctness gate ctest subset: 104/104 tests passed
 - Metal runtime counter probe: 50/50 selected counter tests passed
 - Public example smoke: 30/30 checks passed
-- Benchmark harness tests: 220 passed
+- Benchmark harness tests: 228 passed
 
-This tracked page is an evidence index, not a live status endpoint. Before
-using a newer commit as the source-only RC baseline, rerun the commands below
-and update the evidence references if the commit, workflow run IDs, or gate
-totals changed.
+This tracked page is an evidence index, not a live status endpoint. The live
+audits below are authoritative for the exact current commit. Before using a
+newer commit as the documented source-only RC baseline, rerun the commands
+below and update the evidence references if the commit, workflow run IDs, or
+gate totals changed.
 
 ## Acceptance Gates
 

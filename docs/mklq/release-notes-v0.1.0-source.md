@@ -76,19 +76,22 @@ gh run watch <run-id> --repo wuls968/MKL-Q --exit-status
 
 ## Current Evidence Snapshot
 
-As of 2026-07-06, the latest verified source-only baseline on `main` is:
+As of 2026-07-06, the documented verified source-only baseline on `main` is:
 
-- Commit: `206d392fc30019f6934965ec88ae18d30c87324d`
+- Commit: `7902659bce562702147a4ae2862818861f8992c8`
 - Public hygiene workflow:
-  <https://github.com/wuls968/MKL-Q/actions/runs/28784573258>
+  <https://github.com/wuls968/MKL-Q/actions/runs/28800917068>
 - Manual Apple Silicon full gate:
-  <https://github.com/wuls968/MKL-Q/actions/runs/28784584186>
-- Full public healthcheck: 35/35 steps passed
+  <https://github.com/wuls968/MKL-Q/actions/runs/28800993186>
+- Source tag preflight audit: 8/8 checks passed
+- Full public healthcheck: 36/36 steps passed
 - Correctness gate: 4/4 steps passed
 - Metal runtime counter probe: 50/50 selected counter tests passed
+- Benchmark harness tests: 228 passed
 - Public readiness audit: 13/13 checks passed
 
-This snapshot is evidence for the named commit only. Rerun the tag preflight
+This snapshot is evidence for the named commit only. The tag preflight audit
+also performs live checks for the exact current commit. Rerun the tag preflight
 and public readiness audits if any commit, workflow run, branch-protection
 state, or release policy changes.
 
