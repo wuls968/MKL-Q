@@ -76,7 +76,8 @@ gh run watch <run-id> --repo wuls968/MKL-Q --exit-status
 
 ## Current Evidence Snapshot
 
-As of 2026-07-07, the documented verified source-only baseline on `main` is:
+On 2026-07-07, the documented verified source-only baseline was collected as a
+historical evidence snapshot from protected `main` at this commit:
 
 - Commit: `2f0a72443dc8f8a01e801d6954d69ea2b063f83b`
 - Public hygiene workflow:
@@ -90,10 +91,10 @@ As of 2026-07-07, the documented verified source-only baseline on `main` is:
 - Benchmark harness tests: 228 passed
 - Public readiness audit: 13/13 checks passed
 
-This snapshot is evidence for the named commit only. The tag preflight audit
-also performs live checks for the exact current commit. Rerun the tag preflight
-and public readiness audits if any commit, workflow run, branch-protection
-state, or release policy changes.
+This snapshot is evidence for the named commit only, not a live status line for
+the moving `main` branch. The tag preflight audit also performs live checks for
+the exact current commit. Rerun the tag preflight and public readiness audits if
+any commit, workflow run, branch-protection state, or release policy changes.
 
 ## Promotion Boundary
 

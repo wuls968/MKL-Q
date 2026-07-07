@@ -57,6 +57,8 @@ RELEASE_NOTE_REQUIRED_TOKENS = (
     "Dispatch guard is not sufficient",
     "Current Evidence Snapshot",
     "documented verified source-only baseline",
+    "historical evidence snapshot",
+    "not a live status line",
     "Source tag preflight audit",
     "Full public healthcheck",
     "Public readiness audit",
@@ -96,20 +98,24 @@ README_REQUIRED_TOKENS = (
 
 SOURCE_RC_REQUIRED_TOKENS = (
     "documented verified public baseline",
+    "historical evidence snapshot",
     "Public hygiene workflow",
     "Manual Apple Silicon full gate",
     "Source tag preflight audit result",
     "Full public healthcheck result",
     "Benchmark harness tests",
+    "live audits below are authoritative",
 )
 
 PUBLIC_READINESS_REQUIRED_TOKENS = (
     "documented source-only readiness baseline",
+    "historical evidence snapshot",
     "MKL-Q public hygiene",
     "MKL-Q Apple Silicon correctness",
     "source tag preflight checks passed",
     "manual Apple Silicon full gate",
     "source-only no-tags/no-releases boundary",
+    "not a moving run log",
 )
 
 BASELINE_SECTIONS = {

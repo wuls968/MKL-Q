@@ -5838,13 +5838,16 @@ run_full_gate=confirm.
 Dispatch guard is not sufficient.
 Current Evidence Snapshot.
 documented verified source-only baseline.
+historical evidence snapshot.
+not a live status line.
 Source tag preflight audit.
 Full public healthcheck.
 Public readiness audit.
 
 ## Current Evidence Snapshot
 
-As of 2026-07-07, the documented verified source-only baseline on `main` is:
+On 2026-07-07, the documented verified source-only baseline was collected as a
+historical evidence snapshot from protected `main` at this commit:
 
 - Commit: `2f0a72443dc8f8a01e801d6954d69ea2b063f83b`
 - Public hygiene workflow:
@@ -5854,6 +5857,9 @@ As of 2026-07-07, the documented verified source-only baseline on `main` is:
 - Source tag preflight audit: 9/9 checks passed
 - Full public healthcheck: 36/36 steps passed
 - Public readiness audit: 13/13 checks passed
+
+This snapshot is evidence for the named commit only, not a live status line for
+the moving `main` branch.
 """,
         encoding="utf-8")
     (docs / "release-policy.md").write_text(
@@ -5879,7 +5885,8 @@ run_full_gate=confirm.
         """
 ## Current Verified Baseline
 
-The documented verified public baseline was collected on 2026-07-07:
+The documented verified public baseline was collected on 2026-07-07 as a
+historical evidence snapshot:
 
 - Verified branch head:
   `2f0a72443dc8f8a01e801d6954d69ea2b063f83b`
@@ -5890,19 +5897,22 @@ The documented verified public baseline was collected on 2026-07-07:
 - Source tag preflight audit result: 9/9 checks passed
 - Full public healthcheck result: 36/36 steps passed
 - Benchmark harness tests: 228 passed
+
+The live audits below are authoritative for the exact current commit.
 """,
         encoding="utf-8")
     (docs / "public-readiness.md").write_text(
         """
-The documented source-only readiness baseline was refreshed on 2026-07-07
-against protected `main` at `2f0a72443dc8f8a01e801d6954d69ea2b063f83b`.
+The documented source-only readiness baseline was refreshed on 2026-07-07 as a
+historical evidence snapshot from protected `main` at
+`2f0a72443dc8f8a01e801d6954d69ea2b063f83b`.
 The `MKL-Q public hygiene` run
 <https://github.com/wuls968/MKL-Q/actions/runs/28834453115> and the manual
 `MKL-Q Apple Silicon correctness` full gate
 <https://github.com/wuls968/MKL-Q/actions/runs/28834480337> both completed
 successfully for that head. The source tag preflight checks passed, including
 the manual Apple Silicon full gate and the source-only no-tags/no-releases
-boundary.
+boundary. This tracked page is not a moving run log.
 
 ## Branch Protection
 """,
@@ -5947,6 +5957,40 @@ def test_mklq_source_release_tag_audit_docs_only_builds_passing_report(
     assert report["docs_only"] is True
     assert report["summary"] == {"status": "passed", "passed": 6, "failed": 0}
     assert not any(call and call[0] == "gh" for call in calls)
+
+
+def test_mklq_source_release_tag_audit_rejects_live_status_wording_regression(
+        monkeypatch, tmp_path):
+    module = _load_source_release_tag_audit_module()
+    _write_source_release_tag_audit_fixture(tmp_path)
+    release_notes = tmp_path / "docs" / "mklq" / (
+        "release-notes-v0.1.0-source.md")
+    release_notes.write_text(
+        release_notes.read_text(encoding="utf-8").replace(
+            "not a live status line", "not a status line"),
+        encoding="utf-8")
+
+    def fake_command_output(cwd, command):
+        if command == ["git", "tag", "-l", "mklq-v0.1.0-source"]:
+            return ""
+        if command == ["git", "ls-files"]:
+            return "\n".join([
+                "README.md",
+                "CHANGELOG.md",
+                "docs/mklq/release-notes-v0.1.0-source.md",
+            ])
+        raise AssertionError(command)
+
+    monkeypatch.setattr(module, "command_output", fake_command_output)
+    config = _source_release_tag_audit_config(module, tmp_path, docs_only=True)
+
+    report = module.build_report(config)
+
+    assert report["summary"]["status"] == "failed"
+    checks = {check["name"]: check for check in report["checks"]}
+    assert checks["release_notes"]["status"] == "failed"
+    assert "not a live status line" in checks["release_notes"]["details"][
+        "missing"]
 
 
 def test_mklq_source_release_tag_audit_full_builds_passing_report(monkeypatch,

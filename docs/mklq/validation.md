@@ -47,8 +47,8 @@ source-only v0.1 release-candidate entry point is
 [`source-only-rc-v0.1.md`](source-only-rc-v0.1.md). The live self-hosted runner
 inventory check was refreshed on 2026-07-06 and reported one online runner
 named `mklq-apple-silicon-a0000` with the required `self-hosted`, `macOS`,
-`ARM64`, and `mklq-apple-silicon` labels. The latest tracked manual
-self-hosted Apple Silicon full gate passed on 2026-07-07 for
+`ARM64`, and `mklq-apple-silicon` labels. The tracked source-only RC manual
+self-hosted Apple Silicon full gate evidence snapshot passed on 2026-07-07 for
 `2f0a72443dc8f8a01e801d6954d69ea2b063f83b` in
 <https://github.com/wuls968/MKL-Q/actions/runs/28834480337>, with 36/36 public
 healthcheck steps passed, the correctness gate ctest subset reporting 104/104
@@ -352,7 +352,7 @@ python3 benchmarks/mklq/run_correctness_gate.py \
   --build-dir build-python
 ```
 
-Latest local/self-hosted result: passed on 2026-07-07 for
+Tracked source-only RC local/self-hosted result: passed on 2026-07-07 for
 `2f0a72443dc8f8a01e801d6954d69ea2b063f83b` in the manual Apple Silicon
 correctness workflow after the source submodule bootstrap, focused install
 build, macOS install-prefix signature repair, correctness gate, benchmark
