@@ -1116,8 +1116,8 @@ protected:
     invalidateMetalResidentState();
 #endif
 
-    if (isBuiltInOperation && controls.empty() && operationName == "swap") {
-      applyUncontrolledSwapGate(targets);
+    if (isBuiltInOperation && operationName == "swap") {
+      applySwapGate(controls, targets);
       return;
     }
 
@@ -1327,7 +1327,8 @@ protected:
 #endif
   }
 
-  void applyUncontrolledSwapGate(const std::vector<std::size_t> &targets) {
+  void applySwapGate(const std::vector<std::size_t> &controls,
+                     const std::vector<std::size_t> &targets) {
     std::vector<std::size_t> targetMasks;
     targetMasks.reserve(2);
     for (auto target : targets)
@@ -1335,6 +1336,7 @@ protected:
 
     const auto blockCount = stateDimension >> 2;
     const auto indexMasks = twoZeroBitIndexMasks(targets[0], targets[1]);
+    const auto controlBits = controlMask(controls);
 #if defined(_OPENMP)
     const auto threadCount = parallelThreadCount();
 #pragma omp parallel for num_threads(                                          \
@@ -1343,6 +1345,9 @@ protected:
 #endif
     for (std::size_t block = 0; block < blockCount; ++block) {
       const auto base = indexWithTwoZeroBits(block, indexMasks);
+      if (!controlsSatisfied(base, controlBits))
+        continue;
+
       const auto index1 = indexWithTargetBits(base, 1, targetMasks);
       const auto index2 = indexWithTargetBits(base, 2, targetMasks);
       std::swap(state[index1], state[index2]);
