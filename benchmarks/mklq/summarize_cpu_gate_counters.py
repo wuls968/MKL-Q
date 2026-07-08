@@ -53,6 +53,7 @@ CATEGORY_RULES = (
     ("phase_fast_path", ("CzFastPath",)),
     ("two_qubit_fast_path", (
         "GenericTwoQubitBlockPath",
+        "ControlledDenseTwoQubitBlockPath",
         "RowSparseTwoQubit",
         "SwapFastPath",
     )),

@@ -142,9 +142,10 @@ target-marker output.
   bit-flip permutation fast path, and
   built-in controlled-Z/CZ use a dedicated in-place phase-sign fast path. Custom
   single-qubit operations still use the generic 2x2 path.
-  Two-target gates, including custom two-qubit operations, use an in-place 4x4
-  block update path; uncontrolled SWAP uses a dedicated in-place permutation
-  fast path. The build-tree CPU backend tests include a hardware-efficient
+  Two-target gates, including controlled custom two-qubit operations, use an
+  in-place 4x4 block update path; uncontrolled SWAP uses a dedicated in-place
+  permutation fast path. The build-tree CPU backend tests include a
+  hardware-efficient
   ansatz composite counter fixture that verifies this mixed rotation, CNOT,
   CRZ, CZ, CRX, and SWAP path selection.
   Sampling has a fast path for full-register measurements in natural qubit
