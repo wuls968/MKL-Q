@@ -58,6 +58,23 @@ the benchmark harness reporting 228 passed. The post-gate source tag preflight
 audit passed with 9/9 checks in
 `/tmp/mklq-source-release-tag-post-refresh-baseline-2026-07-07.json` without creating
 tags, releases, wheels, installers, or signed artifacts.
+The latest live source-only refresh was executed on 2026-07-08 for protected
+`main` at `7d623c0892acb35bfff493120e66e1911d1a40b5` after the Metal
+diagonal-phase evidence update. The local full public healthcheck passed with
+36/36 steps in
+`/tmp/mklq-public-healthcheck-full-2026-07-08-7d623c08.json`, including the
+install-prefix build, macOS install-prefix signature repair for 60 loadables,
+the one-command correctness gate, benchmark harness tests, and public example
+smoke gate. A manual `workflow_dispatch` Apple Silicon full gate also passed
+for the same commit in
+<https://github.com/wuls968/MKL-Q/actions/runs/28932946291>, with the
+`Manual Apple Silicon correctness gate` job completing successfully. The
+post-dispatch source tag preflight audit passed with 9/9 checks in
+`/tmp/mklq-source-release-tag-audit-2026-07-08-7d623c08-after-manual-gate.json`,
+and the public readiness audit passed with 13/13 checks in
+`/tmp/mklq-public-readiness-audit-2026-07-08-7d623c08-after-manual-gate.json`.
+This is source-only live evidence for the named commit, not a tag, GitHub
+Release, package, binary artifact, or release certification.
 The current public healthcheck plan adds a source-only tag draft audit. The
 default repository hygiene gate count is now 32/32 steps, and the expanded full
 gate has passed with 36/36 steps.
@@ -216,13 +233,13 @@ Raw wrapper output was written to ignored local paths
 `benchmarks/mklq/results/macos-install-signature-repair-2026-07-05.json`;
 these raw payloads are not tracked as public evidence.
 
-Latest default 2026-07-06 result: `32/32` steps passed.
-Latest full 2026-07-06 result: `36/36` steps passed.
+Latest default 2026-07-08 result: `32/32` steps passed.
+Latest full 2026-07-08 result: `36/36` steps passed.
 
 - Install-prefix build: passed.
-- Default public healthcheck: passed on 2026-07-06, with 32 steps passed and
+- Default public healthcheck: passed on 2026-07-08, with 32 steps passed and
   0 failed.
-- Latest full public healthcheck: passed on 2026-07-06, with 36 steps passed
+- Latest full public healthcheck: passed on 2026-07-08, with 36 steps passed
   and 0 failed, including the source-only tag draft audit, install-prefix
   build, local macOS signature repair, correctness gate, benchmark harness
   tests, and public example smoke.
@@ -387,6 +404,13 @@ The Python smoke step includes the MKL-Q API smoke tests, the CPU correctness
 fixture suite, the limited experimental Metal correctness fixture suite, and
 the builder-level MKL-Q target tests.
 
+A later live refresh passed on 2026-07-08 for
+`7d623c0892acb35bfff493120e66e1911d1a40b5` in
+<https://github.com/wuls968/MKL-Q/actions/runs/28932946291>. The manual job
+used a fresh sparse checkout, source submodule bootstrap, focused install
+build, and the full public healthcheck wrapper with `--full --require-clean`.
+This newer run keeps the same source-only, non-release boundary.
+
 The default JSON output path is ignored by Git:
 `benchmarks/mklq/results/local-correctness-gate-<date>.json`. The default
 Metal runtime counter probe output path is also ignored by Git:
@@ -417,8 +441,8 @@ python3 benchmarks/mklq/run_correctness_gate.py \
 python3 benchmarks/mklq/run_public_healthcheck.py --full --require-clean
 ```
 
-Latest default 2026-07-07 result: `32/32` steps passed. The latest full
-2026-07-06 result is `36/36` steps passed. The full gate includes Git
+Latest default 2026-07-08 result: `32/32` steps passed. The latest full
+2026-07-08 result remains `36/36` steps passed. The full gate includes Git
 repository hygiene, tracked-artifact checks, public metadata checks, the public
 release checklist audit, the source-only tag draft audit, the upstream sync
 audit, the self-hosted Apple Silicon CI audit, sanitized benchmark summary
@@ -436,7 +460,7 @@ smoke gate.
 
 The ignored raw healthcheck JSON records the exact Git state for these local
 runs. The current default healthcheck benchmark harness step reports
-`231 passed`. The latest full wrapper run reported 36 passed steps, including
+`237 passed`. The latest full wrapper run reported 36 passed steps, including
 source-only tag draft audit, install-prefix build, local signature repair,
 correctness, and example-smoke gates in the `--full --require-clean` wrapper.
 An earlier wrapper run before the signature-repair step was added failed when

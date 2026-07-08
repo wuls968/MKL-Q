@@ -50,6 +50,30 @@ newer commit as the documented source-only RC baseline, rerun the commands
 below and update the evidence references if the commit, workflow run IDs, or
 gate totals changed.
 
+## Latest Live Refresh
+
+A later source-only live refresh was collected on 2026-07-08 for protected
+`main` at `7d623c0892acb35bfff493120e66e1911d1a40b5` after the Metal
+diagonal-phase evidence update:
+
+- Local full public healthcheck:
+  `/tmp/mklq-public-healthcheck-full-2026-07-08-7d623c08.json`
+- Local full public healthcheck result: 36/36 steps passed
+- Benchmark harness tests in that local wrapper: 237 passed
+- Local macOS install-prefix signature repair in that wrapper: 60 loadables
+- Manual Apple Silicon full gate:
+  <https://github.com/wuls968/MKL-Q/actions/runs/28932946291>
+- Source tag preflight audit:
+  `/tmp/mklq-source-release-tag-audit-2026-07-08-7d623c08-after-manual-gate.json`
+- Source tag preflight audit result: 9/9 checks passed
+- Public readiness audit:
+  `/tmp/mklq-public-readiness-audit-2026-07-08-7d623c08-after-manual-gate.json`
+- Public readiness audit result: 13/13 checks passed
+
+This refresh did not create a tag, GitHub Release, wheel, PyPI package,
+installer, signed artifact, or release certification. It is current
+source-only evidence for the named commit.
+
 ## Acceptance Gates
 
 Run these checks before describing a commit as the current source-only RC
