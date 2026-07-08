@@ -711,9 +711,10 @@ def test_mklq_summary_generator_rejects_dirty_by_default(tmp_path):
 def test_mklq_clean_cpu_gate_plan_uses_fixed_environment(tmp_path):
     module = _load_clean_benchmark_gate_module()
     assert module.DEFAULT_GATE_CASES == (
-        "y-state,ch-state,cy-state,crx-state,cry-state,crz-state,cz-state,"
-        "two-qubit-state,custom-two-qubit-state,dense-two-qubit-state,"
-        "controlled-dense-two-qubit-state,three-qubit-state")
+        "y-state,diagonal-phase-state,ch-state,cy-state,crx-state,cry-state,"
+        "crz-state,cz-state,two-qubit-state,custom-two-qubit-state,"
+        "dense-two-qubit-state,controlled-dense-two-qubit-state,"
+        "three-qubit-state")
     config = module.GateConfig(
         repo_root=tmp_path,
         pythonpath="/tmp/cudaq-runtime",
@@ -730,10 +731,10 @@ def test_mklq_clean_cpu_gate_plan_uses_fixed_environment(tmp_path):
         evidence_output=tmp_path / "benchmark-evidence.md",
         targets="qpp-cpu,mklq-cpu",
         gate_cases=(
-            "y-state,ch-state,cy-state,crx-state,cry-state,crz-state,"
-            "cz-state,two-qubit-state,custom-two-qubit-state,"
-            "dense-two-qubit-state,controlled-dense-two-qubit-state,"
-            "three-qubit-state"),
+            "y-state,diagonal-phase-state,ch-state,cy-state,crx-state,"
+            "cry-state,crz-state,cz-state,two-qubit-state,"
+            "custom-two-qubit-state,dense-two-qubit-state,"
+            "controlled-dense-two-qubit-state,three-qubit-state"),
         composite_cases=
         "qft-like-state,seeded-clifford-state,hardware-efficient-ansatz-state",
         sampling_cases="sample-full-register,sample-partial-register",
@@ -758,8 +759,9 @@ def test_mklq_clean_cpu_gate_plan_uses_fixed_environment(tmp_path):
         "PYTHONPATH": "/tmp/cudaq-runtime",
     }
     assert plan["paths"]["gate_raw"].endswith(
-        "local-clean-cpu-gate-y-ch-cy-crx-cry-crz-cz-two-qubit-custom-two-qubit"
-        "-dense-two-qubit-controlled-dense-two-qubit-three-qubit-q20-2026-06-21.json"
+        "local-clean-cpu-gate-y-diagonal-phase-ch-cy-crx-cry-crz-cz-two-qubit"
+        "-custom-two-qubit-dense-two-qubit-controlled-dense-two-qubit"
+        "-three-qubit-q20-2026-06-21.json"
     )
     assert plan["paths"]["composite_raw"].endswith(
         "local-clean-cpu-composite-qft-like-seeded-clifford-hardware-efficient-ansatz-q20-2026-06-21.json"
@@ -771,9 +773,10 @@ def test_mklq_clean_cpu_gate_plan_uses_fixed_environment(tmp_path):
     gate_command = plan["commands"]["gate_raw"]
     assert "--isolate-rows" in gate_command
     assert gate_command[gate_command.index("--cases") + 1] == (
-        "y-state,ch-state,cy-state,crx-state,cry-state,crz-state,cz-state,"
-        "two-qubit-state,custom-two-qubit-state,dense-two-qubit-state,"
-        "controlled-dense-two-qubit-state,three-qubit-state")
+        "y-state,diagonal-phase-state,ch-state,cy-state,crx-state,cry-state,"
+        "crz-state,cz-state,two-qubit-state,custom-two-qubit-state,"
+        "dense-two-qubit-state,controlled-dense-two-qubit-state,"
+        "three-qubit-state")
     assert gate_command[gate_command.index("--targets") + 1] == (
         "qpp-cpu,mklq-cpu")
     composite_command = plan["commands"]["composite_raw"]
@@ -1569,7 +1572,7 @@ def test_mklq_public_healthcheck_runs_latest_performance_guard(monkeypatch,
                                                                tmp_path):
     module = _load_public_healthcheck_module()
     assert module.CLEAN_CPU_SUMMARY_ID == (
-        "local-clean-cpu-q20-2026-07-03-two-three")
+        "local-clean-cpu-q20-2026-07-08-diagonal-phase")
     config = _public_healthcheck_config(module, tmp_path)
     seen = {}
 
@@ -2979,12 +2982,17 @@ def _performance_summary(module,
 def test_mklq_performance_evidence_guard_accepts_clean_cpu_summary():
     module = _load_performance_evidence_module()
     assert module.DEFAULT_SUMMARY_ID == (
-        "local-clean-cpu-q20-2026-07-03-two-three")
+        "local-clean-cpu-q20-2026-07-08-diagonal-phase")
+    assert "diagonal_phase_state_q20" in module.DEFAULT_REQUIRED_RATIOS
     assert "ch_state_q20" in module.DEFAULT_REQUIRED_RATIOS
     assert "crx_state_q20" in module.DEFAULT_REQUIRED_RATIOS
     assert "cry_state_q20" in module.DEFAULT_REQUIRED_RATIOS
     assert "crz_state_q20" in module.DEFAULT_REQUIRED_RATIOS
     assert "two_qubit_state_q20" in module.DEFAULT_REQUIRED_RATIOS
+    assert "custom_two_qubit_state_q20" in module.DEFAULT_REQUIRED_RATIOS
+    assert "dense_two_qubit_state_q20" in module.DEFAULT_REQUIRED_RATIOS
+    assert "controlled_dense_two_qubit_state_q20" in (
+        module.DEFAULT_REQUIRED_RATIOS)
     assert "three_qubit_state_q20" in module.DEFAULT_REQUIRED_RATIOS
     assert "qft_like_state_q20" in module.DEFAULT_REQUIRED_RATIOS
     assert "seeded_clifford_state_q20" in module.DEFAULT_REQUIRED_RATIOS
@@ -7371,7 +7379,7 @@ def test_mklq_benchmark_dry_run_records_metal_path_metadata(tmp_path):
         "--targets",
         "mklq-metal",
         "--cases",
-        "y-state,cy-state,three-qubit-state,qft-like-state,hardware-efficient-ansatz-state,crz-distance-state,sample-full-register,sample-partial-register,sample-uniform-partial-register",
+        "y-state,diagonal-phase-state,cy-state,three-qubit-state,qft-like-state,hardware-efficient-ansatz-state,crz-distance-state,sample-full-register,sample-partial-register,sample-uniform-partial-register",
         "--qubits",
         "4",
         "--output",
@@ -7389,6 +7397,8 @@ def test_mklq_benchmark_dry_run_records_metal_path_metadata(tmp_path):
     }
 
     assert rows["y-state"]["metrics"]["metal_path_label"] == (
+        "mklq_metal_resident_single_gate_state_host_readback")
+    assert rows["diagonal-phase-state"]["metrics"]["metal_path_label"] == (
         "mklq_metal_resident_single_gate_state_host_readback")
     assert rows["cy-state"]["metrics"]["metal_path_label"] == (
         "mklq_metal_resident_controlled_gate_state_host_readback")
@@ -7533,7 +7543,7 @@ def test_mklq_benchmark_dry_run_accepts_single_gate_cases(tmp_path):
         "--targets",
         "mklq-cpu",
         "--cases",
-        "h-state,y-state,rx-state,ry-state,rz-state",
+        "h-state,y-state,rx-state,ry-state,rz-state,diagonal-phase-state",
         "--qubits",
         "3",
         "--output",
@@ -7551,9 +7561,10 @@ def test_mklq_benchmark_dry_run_accepts_single_gate_cases(tmp_path):
         "rx-state",
         "ry-state",
         "rz-state",
+        "diagonal-phase-state",
     ]
     rows = report["results"]
-    assert len(rows) == 5
+    assert len(rows) == 6
     assert {row["status"] for row in rows} == {"planned"}
     assert {row["case"] for row in rows} == {
         "h-state",
@@ -7561,6 +7572,7 @@ def test_mklq_benchmark_dry_run_accepts_single_gate_cases(tmp_path):
         "rx-state",
         "ry-state",
         "rz-state",
+        "diagonal-phase-state",
     }
     assert {row["estimated_state_bytes"] for row in rows} == {16 * (1 << 3)}
 
@@ -7650,6 +7662,98 @@ def test_mklq_benchmark_single_gate_cases_record_gate_specific_metrics(
         assert metrics[throughput_key] == 24
         assert metrics["process_max_rss_bytes_cumulative"] == 4096
         assert len(fake_cudaq.kernels) == 1
+
+
+def test_mklq_benchmark_diagonal_phase_case_records_gate_metrics(monkeypatch):
+    module = _load_benchmark_module()
+
+    class FakeKernel:
+
+        def __init__(self):
+            self.operations = []
+
+        def qalloc(self, qubits):
+            return list(range(qubits))
+
+        def ry(self, theta, target):
+            self.operations.append(("ry", theta, target))
+
+        def rz(self, theta, target):
+            self.operations.append(("rz", theta, target))
+
+        def z(self, target):
+            self.operations.append(("z", target))
+
+        def s(self, target):
+            self.operations.append(("s", target))
+
+        def t(self, target):
+            self.operations.append(("t", target))
+
+        def sdg(self, target):
+            self.operations.append(("sdg", target))
+
+        def tdg(self, target):
+            self.operations.append(("tdg", target))
+
+    class FakeCudaq:
+
+        def __init__(self):
+            self.kernels = []
+
+        def reset_target(self):
+            pass
+
+        def set_target(self, target):
+            assert target == "mklq-cpu"
+
+        def set_random_seed(self, seed):
+            assert seed == 13
+
+        def make_kernel(self):
+            kernel = FakeKernel()
+            self.kernels.append(kernel)
+            return kernel
+
+        def get_state(self, kernel):
+            return object()
+
+    def fake_timed_repeats(action, repeats):
+        assert repeats == 1
+        action()
+        return [0.5]
+
+    monkeypatch.setattr(module, "timed_repeats", fake_timed_repeats)
+    monkeypatch.setattr(module, "process_max_rss_bytes", lambda: 4096)
+
+    fake_cudaq = FakeCudaq()
+    row = module.run_case(fake_cudaq,
+                          "mklq-cpu",
+                          "diagonal-phase-state",
+                          qubits=4,
+                          shots=16,
+                          repeats=1,
+                          warmups=0,
+                          layers=3)
+
+    assert row["status"] == "ok"
+    metrics = row["metrics"]
+    assert metrics["state_prep_gate_count"] == 8
+    assert metrics["diagonal_phase_gate_count"] == 12
+    assert metrics["gate_count"] == 20
+    assert metrics["diagonal_phase_gate_family"] == [
+        "z",
+        "s",
+        "t",
+        "sdg",
+        "tdg",
+    ]
+    assert metrics["layers"] == 3
+    assert metrics["diagonal_phase_gate_state_throughput_per_second"] == 24
+    assert metrics["process_max_rss_bytes_cumulative"] == 4096
+    operations = fake_cudaq.kernels[0].operations
+    assert sum(1 for operation in operations
+               if operation[0] in {"z", "s", "t", "sdg", "tdg"}) == 12
 
 
 def test_mklq_benchmark_run_case_records_metal_path_metrics(monkeypatch):

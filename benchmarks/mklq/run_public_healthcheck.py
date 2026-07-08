@@ -210,7 +210,7 @@ METAL_SAMPLING_BOUNDARY_SUMMARY_IDS = (
 )
 METAL_UNIFORM_SAMPLING_SUMMARY_ID = (
     "local-metal-uniform-partial-sampling-q20-q24-2026-07-05")
-CLEAN_CPU_SUMMARY_ID = "local-clean-cpu-q20-2026-07-03-two-three"
+CLEAN_CPU_SUMMARY_ID = "local-clean-cpu-q20-2026-07-08-diagonal-phase"
 SAMPLING_SCALING_REQUIRED_RATIOS = (
     "sample_full_register_q18_1024_shots",
     "sample_full_register_q18_65536_shots",

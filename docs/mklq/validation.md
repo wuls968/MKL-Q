@@ -542,6 +542,7 @@ python3 benchmarks/mklq/run_sampling_scaling_benchmark.py \
 
 Current tracked summaries include:
 
+- `local-clean-cpu-q20-2026-07-08-diagonal-phase.summary.json`
 - `local-clean-cpu-q20-2026-07-03-two-three.summary.json`
 - `local-clean-cpu-q20-2026-07-03.summary.json`
 - `local-clean-cpu-q20-2026-06-30.summary.json`
