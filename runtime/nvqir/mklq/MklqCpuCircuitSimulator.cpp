@@ -1068,12 +1068,26 @@ protected:
     if (applyRowSparseTwoQubitGate(matrix, controls, targets))
       return;
 
-    std::vector<std::size_t> targetMasks;
-    targetMasks.reserve(2);
-    for (auto target : targets) {
-      const auto mask = qubitMask(target);
-      targetMasks.push_back(mask);
-    }
+    const std::array<std::size_t, 2> targetMasks{
+        qubitMask(targets[0]),
+        qubitMask(targets[1]),
+    };
+    const auto m00 = matrix[0];
+    const auto m01 = matrix[1];
+    const auto m02 = matrix[2];
+    const auto m03 = matrix[3];
+    const auto m10 = matrix[4];
+    const auto m11 = matrix[5];
+    const auto m12 = matrix[6];
+    const auto m13 = matrix[7];
+    const auto m20 = matrix[8];
+    const auto m21 = matrix[9];
+    const auto m22 = matrix[10];
+    const auto m23 = matrix[11];
+    const auto m30 = matrix[12];
+    const auto m31 = matrix[13];
+    const auto m32 = matrix[14];
+    const auto m33 = matrix[15];
 
     const auto blockCount = stateDimension >> 2;
     const auto indexMasks = twoZeroBitIndexMasks(targets[0], targets[1]);
@@ -1090,23 +1104,23 @@ protected:
         continue;
 
       const auto index0 = base;
-      const auto index1 = indexWithTargetBits(base, 1, targetMasks);
-      const auto index2 = indexWithTargetBits(base, 2, targetMasks);
-      const auto index3 = indexWithTargetBits(base, 3, targetMasks);
+      const auto index1 = indexWithTwoTargetBits(base, 1, targetMasks);
+      const auto index2 = indexWithTwoTargetBits(base, 2, targetMasks);
+      const auto index3 = indexWithTwoTargetBits(base, 3, targetMasks);
 
       const auto amplitude0 = state[index0];
       const auto amplitude1 = state[index1];
       const auto amplitude2 = state[index2];
       const auto amplitude3 = state[index3];
 
-      state[index0] = matrix[0] * amplitude0 + matrix[1] * amplitude1 +
-                      matrix[2] * amplitude2 + matrix[3] * amplitude3;
-      state[index1] = matrix[4] * amplitude0 + matrix[5] * amplitude1 +
-                      matrix[6] * amplitude2 + matrix[7] * amplitude3;
-      state[index2] = matrix[8] * amplitude0 + matrix[9] * amplitude1 +
-                      matrix[10] * amplitude2 + matrix[11] * amplitude3;
-      state[index3] = matrix[12] * amplitude0 + matrix[13] * amplitude1 +
-                      matrix[14] * amplitude2 + matrix[15] * amplitude3;
+      state[index0] = m00 * amplitude0 + m01 * amplitude1 +
+                      m02 * amplitude2 + m03 * amplitude3;
+      state[index1] = m10 * amplitude0 + m11 * amplitude1 +
+                      m12 * amplitude2 + m13 * amplitude3;
+      state[index2] = m20 * amplitude0 + m21 * amplitude1 +
+                      m22 * amplitude2 + m23 * amplitude3;
+      state[index3] = m30 * amplitude0 + m31 * amplitude1 +
+                      m32 * amplitude2 + m33 * amplitude3;
     }
 
 #if defined(MKLQ_ENABLE_TEST_ACCESSORS)
