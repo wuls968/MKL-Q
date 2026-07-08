@@ -3156,6 +3156,7 @@ def test_mklq_metal_evidence_guard_accepts_current_summaries():
     }
     assert "local-metal-y-cy-resident-isolated-q20-2026-06-19" in checked_ids
     assert "local-metal-composite-mixed-path-q20-2026-06-21" in checked_ids
+    assert "local-metal-diagonal-phase-q20-2026-07-08" in checked_ids
     assert "local-metal-path-labels-q20-2026-06-22" in checked_ids
     assert "local-metal-three-qubit-resident-q20-2026-06-22" in checked_ids
 
@@ -10403,6 +10404,63 @@ def test_mklq_benchmark_summary_records_metal_static_path_labels():
     assert summary["interpretation"]["metal_path_labels_are_static_case_map"]
     assert summary["interpretation"]["metal_runtime_counter"] is False
     assert summary["interpretation"]["do_not_treat_as_clean_release_provenance"]
+
+
+def test_mklq_benchmark_summary_records_metal_diagonal_phase_evidence():
+    repo_root = Path(__file__).resolve().parents[3]
+    summary_path = (
+        repo_root / "benchmarks" / "mklq" / "reports" /
+        "local-metal-diagonal-phase-q20-2026-07-08.summary.json")
+
+    summary = json.loads(summary_path.read_text(encoding="utf-8"))
+
+    assert summary["schema_version"] == "mklq-benchmark-summary-v1"
+    assert summary["evidence_kind"] == "local_tuning_evidence"
+    assert summary["summary_id"] == "local-metal-diagonal-phase-q20-2026-07-08"
+    assert summary["git"]["dirty"] is False
+    assert summary["raw_results"][0]["path"] == (
+        "benchmarks/mklq/results/"
+        "local-metal-diagonal-phase-q20-2026-07-08.json")
+    assert summary["raw_results"][0]["sha256"] == (
+        "c7b8fbbaafc9cdd50d9fa16a57bc3bf06b2ea2fdfdc6df477f14d42f7281911f")
+    assert summary["raw_results"][0]["status_rows"] == {"ok": 3}
+    assert summary["config"]["targets"] == [
+        "qpp-cpu",
+        "mklq-cpu",
+        "mklq-metal",
+    ]
+    assert summary["config"]["cases"] == ["diagonal-phase-state"]
+    assert summary["config"]["qubits"] == [20]
+    assert summary["config"]["layers"] == 8
+
+    rows = {
+        row["target"]: row
+        for row in summary["rows"]
+    }
+    assert set(rows) == {"qpp-cpu", "mklq-cpu", "mklq-metal"}
+    metal_row = rows["mklq-metal"]
+    assert metal_row["status"] == "ok"
+    assert metal_row["metal_path_label"] == (
+        "mklq_metal_resident_single_gate_state_host_readback")
+    assert metal_row["metal_path_label_source"] == (
+        "benchmark_harness_static_case_map")
+    assert metal_row["metal_full_native"] is False
+    assert metal_row["metal_runtime_counter"] is False
+    assert "not a runtime counter" in metal_row["metal_evidence_boundary"]
+    assert "host readback" in metal_row["metal_path_scope"]
+    assert metal_row["elapsed_seconds_median"] > 0.0
+    assert metal_row["diagonal_phase_gate_count"] == 160
+
+    ratios = summary["comparison"]["same_day_cross_target_ratio"]
+    assert ratios[
+        "qpp_cpu_over_mklq_metal_diagonal_phase_state_q20"] > 0.0
+    elapsed = summary["comparison"]["mklq_metal_elapsed_seconds_median"]
+    assert elapsed["diagonal_phase_state_q20"] > 0.0
+    assert summary["interpretation"]["metal_path_labels_are_static_case_map"]
+    assert summary["interpretation"]["metal_runtime_counter"] is False
+    assert summary["interpretation"]["do_not_treat_as_clean_release_provenance"]
+    assert "experimental mixed-path" in summary["interpretation"][
+        "performance_claim_scope"]
 
 
 def test_mklq_benchmark_summary_records_metal_composite_evidence():
