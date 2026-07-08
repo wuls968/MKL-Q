@@ -198,8 +198,21 @@ public:
 
   std::vector<std::complex<double>> stateVectorForTest() const { return state; }
 
+  void applyTwoQubitGateForTest(
+      const std::vector<std::complex<double>> &matrix,
+      const std::vector<std::size_t> &controls,
+      const std::vector<std::size_t> &targets,
+      std::string_view operationName = "test_two_qubit") {
+    applyTwoQubitGate(matrix, controls, targets, operationName,
+                      /*isBuiltInOperation=*/false);
+  }
+
   std::size_t twoQubitBlockApplicationsForTest() const {
     return twoQubitBlockApplications;
+  }
+
+  std::size_t twoQubitRowSparseApplicationsForTest() const {
+    return twoQubitRowSparseApplications;
   }
 
   std::size_t swapApplicationsForTest() const { return swapApplications; }
@@ -1741,10 +1754,39 @@ CUDAQ_TEST(MKLQCpuTester, SwapFastPathAppliesUncontrolledTwoQubitGate) {
   expectNear(state[2], {2.0, -1.0});
   expectNear(state[3], {-3.0, 0.5});
   EXPECT_EQ(sim.twoQubitBlockApplicationsForTest(), 0);
+  EXPECT_EQ(sim.twoQubitRowSparseApplicationsForTest(), 0);
   EXPECT_EQ(sim.swapApplicationsForTest(), 1);
 }
 
 CUDAQ_TEST(MKLQCpuTester, GenericTwoQubitBlockPathAppliesCustomGate) {
+  const std::vector<std::complex<double>> initial{
+      {1.0, 0.0},   {2.0, -1.0}, {0.5, 0.25}, {-3.0, 0.5},
+      {0.25, -0.5}, {1.5, 0.5},  {-2.0, 1.0}, {0.75, -1.25},
+  };
+  const auto invSqrt2 = 1.0 / std::sqrt(2.0);
+  const std::vector<std::complex<double>> denseMix{
+      {invSqrt2, 0.0}, {0.0, 0.0},       {invSqrt2, 0.0},  {0.0, 0.0},
+      {0.0, 0.0},      {invSqrt2, 0.0},  {0.0, 0.0},       {invSqrt2, 0.0},
+      {invSqrt2, 0.0}, {0.0, 0.0},       {-invSqrt2, 0.0}, {0.0, 0.0},
+      {0.0, 0.0},      {invSqrt2, 0.0},  {0.0, 0.0},       {-invSqrt2, 0.0},
+  };
+
+  MklqCpuCircuitSimulatorTester sim;
+  sim.setStateForTest(initial);
+
+  sim.applyTwoQubitGateForTest(denseMix, {0}, {1, 2});
+
+  expectStateNear(
+      sim.stateVectorForTest(),
+      applyTwoQubitMatrixForTest(initial, {1, 2}, denseMix, {0}));
+  EXPECT_EQ(sim.twoQubitBlockApplicationsForTest(), 1);
+  EXPECT_EQ(sim.twoQubitRowSparseApplicationsForTest(), 0);
+  EXPECT_EQ(sim.swapApplicationsForTest(), 0);
+  EXPECT_EQ(sim.specializedSingleQubitApplicationsForTest(), 0);
+}
+
+CUDAQ_TEST(MKLQCpuTester,
+           RowSparseTwoQubitCustomOperationUsesDedicatedFastPath) {
   const std::vector<std::complex<double>> initial{
       {1.0, 0.0},   {2.0, -1.0}, {0.5, 0.25}, {-3.0, 0.5},
       {0.25, -0.5}, {1.5, 0.5},  {-2.0, 1.0}, {0.75, -1.25},
@@ -1759,18 +1801,18 @@ CUDAQ_TEST(MKLQCpuTester, GenericTwoQubitBlockPathAppliesCustomGate) {
   MklqCpuCircuitSimulatorTester sim;
   sim.setStateForTest(initial);
 
-  sim.applyCustomOperation(phasedISwap, {0}, {1, 2}, "phased_iswap");
-  sim.flushGateQueue();
+  sim.applyTwoQubitGateForTest(phasedISwap, {0}, {1, 2});
 
   expectStateNear(sim.stateVectorForTest(),
                   applyTwoQubitMatrixForTest(initial, {1, 2}, phasedISwap,
                                              {0}));
-  EXPECT_EQ(sim.twoQubitBlockApplicationsForTest(), 1);
+  EXPECT_EQ(sim.twoQubitBlockApplicationsForTest(), 0);
+  EXPECT_EQ(sim.twoQubitRowSparseApplicationsForTest(), 1);
   EXPECT_EQ(sim.swapApplicationsForTest(), 0);
   EXPECT_EQ(sim.specializedSingleQubitApplicationsForTest(), 0);
 }
 
-CUDAQ_TEST(MKLQCpuTester, ControlledSwapUsesGenericTwoQubitPath) {
+CUDAQ_TEST(MKLQCpuTester, ControlledSwapUsesRowSparseTwoQubitPath) {
   MklqCpuCircuitSimulatorTester sim;
   sim.setStateForTest({
       {0.0, 0.0},
@@ -1792,11 +1834,12 @@ CUDAQ_TEST(MKLQCpuTester, ControlledSwapUsesGenericTwoQubitPath) {
   expectNear(state[3], {5.0, 0.0});
   expectNear(state[5], {3.0, 0.0});
   expectNear(state[7], {7.0, 0.0});
-  EXPECT_EQ(sim.twoQubitBlockApplicationsForTest(), 1);
+  EXPECT_EQ(sim.twoQubitBlockApplicationsForTest(), 0);
+  EXPECT_EQ(sim.twoQubitRowSparseApplicationsForTest(), 1);
   EXPECT_EQ(sim.swapApplicationsForTest(), 0);
 }
 
-CUDAQ_TEST(MKLQCpuTester, CustomOperationNamedSwapUsesGenericTwoQubitPath) {
+CUDAQ_TEST(MKLQCpuTester, CustomOperationNamedSwapUsesRowSparseTwoQubitPath) {
   MklqCpuCircuitSimulatorTester sim;
   sim.setStateForTest({
       {1.0, 0.0},
@@ -1819,7 +1862,8 @@ CUDAQ_TEST(MKLQCpuTester, CustomOperationNamedSwapUsesGenericTwoQubitPath) {
   expectNear(state[1], {2.0, -1.0});
   expectNear(state[2], {0.5, 0.25});
   expectNear(state[3], {-3.0, 0.5});
-  EXPECT_EQ(sim.twoQubitBlockApplicationsForTest(), 1);
+  EXPECT_EQ(sim.twoQubitBlockApplicationsForTest(), 0);
+  EXPECT_EQ(sim.twoQubitRowSparseApplicationsForTest(), 1);
   EXPECT_EQ(sim.swapApplicationsForTest(), 0);
 }
 

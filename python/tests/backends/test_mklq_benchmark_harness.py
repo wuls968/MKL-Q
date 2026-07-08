@@ -3610,6 +3610,7 @@ Test project /repo/build-python
   Test #712: mklq_cpu_MKLQCpuTester.SingleControlRzUsesDedicatedPhaseFastPath
   Test #713: mklq_cpu_MKLQCpuTester.RowSparseThreeQubitCustomOperationUsesDedicatedFastPath
   Test #714: mklq_cpu_MKLQCpuTester.GenericTwoQubitBlockPathAppliesCustomGate
+  Test #715: mklq_cpu_MKLQCpuTester.RowSparseTwoQubitCustomOperationUsesDedicatedFastPath
   Test #999: mklq_cpu_MKLQCpuTester.UnrelatedCorrectnessTest
   Test #1000: mklq_metal_MKLQMetalTester.SingleControlRzUsesDedicatedPhaseFastPath
 """
@@ -3621,6 +3622,7 @@ Test project /repo/build-python
         "mklq_cpu_MKLQCpuTester.CnotFastPathAppliesControlledXGate",
         "mklq_cpu_MKLQCpuTester.SingleControlRzUsesDedicatedPhaseFastPath",
         "mklq_cpu_MKLQCpuTester.GenericTwoQubitBlockPathAppliesCustomGate",
+        "mklq_cpu_MKLQCpuTester.RowSparseTwoQubitCustomOperationUsesDedicatedFastPath",
         "mklq_cpu_MKLQCpuTester.RowSparseThreeQubitCustomOperationUsesDedicatedFastPath",
     ]
 
@@ -3730,6 +3732,7 @@ def _cpu_gate_counter_summary_fixture():
         "mklq_cpu_MKLQCpuTester.SingleControlRzUsesDedicatedPhaseFastPath",
         "mklq_cpu_MKLQCpuTester.HardwareEfficientAnsatzCompositeUsesDedicatedFastPaths",
         "mklq_cpu_MKLQCpuTester.GenericTwoQubitBlockPathAppliesCustomGate",
+        "mklq_cpu_MKLQCpuTester.RowSparseTwoQubitCustomOperationUsesDedicatedFastPath",
         "mklq_cpu_MKLQCpuTester.RowSparseThreeQubitCustomOperationUsesDedicatedFastPath",
     ]
     return {
@@ -3772,7 +3775,7 @@ def test_mklq_cpu_gate_counter_summary_groups_fast_path_coverage(tmp_path):
 
     assert summary["schema_version"] == "mklq-cpu-gate-counter-summary-v1"
     assert summary["summary"]["status"] == "passed"
-    assert summary["summary"]["selected"] == 10
+    assert summary["summary"]["selected"] == 11
     assert summary["boundary"]["gate_fast_path_counter_evidence"] is True
     categories = {
         category["category"]: category
@@ -3780,7 +3783,7 @@ def test_mklq_cpu_gate_counter_summary_groups_fast_path_coverage(tmp_path):
     }
     assert categories["single_control_rz_phase"]["passed"] == 1
     assert categories["controlled_single_qubit_fast_path"]["passed"] == 5
-    assert categories["two_qubit_fast_path"]["passed"] == 1
+    assert categories["two_qubit_fast_path"]["passed"] == 2
     assert categories["composite_fast_path"]["passed"] == 1
     assert categories["three_qubit_fast_path"]["passed"] == 1
 

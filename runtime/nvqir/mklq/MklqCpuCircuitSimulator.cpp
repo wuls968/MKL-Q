@@ -228,6 +228,7 @@ protected:
   mutable std::size_t specializedSingleControlQubitApplications = 0;
   mutable std::size_t accelerateProbabilityFillApplications = 0;
   mutable std::size_t twoQubitBlockApplications = 0;
+  mutable std::size_t twoQubitRowSparseApplications = 0;
   mutable std::size_t swapApplications = 0;
   mutable std::size_t denseDrawCountBuffers = 0;
   mutable std::size_t sparseDrawCountMaps = 0;
@@ -681,6 +682,17 @@ protected:
   }
 
   static std::size_t
+  indexWithTwoTargetBits(std::size_t base, std::size_t targetBits,
+                         const std::array<std::size_t, 2> &targetMasks) {
+    auto result = base;
+    if (targetBits & 1)
+      result |= targetMasks[0];
+    if (targetBits & 2)
+      result |= targetMasks[1];
+    return result;
+  }
+
+  static std::size_t
   indexWithThreeZeroBits(std::size_t block,
                          const std::array<std::size_t, 3> &sortedTargets) {
     auto result = block;
@@ -1053,6 +1065,9 @@ protected:
       return;
     }
 
+    if (applyRowSparseTwoQubitGate(matrix, controls, targets))
+      return;
+
     std::vector<std::size_t> targetMasks;
     targetMasks.reserve(2);
     for (auto target : targets) {
@@ -1097,6 +1112,66 @@ protected:
 #if defined(MKLQ_ENABLE_TEST_ACCESSORS)
     ++twoQubitBlockApplications;
 #endif
+  }
+
+  bool applyRowSparseTwoQubitGate(const std::vector<complexd> &matrix,
+                                  const std::vector<std::size_t> &controls,
+                                  const std::vector<std::size_t> &targets) {
+    static constexpr std::size_t subspaceDim = 4;
+
+    std::array<std::size_t, subspaceDim> sourceColumns{};
+    std::array<complexd, subspaceDim> coefficients{};
+    std::array<bool, subspaceDim> hasCoefficient{};
+    for (std::size_t row = 0; row < subspaceDim; ++row) {
+      for (std::size_t column = 0; column < subspaceDim; ++column) {
+        const auto coefficient = matrix[row * subspaceDim + column];
+        if (coefficient == complexd{0.0, 0.0})
+          continue;
+        if (hasCoefficient[row])
+          return false;
+        hasCoefficient[row] = true;
+        sourceColumns[row] = column;
+        coefficients[row] = coefficient;
+      }
+    }
+
+    const std::array<std::size_t, 2> targetMasks{
+        qubitMask(targets[0]),
+        qubitMask(targets[1]),
+    };
+
+    const auto blockCount = stateDimension >> 2;
+    const auto indexMasks = twoZeroBitIndexMasks(targets[0], targets[1]);
+    const auto controlBits = controlMask(controls);
+#if defined(_OPENMP)
+    const auto threadCount = parallelThreadCount();
+#pragma omp parallel for num_threads(                                          \
+        threadCount) if (threadCount > 1 &&                                    \
+                             stateDimension >= parallelStateThreshold)
+#endif
+    for (std::size_t block = 0; block < blockCount; ++block) {
+      const auto base = indexWithTwoZeroBits(block, indexMasks);
+      if (!controlsSatisfied(base, controlBits))
+        continue;
+
+      std::array<complexd, subspaceDim> amplitudes;
+      for (std::size_t column = 0; column < subspaceDim; ++column)
+        amplitudes[column] =
+            state[indexWithTwoTargetBits(base, column, targetMasks)];
+
+      for (std::size_t row = 0; row < subspaceDim; ++row) {
+        const auto updated =
+            hasCoefficient[row]
+                ? coefficients[row] * amplitudes[sourceColumns[row]]
+                : complexd{0.0, 0.0};
+        state[indexWithTwoTargetBits(base, row, targetMasks)] = updated;
+      }
+    }
+
+#if defined(MKLQ_ENABLE_TEST_ACCESSORS)
+    ++twoQubitRowSparseApplications;
+#endif
+    return true;
   }
 
   void applyBitFlipGate(const std::vector<std::size_t> &controls,
