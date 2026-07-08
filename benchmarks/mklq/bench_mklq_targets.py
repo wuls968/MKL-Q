@@ -95,6 +95,9 @@ METAL_PATH_CASES = {
                  METAL_SINGLE_GATE_SCOPE),
     "rz-state": ("mklq_metal_resident_single_gate_state_host_readback",
                  METAL_SINGLE_GATE_SCOPE),
+    "diagonal-phase-state":
+        ("mklq_metal_resident_single_gate_state_host_readback",
+         METAL_SINGLE_GATE_SCOPE),
     "controlled-state":
         ("mklq_metal_mixed_controlled_gate_state_host_readback",
          METAL_CONTROLLED_GATE_SCOPE),
@@ -210,6 +213,7 @@ DEFAULT_CASES = (
     "rx-state",
     "ry-state",
     "rz-state",
+    "diagonal-phase-state",
     "controlled-state",
     "multi-control-state",
     "ch-state",
@@ -422,6 +426,38 @@ def build_single_gate_state_kernel(
 
   return (kernel, state_prep_gate_count + single_gate_count,
           state_prep_gate_count, single_gate_count)
+
+
+def build_diagonal_phase_state_kernel(
+    cudaq: Any, qubits: int, layers: int) -> tuple[Any, int, int, int]:
+  kernel = cudaq.make_kernel()
+  q = kernel.qalloc(qubits)
+  state_prep_gate_count = 0
+  diagonal_phase_gate_count = 0
+
+  for index in range(qubits):
+    theta = 0.061 + 0.001 * index
+    kernel.ry(theta, q[index])
+    kernel.rz(-0.5 * theta, q[index])
+    state_prep_gate_count += 2
+
+  for layer in range(layers):
+    for index in range(qubits):
+      selector = (layer + index) % 5
+      if selector == 0:
+        kernel.z(q[index])
+      elif selector == 1:
+        kernel.s(q[index])
+      elif selector == 2:
+        kernel.t(q[index])
+      elif selector == 3:
+        kernel.sdg(q[index])
+      else:
+        kernel.tdg(q[index])
+      diagonal_phase_gate_count += 1
+
+  return (kernel, state_prep_gate_count + diagonal_phase_gate_count,
+          state_prep_gate_count, diagonal_phase_gate_count)
 
 
 def build_controlled_state_kernel(cudaq: Any, qubits: int,
@@ -1178,6 +1214,24 @@ def run_case(cudaq: Any, target: str, case: str, qubits: int, shots: int,
           "layers": layers,
           throughput_key: single_gate_count / median if median > 0 else None,
       })
+    elif case == "diagonal-phase-state":
+      kernel, gate_count, state_prep_gate_count, diagonal_phase_gate_count = (
+          build_diagonal_phase_state_kernel(cudaq, qubits, layers))
+      action = lambda: cudaq.get_state(kernel)
+      for _ in range(warmups):
+        action()
+      timings = timed_repeats(action, repeats)
+      metrics = summarize_timings(timings)
+      median = metrics["elapsed_seconds_median"]
+      metrics.update({
+          "gate_count": gate_count,
+          "state_prep_gate_count": state_prep_gate_count,
+          "diagonal_phase_gate_count": diagonal_phase_gate_count,
+          "diagonal_phase_gate_family": ["z", "s", "t", "sdg", "tdg"],
+          "layers": layers,
+          "diagonal_phase_gate_state_throughput_per_second":
+              diagonal_phase_gate_count / median if median > 0 else None,
+      })
     elif case == "controlled-state":
       kernel, gate_count = build_controlled_state_kernel(cudaq, qubits, layers)
       action = lambda: cudaq.get_state(kernel)
@@ -1758,6 +1812,7 @@ def make_parser() -> argparse.ArgumentParser:
                             "sample-uniform-partial-register,"
                             "single-qubit-state,"
                             "h-state,y-state,rx-state,ry-state,rz-state,"
+                            "diagonal-phase-state,"
                             "controlled-state,multi-control-state,"
                             "ch-state,cy-state,crx-state,cry-state,crz-state,"
                             "cz-state,two-qubit-state,"
@@ -1794,7 +1849,8 @@ def make_parser() -> argparse.ArgumentParser:
                       default=16,
                       help=("Layer count for gate-state and "
                             "single-qubit-state/h-state/rx-state/ry-state/"
-                            "rz-state/y-state/controlled-state/"
+                            "rz-state/y-state/diagonal-phase-state/"
+                            "controlled-state/"
                             "multi-control-state/ch-state/cy-state/crx-state/cry-state/"
                             "crz-state/cz-state/two-qubit-state/"
                             "custom-two-qubit-state/"

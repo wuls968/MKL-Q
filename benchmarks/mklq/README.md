@@ -39,7 +39,7 @@ counters or release sign-off.
 python3 benchmarks/mklq/bench_mklq_targets.py \
   --dry-run \
   --targets qpp-cpu,mklq-cpu,mklq-metal \
-  --cases gate-state,sample-basis,sample-ghz,sample-full-register,sample-partial-register,sample-uniform-partial-register,single-qubit-state,h-state,y-state,rx-state,ry-state,rz-state,controlled-state,multi-control-state,ch-state,cy-state,crx-state,cry-state,crz-state,cz-state,two-qubit-state,custom-two-qubit-state,dense-two-qubit-state,controlled-dense-two-qubit-state,three-qubit-state,qft-like-state,crz-distance-state,crz-distance-sweep-state,seeded-clifford-state \
+  --cases gate-state,sample-basis,sample-ghz,sample-full-register,sample-partial-register,sample-uniform-partial-register,single-qubit-state,h-state,y-state,rx-state,ry-state,rz-state,diagonal-phase-state,controlled-state,multi-control-state,ch-state,cy-state,crx-state,cry-state,crz-state,cz-state,two-qubit-state,custom-two-qubit-state,dense-two-qubit-state,controlled-dense-two-qubit-state,three-qubit-state,qft-like-state,crz-distance-state,crz-distance-sweep-state,seeded-clifford-state \
   --qubits 4,8,12 \
   --shot-counts 256,1024,8192 \
   --output /tmp/mklq-benchmark-plan.json
@@ -53,7 +53,7 @@ Use the built Python tree when running from the repository:
 PYTHONPATH="$(pwd)/build-python/python" \
 python3 benchmarks/mklq/bench_mklq_targets.py \
   --targets qpp-cpu,mklq-cpu,mklq-metal \
-  --cases gate-state,sample-basis,sample-ghz,sample-full-register,sample-partial-register,sample-uniform-partial-register,single-qubit-state,h-state,y-state,rx-state,ry-state,rz-state,controlled-state,multi-control-state,ch-state,cy-state,crx-state,cry-state,crz-state,cz-state,two-qubit-state,custom-two-qubit-state,dense-two-qubit-state,controlled-dense-two-qubit-state,three-qubit-state,qft-like-state,crz-distance-state,crz-distance-sweep-state,seeded-clifford-state \
+  --cases gate-state,sample-basis,sample-ghz,sample-full-register,sample-partial-register,sample-uniform-partial-register,single-qubit-state,h-state,y-state,rx-state,ry-state,rz-state,diagonal-phase-state,controlled-state,multi-control-state,ch-state,cy-state,crx-state,cry-state,crz-state,cz-state,two-qubit-state,custom-two-qubit-state,dense-two-qubit-state,controlled-dense-two-qubit-state,three-qubit-state,qft-like-state,crz-distance-state,crz-distance-sweep-state,seeded-clifford-state \
   --qubits 4 \
   --shots 32 \
   --repeats 1 \
@@ -84,7 +84,7 @@ PYTHONPATH="$(pwd)/build-python/python" \
 python3 benchmarks/mklq/bench_mklq_targets.py \
   --isolate-rows \
   --targets mklq-cpu \
-  --cases gate-state,sample-basis,sample-ghz,sample-full-register,sample-partial-register,sample-uniform-partial-register,single-qubit-state,h-state,y-state,rx-state,ry-state,rz-state,controlled-state,multi-control-state,ch-state,cy-state,crx-state,cry-state,crz-state,cz-state,two-qubit-state,custom-two-qubit-state,dense-two-qubit-state,controlled-dense-two-qubit-state,three-qubit-state,qft-like-state,crz-distance-state,crz-distance-sweep-state,seeded-clifford-state \
+  --cases gate-state,sample-basis,sample-ghz,sample-full-register,sample-partial-register,sample-uniform-partial-register,single-qubit-state,h-state,y-state,rx-state,ry-state,rz-state,diagonal-phase-state,controlled-state,multi-control-state,ch-state,cy-state,crx-state,cry-state,crz-state,cz-state,two-qubit-state,custom-two-qubit-state,dense-two-qubit-state,controlled-dense-two-qubit-state,three-qubit-state,qft-like-state,crz-distance-state,crz-distance-sweep-state,seeded-clifford-state \
   --qubits 15,16,17,18,19,20 \
   --shots 1024 \
   --repeats 2 \
@@ -117,7 +117,7 @@ The JSON report includes:
   mixed-path/resident/host boundary without implying all-Metal execution
 
 `single-qubit-state`, `h-state`, `y-state`, `rx-state`, `ry-state`,
-`rz-state`,
+`rz-state`, `diagonal-phase-state`,
 `controlled-state`, `multi-control-state`, `ch-state`, `cy-state`,
 `crx-state`, `cry-state`, `crz-state`, `cz-state`, and
 `two-qubit-state` are focused state-vector update microbenchmarks. The dedicated
@@ -126,6 +126,10 @@ built-in single-qubit gate; their elapsed times include the state-preparation
 gates, while the gate-specific throughput fields use only the repeated
 target-gate count. Use those rows to compare built-in uncontrolled
 single-qubit hot paths, not custom or controlled gate behavior. The dedicated
+`diagonal-phase-state` case initializes a non-uniform state, then applies
+Z/S/T/Sdg/Tdg layers; use it as timing evidence for the built-in diagonal
+phase-family fast path, not custom diagonal operations or controlled phase
+gates. The dedicated
 CH/CY/CRX/CRY/CRZ cases initialize a non-uniform state, then apply layers of one
 built-in controlled single-qubit gate; their elapsed times include the
 state-preparation gates, while the controlled-gate throughput fields use only
@@ -203,8 +207,8 @@ probability-fill, draw, or count-aggregation counters.
 
 Use the CPU gate counter probe when changing `mklq-cpu` gate fast paths,
 including single-qubit, controlled single-qubit, single-control Rz phase,
-generic dense two-qubit, row-sparse custom two-qubit, three-qubit, and
-composite fast-path selection tests:
+diagonal phase gates, generic dense two-qubit, row-sparse custom two-qubit,
+three-qubit, and composite fast-path selection tests:
 
 ```bash
 python3 benchmarks/mklq/run_cpu_gate_counter_probe.py \
@@ -660,11 +664,12 @@ python3 benchmarks/mklq/run_clean_cpu_benchmark.py \
   --stamp YYYY-MM-DD
 ```
 
-Current default clean CPU runs include the `y-state`, `ch-state`, `cy-state`,
-`crx-state`, `cry-state`, `crz-state`, `cz-state`, `two-qubit-state`,
-`three-qubit-state`, `qft-like-state`, `seeded-clifford-state`,
-`hardware-efficient-ansatz-state`, full-register sampling, and
-partial-register sampling cases.
+Current default clean CPU runs include the `y-state`, `diagonal-phase-state`,
+`ch-state`, `cy-state`, `crx-state`, `cry-state`, `crz-state`, `cz-state`,
+`two-qubit-state`, `custom-two-qubit-state`, `dense-two-qubit-state`,
+`controlled-dense-two-qubit-state`, `three-qubit-state`, `qft-like-state`,
+`seeded-clifford-state`, `hardware-efficient-ansatz-state`, full-register
+sampling, and partial-register sampling cases.
 
 The gate writes ignored raw JSON under `benchmarks/mklq/results/`, writes the
 sanitized summary under `benchmarks/mklq/reports/`, and refreshes
