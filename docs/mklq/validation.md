@@ -562,6 +562,7 @@ Current tracked summaries include:
 - `local-metal-partial-count-accumulation-sampling-q22-2026-07-05.summary.json`
 - `local-metal-partial-count-accumulation-sampling-q24-2026-07-05.summary.json`
 - `local-metal-uniform-partial-sampling-q20-q24-2026-07-05.summary.json`
+- `local-metal-diagonal-phase-q20-2026-07-08.summary.json`
 - `local-multi-control-cpu-q20-2026-06-22.summary.json`
 - `local-scaling-cpu-multi-control-q18-q22-2026-06-22.summary.json`
 - `local-scaling-cpu-hardware-efficient-ansatz-q18-q22-2026-06-30.summary.json`
