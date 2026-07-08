@@ -9,11 +9,11 @@ Caveat: this is gate fast-path counter evidence from selected build-tree ctest c
 | Field | Value |
 | --- | --- |
 | `status` | passed |
-| `report_count` | 6 |
-| `expected` | 88 |
-| `selected` | 88 |
+| `report_count` | 7 |
+| `expected` | 108 |
+| `selected` | 108 |
 | `missing` | 0 |
-| `passed` | 88 |
+| `passed` | 108 |
 | `failed` | 0 |
 | `runtime_counter_evidence` | True |
 | `gate_fast_path_counter_evidence` | True |
@@ -29,14 +29,14 @@ Aggregate counts are summed across tracked reports. Repeated daily probes intent
 
 | Category | Passed | Failed | Unknown | Description |
 | --- | ---: | ---: | ---: | --- |
-| composite_fast_path | 6 | 0 | 0 | Composite circuit fast-path selection counter tests |
-| controlled_single_qubit_fast_path | 34 | 0 | 0 | Controlled built-in single-qubit gate fast-path counter tests |
-| multi_control_boundary | 6 | 0 | 0 | Multi-control generic specialized-path boundary tests |
-| phase_fast_path | 6 | 0 | 0 | Phase-sign gate fast-path counter tests |
-| single_control_rz_phase | 6 | 0 | 0 | Single-control Rz direct phase fast-path counter tests |
-| single_qubit_fast_path | 12 | 0 | 0 | Uncontrolled built-in single-qubit gate fast-path counter tests |
-| three_qubit_fast_path | 6 | 0 | 0 | Three-qubit row-sparse fast-path counter tests |
-| two_qubit_fast_path | 12 | 0 | 0 | Two-qubit gate fast-path counter tests |
+| composite_fast_path | 7 | 0 | 0 | Composite circuit fast-path selection counter tests |
+| controlled_single_qubit_fast_path | 41 | 0 | 0 | Controlled built-in single-qubit gate fast-path counter tests |
+| multi_control_boundary | 7 | 0 | 0 | Multi-control generic specialized-path boundary tests |
+| phase_fast_path | 9 | 0 | 0 | Diagonal phase gate fast-path counter tests |
+| single_control_rz_phase | 7 | 0 | 0 | Single-control Rz direct phase fast-path counter tests |
+| single_qubit_fast_path | 14 | 0 | 0 | Uncontrolled built-in single-qubit gate fast-path counter tests |
+| three_qubit_fast_path | 7 | 0 | 0 | Three-qubit row-sparse fast-path counter tests |
+| two_qubit_fast_path | 16 | 0 | 0 | Two-qubit gate fast-path counter tests |
 
 ## Selected Tests
 
@@ -52,6 +52,8 @@ Aggregate counts are summed across tracked reports. Repeated daily probes intent
 | controlled_single_qubit_fast_path | `mklq_cpu_MKLQCpuTester.SingleControlBuiltInYGateUsesDedicatedFastPath` |
 | multi_control_boundary | `mklq_cpu_MKLQCpuTester.MultiControlBuiltInSingleQubitGatesKeepGenericSpecializedPath` |
 | phase_fast_path | `mklq_cpu_MKLQCpuTester.CzFastPathAppliesControlledZGate` |
+| phase_fast_path | `mklq_cpu_MKLQCpuTester.SingleControlDiagonalPhaseGatesUsePhaseFastPath` |
+| phase_fast_path | `mklq_cpu_MKLQCpuTester.UncontrolledDiagonalPhaseGatesUsePhaseFastPath` |
 | single_control_rz_phase | `mklq_cpu_MKLQCpuTester.SingleControlRzUsesDedicatedPhaseFastPath` |
 | single_qubit_fast_path | `mklq_cpu_MKLQCpuTester.BuiltInSingleQubitFastPathsMatchMatrices` |
 | single_qubit_fast_path | `mklq_cpu_MKLQCpuTester.XFastPathAppliesUncontrolledSingleQubitGate` |
@@ -70,6 +72,7 @@ Aggregate counts are summed across tracked reports. Repeated daily probes intent
 | benchmarks/mklq/reports/local-cpu-gate-counter-probe-2026-07-03.cpu-gate-counter.json | 2026-07-03T09:42:16.858470+00:00 | passed | 15 | 15 | 0 | 15 | 0 |
 | benchmarks/mklq/reports/local-cpu-gate-counter-probe-2026-07-07-two-qubit-block.cpu-gate-counter.json | 2026-07-07T02:33:20.094257+00:00 | passed | 16 | 16 | 0 | 16 | 0 |
 | benchmarks/mklq/reports/local-cpu-gate-counter-probe-2026-07-08-controlled-dense-two-qubit.cpu-gate-counter.json | 2026-07-08T07:12:20.338978+00:00 | passed | 18 | 18 | 0 | 18 | 0 |
+| benchmarks/mklq/reports/local-cpu-gate-counter-probe-2026-07-08-diagonal-phase.cpu-gate-counter.json | 2026-07-08T08:31:22.283490+00:00 | passed | 20 | 20 | 0 | 20 | 0 |
 | benchmarks/mklq/reports/local-cpu-gate-counter-probe-2026-07-08-row-sparse-two-qubit.cpu-gate-counter.json | 2026-07-08T05:14:42.350326+00:00 | passed | 17 | 17 | 0 | 17 | 0 |
 
 ## Regenerate

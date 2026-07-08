@@ -31,7 +31,7 @@ CATEGORY_DESCRIPTIONS = {
     "multi_control_boundary":
         "Multi-control generic specialized-path boundary tests",
     "phase_fast_path":
-        "Phase-sign gate fast-path counter tests",
+        "Diagonal phase gate fast-path counter tests",
     "two_qubit_fast_path":
         "Two-qubit gate fast-path counter tests",
     "three_qubit_fast_path":
@@ -50,7 +50,7 @@ CATEGORY_RULES = (
         "SingleControlBuiltIn",
         "SingleControlBuiltInSingleQubit",
     )),
-    ("phase_fast_path", ("CzFastPath",)),
+    ("phase_fast_path", ("CzFastPath", "DiagonalPhaseGates")),
     ("two_qubit_fast_path", (
         "GenericTwoQubitBlockPath",
         "ControlledDenseTwoQubitBlockPath",
