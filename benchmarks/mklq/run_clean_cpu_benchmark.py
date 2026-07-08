@@ -31,8 +31,8 @@ DEFAULT_PERFORMANCE_SCOPE = (
     "release benchmark")
 DEFAULT_SUMMARY_TEXT = (
     "Clean-worktree local run comparing qpp-cpu and mklq-cpu for q20 Y, "
-    "single-control H/Y/Rx/Ry/Rz, CZ, built-in SWAP/two-qubit, custom "
-    "generic 4x4 two-qubit, and three-qubit custom state updates, QFT-like, "
+    "single-control H/Y/Rx/Ry/Rz, CZ, built-in SWAP/two-qubit, row-sparse "
+    "custom 4x4 two-qubit, and three-qubit custom state updates, QFT-like, "
     "seeded Clifford, and hardware-efficient ansatz composite state updates, "
     "plus full/partial-register sampling at 1024 and 65536 shots.")
 DEFAULT_RUNTIME_NOTE = (

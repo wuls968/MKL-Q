@@ -39,6 +39,7 @@ COUNTER_TEST_SUFFIXES = (
     "CzFastPathAppliesControlledZGate",
     "GenericTwoQubitBlockPathAppliesCustomGate",
     "SwapFastPathAppliesUncontrolledTwoQubitGate",
+    "RowSparseTwoQubitCustomOperationUsesDedicatedFastPath",
     "RowSparseThreeQubitCustomOperationUsesDedicatedFastPath",
 )
 
