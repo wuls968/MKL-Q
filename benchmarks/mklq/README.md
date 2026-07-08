@@ -39,7 +39,7 @@ counters or release sign-off.
 python3 benchmarks/mklq/bench_mklq_targets.py \
   --dry-run \
   --targets qpp-cpu,mklq-cpu,mklq-metal \
-  --cases gate-state,sample-basis,sample-ghz,sample-full-register,sample-partial-register,sample-uniform-partial-register,single-qubit-state,h-state,y-state,rx-state,ry-state,rz-state,controlled-state,multi-control-state,ch-state,cy-state,crx-state,cry-state,crz-state,cz-state,two-qubit-state,custom-two-qubit-state,three-qubit-state,qft-like-state,crz-distance-state,crz-distance-sweep-state,seeded-clifford-state \
+  --cases gate-state,sample-basis,sample-ghz,sample-full-register,sample-partial-register,sample-uniform-partial-register,single-qubit-state,h-state,y-state,rx-state,ry-state,rz-state,controlled-state,multi-control-state,ch-state,cy-state,crx-state,cry-state,crz-state,cz-state,two-qubit-state,custom-two-qubit-state,dense-two-qubit-state,three-qubit-state,qft-like-state,crz-distance-state,crz-distance-sweep-state,seeded-clifford-state \
   --qubits 4,8,12 \
   --shot-counts 256,1024,8192 \
   --output /tmp/mklq-benchmark-plan.json
@@ -53,7 +53,7 @@ Use the built Python tree when running from the repository:
 PYTHONPATH="$(pwd)/build-python/python" \
 python3 benchmarks/mklq/bench_mklq_targets.py \
   --targets qpp-cpu,mklq-cpu,mklq-metal \
-  --cases gate-state,sample-basis,sample-ghz,sample-full-register,sample-partial-register,sample-uniform-partial-register,single-qubit-state,h-state,y-state,rx-state,ry-state,rz-state,controlled-state,multi-control-state,ch-state,cy-state,crx-state,cry-state,crz-state,cz-state,two-qubit-state,custom-two-qubit-state,three-qubit-state,qft-like-state,crz-distance-state,crz-distance-sweep-state,seeded-clifford-state \
+  --cases gate-state,sample-basis,sample-ghz,sample-full-register,sample-partial-register,sample-uniform-partial-register,single-qubit-state,h-state,y-state,rx-state,ry-state,rz-state,controlled-state,multi-control-state,ch-state,cy-state,crx-state,cry-state,crz-state,cz-state,two-qubit-state,custom-two-qubit-state,dense-two-qubit-state,three-qubit-state,qft-like-state,crz-distance-state,crz-distance-sweep-state,seeded-clifford-state \
   --qubits 4 \
   --shots 32 \
   --repeats 1 \
@@ -84,7 +84,7 @@ PYTHONPATH="$(pwd)/build-python/python" \
 python3 benchmarks/mklq/bench_mklq_targets.py \
   --isolate-rows \
   --targets mklq-cpu \
-  --cases gate-state,sample-basis,sample-ghz,sample-full-register,sample-partial-register,sample-uniform-partial-register,single-qubit-state,h-state,y-state,rx-state,ry-state,rz-state,controlled-state,multi-control-state,ch-state,cy-state,crx-state,cry-state,crz-state,cz-state,two-qubit-state,custom-two-qubit-state,three-qubit-state,qft-like-state,crz-distance-state,crz-distance-sweep-state,seeded-clifford-state \
+  --cases gate-state,sample-basis,sample-ghz,sample-full-register,sample-partial-register,sample-uniform-partial-register,single-qubit-state,h-state,y-state,rx-state,ry-state,rz-state,controlled-state,multi-control-state,ch-state,cy-state,crx-state,cry-state,crz-state,cz-state,two-qubit-state,custom-two-qubit-state,dense-two-qubit-state,three-qubit-state,qft-like-state,crz-distance-state,crz-distance-sweep-state,seeded-clifford-state \
   --qubits 15,16,17,18,19,20 \
   --shots 1024 \
   --repeats 2 \
@@ -144,7 +144,11 @@ every custom 4x4 gate. The `custom-two-qubit-state` case initializes a
 non-uniform state, then applies a registered custom phased-iSWAP-like 4x4
 unitary over adjacent two-qubit pairs; use it as evidence for the benchmark's
 row-sparse custom two-target path, not as a claim about every possible 4x4
-unitary. The `three-qubit-state` case initializes a non-uniform state, then
+unitary. The `dense-two-qubit-state` case initializes a non-uniform state, then
+applies a registered dense H-tensor-H-style 4x4 unitary over adjacent two-qubit
+pairs; use it as evidence for the generic dense 4x4 block path, not as a claim
+about every possible 4x4 unitary. The `three-qubit-state` case initializes a
+non-uniform state, then
 applies a registered custom 8x8 flip-all unitary over adjacent three-qubit
 windows; use it as evidence for the benchmark's custom three-target path, not
 as a claim about every possible 8x8 unitary. The
@@ -688,17 +692,18 @@ python3 benchmarks/mklq/run_cpu_scaling_benchmark.py \
 ```
 
 To rerun the focused CPU qubit-scaling evidence gate for the built-in
-two-qubit/SWAP, row-sparse custom 4x4 two-qubit, and three-qubit custom
+two-qubit/SWAP, row-sparse custom 4x4 two-qubit, dense generic 4x4
+two-qubit, and three-qubit custom
 state-vector update paths, run:
 
 ```bash
 python3 benchmarks/mklq/run_cpu_scaling_benchmark.py \
   --pythonpath "${HOME}/.cudaq-mklq" \
   --stamp YYYY-MM-DD-custom-two-qubit-scaling \
-  --cases two-qubit-state,custom-two-qubit-state,three-qubit-state \
-  --summary-text "Clean-worktree local scaling run comparing qpp-cpu and mklq-cpu for q18/q20/q22 SWAP/two-qubit, row-sparse custom 4x4 two-qubit, and three-qubit custom state-vector updates." \
-  --performance-scope "local Apple M5 q18-q22 built-in two-qubit, row-sparse custom 4x4 two-qubit, and three-qubit CPU target scaling comparison only; not a cross-machine release benchmark" \
-  --runtime-note "The CUDA-Q Python runtime and source provenance are recorded from the raw benchmark report generated by run_cpu_scaling_benchmark.py for built-in two-qubit, row-sparse custom 4x4 two-qubit, and three-qubit rows."
+  --cases two-qubit-state,custom-two-qubit-state,dense-two-qubit-state,three-qubit-state \
+  --summary-text "Clean-worktree local scaling run comparing qpp-cpu and mklq-cpu for q18/q20/q22 SWAP/two-qubit, row-sparse custom 4x4 two-qubit, dense generic 4x4 two-qubit, and three-qubit custom state-vector updates." \
+  --performance-scope "local Apple M5 q18-q22 built-in two-qubit, row-sparse custom 4x4 two-qubit, dense generic 4x4 two-qubit, and three-qubit CPU target scaling comparison only; not a cross-machine release benchmark" \
+  --runtime-note "The CUDA-Q Python runtime and source provenance are recorded from the raw benchmark report generated by run_cpu_scaling_benchmark.py for built-in two-qubit, row-sparse custom 4x4 two-qubit, dense generic 4x4 two-qubit, and three-qubit rows."
 ```
 
 For a compact table across all tracked sanitized summaries, run:
