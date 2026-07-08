@@ -150,6 +150,23 @@ source-only no-tags/no-releases boundary. Use the readiness commands below for
 the exact latest commit and workflow run IDs; this tracked page records the
 stable source-only readiness boundary, not a moving run log.
 
+## Latest Live Refresh
+
+A later live readiness refresh was collected on 2026-07-08 for protected
+`main` at `7d623c0892acb35bfff493120e66e1911d1a40b5` after the Metal
+diagonal-phase evidence update. The latest public hygiene workflow for that
+head passed in
+<https://github.com/wuls968/MKL-Q/actions/runs/28931869978>. The manual
+`workflow_dispatch` Apple Silicon full gate for that same head passed in
+<https://github.com/wuls968/MKL-Q/actions/runs/28932946291>, with the
+`Manual Apple Silicon correctness gate` job completing successfully. The
+post-dispatch source tag preflight audit recorded 9/9 checks passed in
+`/tmp/mklq-source-release-tag-audit-2026-07-08-7d623c08-after-manual-gate.json`,
+and the public readiness audit recorded 13/13 checks passed in
+`/tmp/mklq-public-readiness-audit-2026-07-08-7d623c08-after-manual-gate.json`.
+No tag, GitHub Release, wheel, installer, signed artifact, or package was
+created; this is live source-only evidence for the named commit.
+
 ## Branch Protection
 
 The public `main` branch is intended to be protected with:
@@ -171,11 +188,11 @@ compares the live core protection fields against that JSON reference.
 ## Validation Snapshot
 
 The latest public local validation evidence is recorded in
-[`validation.md`](validation.md), with the default public healthcheck refreshed
-on 2026-07-05, the source-only readiness baseline refreshed on 2026-07-06, and
-focused CRZ distance-sweep evidence retained from 2026-07-01:
+[`validation.md`](validation.md), with the default and full public healthcheck
+refreshed on 2026-07-08, the source-only readiness baseline refreshed on
+2026-07-07, and focused CRZ distance-sweep evidence retained from 2026-07-01:
 
-- latest correctness refresh date: 2026-07-05;
+- latest correctness refresh date: 2026-07-08;
 - source state: the ignored raw healthcheck JSON records the exact local Git
   state for the latest public healthcheck gate, and the ignored correctness
   gate JSON records the latest correctness-gate state;
@@ -183,8 +200,8 @@ focused CRZ distance-sweep evidence retained from 2026-07-01:
 - default public healthcheck: passed with 32/32 steps passed;
 - full public healthcheck: passed with 36/36 steps passed for the expanded
   source-only tag-audit gate, including the install-prefix build, local macOS
-  signature repair for 71 loadables, correctness gate, benchmark harness tests,
-  and public example smoke gate;
+  signature repair for 60 loadables in the latest local wrapper run,
+  correctness gate, benchmark harness tests, and public example smoke gate;
 - source-only release-candidate dry run: passed the local full public
   healthcheck, public release checklist audit, preflight audit, and public
   readiness audit on 2026-07-05; the tracked source-only RC v0.1 entry point is
@@ -200,12 +217,17 @@ focused CRZ distance-sweep evidence retained from 2026-07-01:
   reporting 50/50 selected counter tests passed, the public example smoke gate
   reporting 30/30 checks passed, and the benchmark harness reporting 228
   passed;
+- latest live manual self-hosted Apple Silicon full gate: passed on 2026-07-08
+  for `7d623c0892acb35bfff493120e66e1911d1a40b5` in
+  <https://github.com/wuls968/MKL-Q/actions/runs/28932946291>, with the
+  `Manual Apple Silicon correctness gate` job and the nested full public
+  healthcheck completing successfully;
 - public readiness audit: passed with 13/13 checks passed against the
-  then-current protected `main` branch;
+  current protected `main` branch;
 - one-command correctness gate: passed with 4/4 steps passed, including
   `metal_runtime_counter_probe`;
 - public example smoke gate: passed with 30/30 steps passed;
-- current benchmark harness tests: `231 passed`;
+- current benchmark harness tests: `237 passed`;
 - current `cpu_sampling_counter_probe_parse`: 3 bounded reports, 21 expected,
   21 selected, 0 missing, and 0 failures, including full-register and marginal
   probability-fill counter ctests;
