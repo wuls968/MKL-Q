@@ -149,7 +149,9 @@ retry_git "origin main sparse fetch" \
   git -c http.version=HTTP/1.1 -c protocol.version=2 fetch \
   --no-tags --filter=blob:none --depth=1 \
   origin +refs/heads/main:refs/remotes/origin/main
-git checkout --force -B main origin/main
+retry_git "origin main sparse checkout" \
+  git -c http.version=HTTP/1.1 -c protocol.version=2 checkout \
+  --force -B main origin/main
 
 git remote set-url origin https://github.com/wuls968/MKL-Q.git
 git remote remove upstream 2>/dev/null || true
