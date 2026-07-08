@@ -712,7 +712,7 @@ def test_mklq_clean_cpu_gate_plan_uses_fixed_environment(tmp_path):
     module = _load_clean_benchmark_gate_module()
     assert module.DEFAULT_GATE_CASES == (
         "y-state,ch-state,cy-state,crx-state,cry-state,crz-state,cz-state,"
-        "two-qubit-state,three-qubit-state")
+        "two-qubit-state,custom-two-qubit-state,three-qubit-state")
     config = module.GateConfig(
         repo_root=tmp_path,
         pythonpath="/tmp/cudaq-runtime",
@@ -730,7 +730,8 @@ def test_mklq_clean_cpu_gate_plan_uses_fixed_environment(tmp_path):
         targets="qpp-cpu,mklq-cpu",
         gate_cases=(
             "y-state,ch-state,cy-state,crx-state,cry-state,crz-state,"
-            "cz-state,two-qubit-state,three-qubit-state"),
+            "cz-state,two-qubit-state,custom-two-qubit-state,"
+            "three-qubit-state"),
         composite_cases=
         "qft-like-state,seeded-clifford-state,hardware-efficient-ansatz-state",
         sampling_cases="sample-full-register,sample-partial-register",
@@ -755,8 +756,8 @@ def test_mklq_clean_cpu_gate_plan_uses_fixed_environment(tmp_path):
         "PYTHONPATH": "/tmp/cudaq-runtime",
     }
     assert plan["paths"]["gate_raw"].endswith(
-        "local-clean-cpu-gate-y-ch-cy-crx-cry-crz-cz-two-qubit-three-qubit"
-        "-q20-2026-06-21.json")
+        "local-clean-cpu-gate-y-ch-cy-crx-cry-crz-cz-two-qubit-custom-two-qubit"
+        "-three-qubit-q20-2026-06-21.json")
     assert plan["paths"]["composite_raw"].endswith(
         "local-clean-cpu-composite-qft-like-seeded-clifford-hardware-efficient-ansatz-q20-2026-06-21.json"
     )
@@ -768,7 +769,7 @@ def test_mklq_clean_cpu_gate_plan_uses_fixed_environment(tmp_path):
     assert "--isolate-rows" in gate_command
     assert gate_command[gate_command.index("--cases") + 1] == (
         "y-state,ch-state,cy-state,crx-state,cry-state,crz-state,cz-state,"
-        "two-qubit-state,three-qubit-state")
+        "two-qubit-state,custom-two-qubit-state,three-qubit-state")
     assert gate_command[gate_command.index("--targets") + 1] == (
         "qpp-cpu,mklq-cpu")
     composite_command = plan["commands"]["composite_raw"]
@@ -938,12 +939,13 @@ def test_mklq_cpu_scaling_gate_plan_accepts_ansatz_case(tmp_path):
         "local-scaling-cpu-hardware-efficient-ansatz-q18-q22-2026-06-30")
 
 
-def test_mklq_cpu_scaling_gate_plan_accepts_two_three_qubit_cases(tmp_path):
+def test_mklq_cpu_scaling_gate_plan_accepts_two_custom_three_qubit_cases(
+        tmp_path):
     module = _load_cpu_scaling_benchmark_gate_module()
     config = module.ScalingConfig(
         repo_root=tmp_path,
         pythonpath="/tmp/cudaq-runtime",
-        stamp="2026-07-03-two-three-scaling",
+        stamp="2026-07-08-custom-two-qubit-scaling",
         qubits=[18, 20, 22],
         threads=10,
         repeats=3,
@@ -954,13 +956,13 @@ def test_mklq_cpu_scaling_gate_plan_accepts_two_three_qubit_cases(tmp_path):
         reports_dir=tmp_path / "reports",
         evidence_output=tmp_path / "benchmark-evidence.md",
         targets="qpp-cpu,mklq-cpu",
-        cases="two-qubit-state,three-qubit-state",
+        cases="two-qubit-state,custom-two-qubit-state,three-qubit-state",
         summary_id=
-        "local-scaling-cpu-two-qubit-three-qubit-q18-q22-2026-07-03-two-three-scaling",
+        "local-scaling-cpu-two-qubit-custom-two-qubit-three-qubit-q18-q22-2026-07-08-custom-two-qubit-scaling",
         evidence_kind="clean_local_benchmark_evidence",
         ratio_group="clean_worktree_cross_target_ratio",
         performance_scope="local test only",
-        summary_text="Synthetic two/three-qubit scaling benchmark gate.",
+        summary_text="Synthetic two/custom/three-qubit scaling benchmark gate.",
         runtime_note="synthetic runtime note",
         allow_dirty=False,
         skip_benchmark=False,
@@ -970,19 +972,19 @@ def test_mklq_cpu_scaling_gate_plan_accepts_two_three_qubit_cases(tmp_path):
     plan = module.build_plan(config)
 
     assert plan["paths"]["raw"].endswith(
-        "local-scaling-cpu-two-qubit-three-qubit-q18-q22-2026-07-03-two-three-scaling.json"
+        "local-scaling-cpu-two-qubit-custom-two-qubit-three-qubit-q18-q22-2026-07-08-custom-two-qubit-scaling.json"
     )
     assert plan["paths"]["summary"].endswith(
-        "local-scaling-cpu-two-qubit-three-qubit-q18-q22-2026-07-03-two-three-scaling.summary.json"
+        "local-scaling-cpu-two-qubit-custom-two-qubit-three-qubit-q18-q22-2026-07-08-custom-two-qubit-scaling.summary.json"
     )
     benchmark_command = plan["commands"]["raw"]
     assert benchmark_command[benchmark_command.index("--cases") + 1] == (
-        "two-qubit-state,three-qubit-state")
+        "two-qubit-state,custom-two-qubit-state,three-qubit-state")
     assert benchmark_command[benchmark_command.index("--qubits") + 1] == (
         "18,20,22")
     summary_command = plan["commands"]["summary"]
     assert summary_command[summary_command.index("--summary-id") + 1] == (
-        "local-scaling-cpu-two-qubit-three-qubit-q18-q22-2026-07-03-two-three-scaling"
+        "local-scaling-cpu-two-qubit-custom-two-qubit-three-qubit-q18-q22-2026-07-08-custom-two-qubit-scaling"
     )
 
 
@@ -7721,8 +7723,8 @@ def test_mklq_benchmark_three_qubit_case_records_gate_metrics(monkeypatch):
 
         def __getattr__(self, name):
 
-            def apply_custom(target0, target1, target2):
-                self.operations.append((name, target0, target1, target2))
+            def apply_custom(*targets):
+                self.operations.append((name, *targets))
 
             return apply_custom
 
@@ -7783,6 +7785,91 @@ def test_mklq_benchmark_three_qubit_case_records_gate_metrics(monkeypatch):
     operations = fake_cudaq.kernels[0].operations
     assert sum(1 for operation in operations
                if operation[0] == module.THREE_QUBIT_OPERATION_NAME) == 4
+
+
+def test_mklq_benchmark_custom_two_qubit_case_records_gate_metrics(
+        monkeypatch):
+    module = _load_benchmark_module()
+
+    class FakeKernel:
+
+        def __init__(self):
+            self.operations = []
+
+        def qalloc(self, qubits):
+            return list(range(qubits))
+
+        def ry(self, theta, target):
+            self.operations.append(("ry", theta, target))
+
+        def rz(self, theta, target):
+            self.operations.append(("rz", theta, target))
+
+        def __getattr__(self, name):
+
+            def apply_custom(*targets):
+                self.operations.append((name, *targets))
+
+            return apply_custom
+
+    class FakeCudaq:
+
+        def __init__(self):
+            self.kernels = []
+            self.registered_operations = {}
+
+        def reset_target(self):
+            pass
+
+        def set_target(self, target):
+            assert target == "mklq-cpu"
+
+        def set_random_seed(self, seed):
+            assert seed == 13
+
+        def make_kernel(self):
+            kernel = FakeKernel()
+            self.kernels.append(kernel)
+            return kernel
+
+        def register_operation(self, name, matrix):
+            self.registered_operations[name] = matrix
+
+        def get_state(self, kernel):
+            return object()
+
+    def fake_timed_repeats(action, repeats):
+        action()
+        return [0.5]
+
+    monkeypatch.setattr(module, "timed_repeats", fake_timed_repeats)
+    monkeypatch.setattr(module, "process_max_rss_bytes", lambda: 4096)
+
+    fake_cudaq = FakeCudaq()
+    row = module.run_case(fake_cudaq,
+                          "mklq-cpu",
+                          "custom-two-qubit-state",
+                          qubits=4,
+                          shots=16,
+                          repeats=1,
+                          warmups=0,
+                          layers=2)
+
+    assert row["status"] == "ok"
+    metrics = row["metrics"]
+    assert metrics["state_prep_gate_count"] == 6
+    assert metrics["custom_two_qubit_gate_count"] == 6
+    assert metrics["gate_count"] == 12
+    assert metrics["custom_two_qubit_operation_name"] == (
+        module.CUSTOM_TWO_QUBIT_OPERATION_NAME)
+    assert metrics["custom_two_qubit_gate_state_throughput_per_second"] == 12
+    assert metrics["process_max_rss_bytes_cumulative"] == 4096
+    assert fake_cudaq.registered_operations[
+        module.CUSTOM_TWO_QUBIT_OPERATION_NAME] == (
+            module.custom_two_qubit_matrix())
+    operations = fake_cudaq.kernels[0].operations
+    assert sum(1 for operation in operations
+               if operation[0] == module.CUSTOM_TWO_QUBIT_OPERATION_NAME) == 6
 
 
 def test_mklq_benchmark_dry_run_accepts_controlled_gate_cases(tmp_path):
@@ -8144,6 +8231,40 @@ def test_mklq_benchmark_dry_run_accepts_two_qubit_case(tmp_path):
     assert len(rows) == 1
     assert rows[0]["status"] == "planned"
     assert rows[0]["case"] == "two-qubit-state"
+    assert rows[0]["estimated_state_bytes"] == 16 * (1 << 4)
+
+
+def test_mklq_benchmark_dry_run_accepts_custom_two_qubit_case(tmp_path):
+    repo_root = Path(__file__).resolve().parents[3]
+    script = repo_root / "benchmarks" / "mklq" / "bench_mklq_targets.py"
+    output = tmp_path / "dry-run-custom-two-qubit.json"
+    env = os.environ.copy()
+    env.pop("PYTHONPATH", None)
+
+    subprocess.run([
+        sys.executable,
+        str(script),
+        "--dry-run",
+        "--targets",
+        "mklq-cpu",
+        "--cases",
+        "custom-two-qubit-state",
+        "--qubits",
+        "4",
+        "--output",
+        str(output),
+    ],
+                   check=True,
+                   capture_output=True,
+                   text=True,
+                   env=env)
+
+    report = json.loads(output.read_text(encoding="utf-8"))
+    assert report["config"]["cases"] == ["custom-two-qubit-state"]
+    rows = report["results"]
+    assert len(rows) == 1
+    assert rows[0]["status"] == "planned"
+    assert rows[0]["case"] == "custom-two-qubit-state"
     assert rows[0]["estimated_state_bytes"] == 16 * (1 << 4)
 
 

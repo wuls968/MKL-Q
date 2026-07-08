@@ -112,6 +112,9 @@ METAL_PATH_CASES = {
                  METAL_CONTROLLED_GATE_SCOPE),
     "two-qubit-state": ("mklq_metal_resident_two_gate_state_host_readback",
                         METAL_TWO_QUBIT_SCOPE),
+    "custom-two-qubit-state":
+        ("mklq_metal_resident_two_gate_state_host_readback",
+         METAL_TWO_QUBIT_SCOPE),
     "three-qubit-state": ("mklq_metal_resident_three_gate_state_host_readback",
                           METAL_THREE_QUBIT_SCOPE),
     "qft-like-state": ("mklq_metal_mixed_composite_state_host_readback",
@@ -207,6 +210,7 @@ DEFAULT_CASES = (
     "crz-state",
     "cz-state",
     "two-qubit-state",
+    "custom-two-qubit-state",
     "three-qubit-state",
     "qft-like-state",
     "hardware-efficient-ansatz-state",
@@ -218,6 +222,7 @@ DEFAULT_QUBITS = (4, 8, 12)
 UNIFORM_PARTIAL_REGISTER_MEASURED_QUBIT_LIMIT = 12
 SEEDED_CLIFFORD_SEED = 17
 THREE_QUBIT_OPERATION_NAME = "mklq_bench_flip_all_3"
+CUSTOM_TWO_QUBIT_OPERATION_NAME = "mklq_bench_phased_iswap_2"
 PROVENANCE_ENV_KEYS = (
     "OMP_NUM_THREADS",
     "OMP_PROC_BIND",
@@ -545,6 +550,53 @@ def build_two_qubit_state_kernel(cudaq: Any, qubits: int,
       gate_count += 1
 
   return kernel, gate_count
+
+
+def custom_two_qubit_matrix() -> list[list[complex]]:
+  return [
+      [1.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
+      [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 1.0j, 0.0 + 0.0j],
+      [0.0 + 0.0j, 0.0 + 1.0j, 0.0 + 0.0j, 0.0 + 0.0j],
+      [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, -1.0 + 0.0j],
+  ]
+
+
+def build_custom_two_qubit_state_kernel(
+    cudaq: Any, qubits: int, layers: int) -> tuple[Any, int, int, int]:
+  if qubits < 2:
+    raise ValueError("custom two-qubit benchmarks require at least 2 qubits")
+  if not hasattr(cudaq, "register_operation"):
+    raise RuntimeError("cudaq.register_operation is required")
+
+  cudaq.register_operation(CUSTOM_TWO_QUBIT_OPERATION_NAME,
+                           custom_two_qubit_matrix())
+
+  kernel = cudaq.make_kernel()
+  q = kernel.qalloc(qubits)
+  state_prep_gate_count = 0
+  custom_two_qubit_gate_count = 0
+
+  for index in range(qubits):
+    theta = 0.043 + 0.0017 * index
+    kernel.ry(theta, q[index])
+    if index % 2:
+      kernel.rz(-0.5 * theta, q[index])
+      state_prep_gate_count += 1
+    state_prep_gate_count += 1
+
+  for _ in range(layers):
+    for index in range(0, qubits - 1, 2):
+      kernel.__getattr__(CUSTOM_TWO_QUBIT_OPERATION_NAME)(q[index],
+                                                          q[index + 1])
+      custom_two_qubit_gate_count += 1
+    for index in range(1, qubits - 1, 2):
+      kernel.__getattr__(CUSTOM_TWO_QUBIT_OPERATION_NAME)(q[index],
+                                                          q[index + 1])
+      custom_two_qubit_gate_count += 1
+
+  gate_count = state_prep_gate_count + custom_two_qubit_gate_count
+  return (kernel, gate_count, state_prep_gate_count,
+          custom_two_qubit_gate_count)
 
 
 def three_qubit_flip_all_matrix() -> list[list[int]]:
@@ -1107,6 +1159,24 @@ def run_case(cudaq: Any, target: str, case: str, qubits: int, shots: int,
           "two_qubit_gate_state_throughput_per_second": gate_count / median
           if median > 0 else None,
       })
+    elif case == "custom-two-qubit-state":
+      kernel, gate_count, state_prep_gate_count, custom_two_qubit_gate_count = (
+          build_custom_two_qubit_state_kernel(cudaq, qubits, layers))
+      action = lambda: cudaq.get_state(kernel)
+      for _ in range(warmups):
+        action()
+      timings = timed_repeats(action, repeats)
+      metrics = summarize_timings(timings)
+      median = metrics["elapsed_seconds_median"]
+      metrics.update({
+          "gate_count": gate_count,
+          "state_prep_gate_count": state_prep_gate_count,
+          "custom_two_qubit_gate_count": custom_two_qubit_gate_count,
+          "custom_two_qubit_operation_name": CUSTOM_TWO_QUBIT_OPERATION_NAME,
+          "layers": layers,
+          "custom_two_qubit_gate_state_throughput_per_second":
+              custom_two_qubit_gate_count / median if median > 0 else None,
+      })
     elif case == "three-qubit-state":
       kernel, gate_count, state_prep_gate_count, three_qubit_gate_count = (
           build_three_qubit_state_kernel(cudaq, qubits, layers))
@@ -1550,7 +1620,8 @@ def make_parser() -> argparse.ArgumentParser:
                             "h-state,y-state,rx-state,ry-state,rz-state,"
                             "controlled-state,multi-control-state,"
                             "ch-state,cy-state,crx-state,cry-state,crz-state,"
-                            "cz-state,two-qubit-state,three-qubit-state,"
+                            "cz-state,two-qubit-state,"
+                            "custom-two-qubit-state,three-qubit-state,"
                             "qft-like-state,hardware-efficient-ansatz-state,"
                             "crz-distance-state,crz-distance-sweep-state,"
                             "seeded-clifford-state."))
@@ -1583,6 +1654,7 @@ def make_parser() -> argparse.ArgumentParser:
                             "rz-state/y-state/controlled-state/"
                             "multi-control-state/ch-state/cy-state/crx-state/cry-state/"
                             "crz-state/cz-state/two-qubit-state/"
+                            "custom-two-qubit-state/"
                             "three-qubit-state/"
                             "qft-like-state/crz-distance-state/"
                             "crz-distance-sweep-state/"
