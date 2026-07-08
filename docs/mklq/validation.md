@@ -150,15 +150,15 @@ cross-machine performance certification.
 A previous 2026-07-04 validation pass also reran the full
 install/build/signature-repair/correctness/example gate on the current MKL-Q
 branch after adding the local macOS install-prefix signature repair step.
-The current tracked CPU gate counter evidence includes five bounded reports for
-selected single-qubit, controlled single-qubit, single-control X/CNOT,
+The current tracked CPU gate counter evidence includes eight bounded reports
+for selected single-qubit, controlled single-qubit, single-control X/CNOT,
 single-control H/Y/Rx/Ry, single-control Rz phase, two-qubit, three-qubit, and
-composite fast-path counter ctests. The 2026-07-08 CPU gate counter refresh
-adds a row-sparse custom two-qubit 4x4 fast-path counter fixture next to the
-generic dense two-qubit 4x4 block-update fixture and the existing dedicated
-SWAP permutation fixture. The 2026-07-07 CPU gate counter refresh added the
-generic dense two-qubit 4x4 block-update counter fixture. The 2026-07-03 CPU
-gate counter refresh covers per-gate single-control H/Y/Rx/Ry direct
+composite fast-path counter ctests. The latest 2026-07-08 CPU gate counter
+refresh adds a controlled built-in SWAP fast-path fixture next to the existing
+uncontrolled SWAP permutation fixture. Earlier 2026-07-08 CPU gate counter
+refreshes added row-sparse custom two-qubit 4x4, controlled dense two-qubit
+4x4, dense two-qubit 4x4, and diagonal phase fast-path counter fixtures. The
+2026-07-03 CPU gate counter refresh covers per-gate single-control H/Y/Rx/Ry direct
 target/control pair fixtures, on top of the 2026-07-02 single-control X/CNOT
 direct pair refresh and the earlier single-control Rz direct phase path. The
 current tracked CPU

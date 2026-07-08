@@ -231,11 +231,13 @@ refreshed on 2026-07-08, the source-only readiness baseline refreshed on
 - current `cpu_sampling_counter_probe_parse`: 3 bounded reports, 21 expected,
   21 selected, 0 missing, and 0 failures, including full-register and marginal
   probability-fill counter ctests;
-- current `cpu_gate_counter_probe_parse`: 5 bounded reports, 70 expected, 70
+- current `cpu_gate_counter_probe_parse`: 8 bounded reports, 129 expected, 129
   selected, 0 missing, and 0 failures, including single-control X/CNOT,
   per-gate single-control H/Y/Rx/Ry direct pair fixtures, single-control Rz
   direct phase fast-path fixture, generic dense two-qubit 4x4 block update,
-  row-sparse custom two-qubit 4x4 fast-path, dedicated SWAP, and
+  controlled dense two-qubit 4x4 block update, row-sparse custom two-qubit
+  4x4 fast-path, uncontrolled and controlled built-in SWAP, diagonal phase
+  fast paths, and
   hardware-efficient ansatz composite fast-path fixtures;
 - standalone install-prefix Python subset: `37 passed`;
 - `python_target_smoke`: `70 passed`;

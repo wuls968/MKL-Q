@@ -1980,31 +1980,46 @@ CUDAQ_TEST(MKLQCpuTester,
   EXPECT_EQ(sim.specializedSingleQubitApplicationsForTest(), 0);
 }
 
-CUDAQ_TEST(MKLQCpuTester, ControlledSwapUsesRowSparseTwoQubitPath) {
-  MklqCpuCircuitSimulatorTester sim;
-  sim.setStateForTest({
-      {0.0, 0.0},
-      {1.0, 0.0},
-      {2.0, 0.0},
-      {3.0, 0.0},
-      {4.0, 0.0},
-      {5.0, 0.0},
-      {6.0, 0.0},
-      {7.0, 0.0},
-  });
+CUDAQ_TEST(MKLQCpuTester, ControlledSwapFastPathAppliesBuiltInGate) {
+  const std::vector<std::complex<double>> initial{
+      {0.0, 0.0},   {1.0, -0.25}, {2.0, -0.5},  {3.0, -0.75},
+      {4.0, -1.0},  {5.0, -1.25}, {6.0, -1.5},  {7.0, -1.75},
+      {8.0, -2.0},  {9.0, -2.25}, {10.0, -2.5}, {11.0, -2.75},
+      {12.0, -3.0}, {13.0, -3.25}, {14.0, -3.5}, {15.0, -3.75},
+  };
+  const std::vector<std::complex<double>> swapMatrix{
+      {1.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0},
+      {0.0, 0.0}, {0.0, 0.0}, {1.0, 0.0}, {0.0, 0.0},
+      {0.0, 0.0}, {1.0, 0.0}, {0.0, 0.0}, {0.0, 0.0},
+      {0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {1.0, 0.0},
+  };
 
-  sim.swap({0}, 1, 2);
-  sim.flushGateQueue();
-  const auto state = sim.stateVectorForTest();
+  struct Case {
+    std::string_view name;
+    std::vector<std::size_t> controls;
+    std::array<std::size_t, 2> targets;
+  };
 
-  ASSERT_EQ(state.size(), 8);
-  expectNear(state[1], {1.0, 0.0});
-  expectNear(state[3], {5.0, 0.0});
-  expectNear(state[5], {3.0, 0.0});
-  expectNear(state[7], {7.0, 0.0});
-  EXPECT_EQ(sim.twoQubitBlockApplicationsForTest(), 0);
-  EXPECT_EQ(sim.twoQubitRowSparseApplicationsForTest(), 1);
-  EXPECT_EQ(sim.swapApplicationsForTest(), 0);
+  for (const auto &testCase : std::vector<Case>{
+           {"single control", {0}, {1, 2}},
+           {"two controls", {0, 3}, {1, 2}},
+       }) {
+    SCOPED_TRACE(testCase.name);
+    MklqCpuCircuitSimulatorTester sim;
+    sim.setStateForTest(initial);
+
+    sim.swap(testCase.controls, testCase.targets[0], testCase.targets[1]);
+    sim.flushGateQueue();
+
+    expectStateNear(sim.stateVectorForTest(),
+                    applyTwoQubitMatrixForTest(
+                        initial,
+                        {testCase.targets[0], testCase.targets[1]},
+                        swapMatrix, testCase.controls));
+    EXPECT_EQ(sim.twoQubitBlockApplicationsForTest(), 0);
+    EXPECT_EQ(sim.twoQubitRowSparseApplicationsForTest(), 0);
+    EXPECT_EQ(sim.swapApplicationsForTest(), 1);
+  }
 }
 
 CUDAQ_TEST(MKLQCpuTester, CustomOperationNamedSwapUsesRowSparseTwoQubitPath) {
