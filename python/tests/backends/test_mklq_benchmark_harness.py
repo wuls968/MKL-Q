@@ -1572,7 +1572,7 @@ def test_mklq_public_healthcheck_runs_latest_performance_guard(monkeypatch,
                                                                tmp_path):
     module = _load_public_healthcheck_module()
     assert module.CLEAN_CPU_SUMMARY_ID == (
-        "local-clean-cpu-q20-2026-07-03-two-three")
+        "local-clean-cpu-q20-2026-07-08-diagonal-phase")
     config = _public_healthcheck_config(module, tmp_path)
     seen = {}
 
@@ -2982,12 +2982,17 @@ def _performance_summary(module,
 def test_mklq_performance_evidence_guard_accepts_clean_cpu_summary():
     module = _load_performance_evidence_module()
     assert module.DEFAULT_SUMMARY_ID == (
-        "local-clean-cpu-q20-2026-07-03-two-three")
+        "local-clean-cpu-q20-2026-07-08-diagonal-phase")
+    assert "diagonal_phase_state_q20" in module.DEFAULT_REQUIRED_RATIOS
     assert "ch_state_q20" in module.DEFAULT_REQUIRED_RATIOS
     assert "crx_state_q20" in module.DEFAULT_REQUIRED_RATIOS
     assert "cry_state_q20" in module.DEFAULT_REQUIRED_RATIOS
     assert "crz_state_q20" in module.DEFAULT_REQUIRED_RATIOS
     assert "two_qubit_state_q20" in module.DEFAULT_REQUIRED_RATIOS
+    assert "custom_two_qubit_state_q20" in module.DEFAULT_REQUIRED_RATIOS
+    assert "dense_two_qubit_state_q20" in module.DEFAULT_REQUIRED_RATIOS
+    assert "controlled_dense_two_qubit_state_q20" in (
+        module.DEFAULT_REQUIRED_RATIOS)
     assert "three_qubit_state_q20" in module.DEFAULT_REQUIRED_RATIOS
     assert "qft_like_state_q20" in module.DEFAULT_REQUIRED_RATIOS
     assert "seeded_clifford_state_q20" in module.DEFAULT_REQUIRED_RATIOS
