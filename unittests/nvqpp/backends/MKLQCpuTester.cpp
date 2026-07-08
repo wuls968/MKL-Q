@@ -379,6 +379,30 @@ static std::array<std::complex<double>, 4> rzMatrixForTest(double angle) {
            {std::cos(angle / 2.0), std::sin(angle / 2.0)}}};
 }
 
+static std::array<std::complex<double>, 4> zMatrixForTest() {
+  return {{{1.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {-1.0, 0.0}}};
+}
+
+static std::array<std::complex<double>, 4> sMatrixForTest() {
+  return {{{1.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {0.0, 1.0}}};
+}
+
+static std::array<std::complex<double>, 4> sdgMatrixForTest() {
+  return {{{1.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {0.0, -1.0}}};
+}
+
+static std::array<std::complex<double>, 4> tMatrixForTest() {
+  const auto invSqrt2 = 1.0 / std::sqrt(2.0);
+  return {
+      {{1.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {invSqrt2, invSqrt2}}};
+}
+
+static std::array<std::complex<double>, 4> tdgMatrixForTest() {
+  const auto invSqrt2 = 1.0 / std::sqrt(2.0);
+  return {
+      {{1.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {invSqrt2, -invSqrt2}}};
+}
+
 CUDAQ_TEST(MKLQCpuTester, BackendUnitTestCompilesOpenMpBranchesWhenAvailable) {
 #if defined(HAS_OPENMP) && !defined(_OPENMP)
   FAIL() << "HAS_OPENMP is defined, but _OPENMP is not; MKL-Q backend unit "
@@ -1664,7 +1688,8 @@ CUDAQ_TEST(MKLQCpuTester,
       {1.0, 0.0},
   };
 
-  for (std::string_view name : {"h", "y", "rx", "ry", "rz"}) {
+  for (std::string_view name :
+       {"h", "y", "rx", "ry", "rz", "z", "s", "t", "sdg", "tdg"}) {
     MklqCpuCircuitSimulatorTester sim;
     sim.setStateForTest(initial);
 
@@ -1673,9 +1698,11 @@ CUDAQ_TEST(MKLQCpuTester,
 
     expectStateNear(sim.stateVectorForTest(), initial);
     EXPECT_EQ(sim.specializedSingleQubitApplicationsForTest(), 0);
+    EXPECT_EQ(sim.phaseApplicationsForTest(), 0);
   }
 
-  for (std::string_view name : {"h", "y", "rx", "ry", "rz"}) {
+  for (std::string_view name :
+       {"h", "y", "rx", "ry", "rz", "z", "s", "t", "sdg", "tdg"}) {
     MklqCpuCircuitSimulatorTester sim;
     sim.setStateForTest(initial);
 
@@ -1684,6 +1711,7 @@ CUDAQ_TEST(MKLQCpuTester,
 
     expectStateNear(sim.stateVectorForTest(), initial);
     EXPECT_EQ(sim.specializedSingleQubitApplicationsForTest(), 0);
+    EXPECT_EQ(sim.phaseApplicationsForTest(), 0);
   }
 }
 
@@ -1733,6 +1761,118 @@ CUDAQ_TEST(MKLQCpuTester, CustomControlledOperationNamedZUsesGenericPath) {
   expectNear(state[2], {0.5, 0.25});
   expectNear(state[3], {-3.0, 0.5});
   EXPECT_EQ(sim.phaseApplicationsForTest(), 0);
+}
+
+CUDAQ_TEST(MKLQCpuTester,
+           UncontrolledDiagonalPhaseGatesUsePhaseFastPath) {
+  const std::vector<std::complex<double>> initial{
+      {1.0, 0.0},
+      {2.0, -1.0},
+      {0.5, 0.25},
+      {-3.0, 0.5},
+  };
+
+  struct Case {
+    std::string_view name;
+    std::size_t target;
+    std::function<void(MklqCpuCircuitSimulatorTester &, std::size_t)> apply;
+    std::array<std::complex<double>, 4> matrix;
+  };
+
+  const std::vector<Case> cases{
+      {"z target 1", 1, [](auto &sim, auto target) { sim.z(target); },
+       zMatrixForTest()},
+      {"s target 0", 0, [](auto &sim, auto target) { sim.s(target); },
+       sMatrixForTest()},
+      {"t target 1", 1, [](auto &sim, auto target) { sim.t(target); },
+       tMatrixForTest()},
+      {"sdg target 0", 0, [](auto &sim, auto target) { sim.sdg(target); },
+       sdgMatrixForTest()},
+      {"tdg target 1", 1, [](auto &sim, auto target) { sim.tdg(target); },
+       tdgMatrixForTest()},
+  };
+
+  for (const auto &testCase : cases) {
+    SCOPED_TRACE(testCase.name);
+    MklqCpuCircuitSimulatorTester sim;
+    sim.setStateForTest(initial);
+
+    testCase.apply(sim, testCase.target);
+    sim.flushGateQueue();
+
+    expectStateNear(sim.stateVectorForTest(),
+                    applySingleQubitMatrixForTest(initial, testCase.target,
+                                                  testCase.matrix));
+    EXPECT_EQ(sim.phaseApplicationsForTest(), 1);
+    EXPECT_EQ(sim.specializedSingleQubitApplicationsForTest(), 0);
+    EXPECT_EQ(sim.specializedSingleControlQubitApplicationsForTest(), 0);
+  }
+}
+
+CUDAQ_TEST(MKLQCpuTester,
+           SingleControlDiagonalPhaseGatesUsePhaseFastPath) {
+  const std::vector<std::complex<double>> initial{
+      {1.0, 0.0},   {2.0, -1.0}, {0.5, 0.25}, {-3.0, 0.5},
+      {0.25, -0.5}, {1.5, 0.5},  {-2.0, 1.0}, {0.75, -1.25},
+  };
+
+  struct Case {
+    std::string_view name;
+    std::vector<std::size_t> controls;
+    std::size_t target;
+    std::function<void(MklqCpuCircuitSimulatorTester &,
+                       const std::vector<std::size_t> &, std::size_t)>
+        apply;
+    std::array<std::complex<double>, 4> matrix;
+  };
+
+  const std::vector<Case> cases{
+      {"cs control 0 target 2",
+       {0},
+       2,
+       [](auto &sim, const auto &controls, auto target) {
+         sim.s(controls, target);
+       },
+       sMatrixForTest()},
+      {"ct control 2 target 0",
+       {2},
+       0,
+       [](auto &sim, const auto &controls, auto target) {
+         sim.t(controls, target);
+       },
+       tMatrixForTest()},
+      {"csdg control 0 target 1",
+       {0},
+       1,
+       [](auto &sim, const auto &controls, auto target) {
+         sim.sdg(controls, target);
+       },
+       sdgMatrixForTest()},
+      {"ctdg control 1 target 2",
+       {1},
+       2,
+       [](auto &sim, const auto &controls, auto target) {
+         sim.tdg(controls, target);
+       },
+       tdgMatrixForTest()},
+  };
+
+  for (const auto &testCase : cases) {
+    SCOPED_TRACE(testCase.name);
+    MklqCpuCircuitSimulatorTester sim;
+    sim.setStateForTest(initial);
+
+    testCase.apply(sim, testCase.controls, testCase.target);
+    sim.flushGateQueue();
+
+    expectStateNear(sim.stateVectorForTest(),
+                    applySingleQubitMatrixForTest(
+                        initial, testCase.target, testCase.matrix,
+                        testCase.controls));
+    EXPECT_EQ(sim.phaseApplicationsForTest(), 1);
+    EXPECT_EQ(sim.specializedSingleQubitApplicationsForTest(), 1);
+    EXPECT_EQ(sim.specializedSingleControlQubitApplicationsForTest(), 1);
+  }
 }
 
 CUDAQ_TEST(MKLQCpuTester, SwapFastPathAppliesUncontrolledTwoQubitGate) {

@@ -510,6 +510,12 @@ protected:
     return (basis & controls) == controls;
   }
 
+  static bool
+  isDiagonalSingleQubitMatrix(const std::vector<complexd> &matrix) {
+    return matrix[1] == complexd{0.0, 0.0} &&
+           matrix[2] == complexd{0.0, 0.0};
+  }
+
   template <typename PairUpdater>
   void applySingleControlSingleQubitPairs(std::size_t control,
                                           std::size_t target,
@@ -546,6 +552,51 @@ protected:
           state[zeroIndex] *= zeroPhase;
           state[oneIndex] *= onePhase;
         });
+
+#if defined(MKLQ_ENABLE_TEST_ACCESSORS)
+    ++phaseApplications;
+#endif
+  }
+
+  void applyDiagonalSingleQubitGate(complexd zeroPhase, complexd onePhase,
+                                    const std::vector<std::size_t> &controls,
+                                    std::size_t target) {
+    if (controls.size() == 1) {
+      applySingleControlSingleQubitPairs(
+          controls[0], target, [&](std::size_t zeroIndex,
+                                   std::size_t oneIndex) {
+            state[zeroIndex] *= zeroPhase;
+            state[oneIndex] *= onePhase;
+          });
+
+#if defined(MKLQ_ENABLE_TEST_ACCESSORS)
+      ++phaseApplications;
+#endif
+      return;
+    }
+
+    const auto mask = qubitMask(target);
+    const auto controlBits = controlMask(controls);
+    const auto zeroPhaseIsIdentity = zeroPhase == complexd{1.0, 0.0};
+    const auto onePhaseIsIdentity = onePhase == complexd{1.0, 0.0};
+
+#if defined(_OPENMP)
+    const auto threadCount = parallelThreadCount();
+#pragma omp parallel for num_threads(                                          \
+        threadCount) if (threadCount > 1 &&                                    \
+                             stateDimension >= parallelStateThreshold)
+#endif
+    for (std::size_t basis = 0; basis < stateDimension; ++basis) {
+      if (!controlsSatisfied(basis, controlBits))
+        continue;
+
+      if ((basis & mask) == 0) {
+        if (!zeroPhaseIsIdentity)
+          state[basis] *= zeroPhase;
+      } else if (!onePhaseIsIdentity) {
+        state[basis] *= onePhase;
+      }
+    }
 
 #if defined(MKLQ_ENABLE_TEST_ACCESSORS)
     ++phaseApplications;
@@ -760,6 +811,11 @@ protected:
     if (isBuiltInOperation && applySpecializedSingleQubitGate(
                                   operationName, matrix, controls, target))
       return;
+
+    if (isBuiltInOperation && isDiagonalSingleQubitMatrix(matrix)) {
+      applyDiagonalSingleQubitGate(matrix[0], matrix[3], controls, target);
+      return;
+    }
 
     const auto controlBits = controlMask(controls);
 #if defined(_OPENMP)
