@@ -38,6 +38,7 @@ COUNTER_TEST_SUFFIXES = (
     "MultiControlBuiltInSingleQubitGatesKeepGenericSpecializedPath",
     "CzFastPathAppliesControlledZGate",
     "GenericTwoQubitBlockPathAppliesCustomGate",
+    "ControlledDenseTwoQubitBlockPathAppliesCustomGate",
     "SwapFastPathAppliesUncontrolledTwoQubitGate",
     "RowSparseTwoQubitCustomOperationUsesDedicatedFastPath",
     "RowSparseThreeQubitCustomOperationUsesDedicatedFastPath",

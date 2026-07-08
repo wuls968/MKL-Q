@@ -1760,6 +1760,34 @@ CUDAQ_TEST(MKLQCpuTester, SwapFastPathAppliesUncontrolledTwoQubitGate) {
 
 CUDAQ_TEST(MKLQCpuTester, GenericTwoQubitBlockPathAppliesCustomGate) {
   const std::vector<std::complex<double>> initial{
+      {1.0, 0.0},
+      {2.0, -1.0},
+      {0.5, 0.25},
+      {-3.0, 0.5},
+  };
+  const auto invSqrt2 = 1.0 / std::sqrt(2.0);
+  const std::vector<std::complex<double>> denseMix{
+      {invSqrt2, 0.0}, {0.0, 0.0},       {invSqrt2, 0.0},  {0.0, 0.0},
+      {0.0, 0.0},      {invSqrt2, 0.0},  {0.0, 0.0},       {invSqrt2, 0.0},
+      {invSqrt2, 0.0}, {0.0, 0.0},       {-invSqrt2, 0.0}, {0.0, 0.0},
+      {0.0, 0.0},      {invSqrt2, 0.0},  {0.0, 0.0},       {-invSqrt2, 0.0},
+  };
+
+  MklqCpuCircuitSimulatorTester sim;
+  sim.setStateForTest(initial);
+
+  sim.applyTwoQubitGateForTest(denseMix, {}, {0, 1});
+
+  expectStateNear(sim.stateVectorForTest(),
+                  applyTwoQubitMatrixForTest(initial, {0, 1}, denseMix, {}));
+  EXPECT_EQ(sim.twoQubitBlockApplicationsForTest(), 1);
+  EXPECT_EQ(sim.twoQubitRowSparseApplicationsForTest(), 0);
+  EXPECT_EQ(sim.swapApplicationsForTest(), 0);
+  EXPECT_EQ(sim.specializedSingleQubitApplicationsForTest(), 0);
+}
+
+CUDAQ_TEST(MKLQCpuTester, ControlledDenseTwoQubitBlockPathAppliesCustomGate) {
+  const std::vector<std::complex<double>> initial{
       {1.0, 0.0},   {2.0, -1.0}, {0.5, 0.25}, {-3.0, 0.5},
       {0.25, -0.5}, {1.5, 0.5},  {-2.0, 1.0}, {0.75, -1.25},
   };
