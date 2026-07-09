@@ -714,7 +714,7 @@ def test_mklq_clean_cpu_gate_plan_uses_fixed_environment(tmp_path):
         "y-state,diagonal-phase-state,ch-state,cy-state,crx-state,cry-state,"
         "crz-state,cz-state,two-qubit-state,custom-two-qubit-state,"
         "dense-two-qubit-state,controlled-dense-two-qubit-state,"
-        "three-qubit-state")
+        "controlled-swap-state,three-qubit-state")
     config = module.GateConfig(
         repo_root=tmp_path,
         pythonpath="/tmp/cudaq-runtime",
@@ -734,7 +734,8 @@ def test_mklq_clean_cpu_gate_plan_uses_fixed_environment(tmp_path):
             "y-state,diagonal-phase-state,ch-state,cy-state,crx-state,"
             "cry-state,crz-state,cz-state,two-qubit-state,"
             "custom-two-qubit-state,dense-two-qubit-state,"
-            "controlled-dense-two-qubit-state,three-qubit-state"),
+            "controlled-dense-two-qubit-state,controlled-swap-state,"
+            "three-qubit-state"),
         composite_cases=
         "qft-like-state,seeded-clifford-state,hardware-efficient-ansatz-state",
         sampling_cases="sample-full-register,sample-partial-register",
@@ -761,7 +762,7 @@ def test_mklq_clean_cpu_gate_plan_uses_fixed_environment(tmp_path):
     assert plan["paths"]["gate_raw"].endswith(
         "local-clean-cpu-gate-y-diagonal-phase-ch-cy-crx-cry-crz-cz-two-qubit"
         "-custom-two-qubit-dense-two-qubit-controlled-dense-two-qubit"
-        "-three-qubit-q20-2026-06-21.json"
+        "-controlled-swap-three-qubit-q20-2026-06-21.json"
     )
     assert plan["paths"]["composite_raw"].endswith(
         "local-clean-cpu-composite-qft-like-seeded-clifford-hardware-efficient-ansatz-q20-2026-06-21.json"
@@ -776,7 +777,7 @@ def test_mklq_clean_cpu_gate_plan_uses_fixed_environment(tmp_path):
         "y-state,diagonal-phase-state,ch-state,cy-state,crx-state,cry-state,"
         "crz-state,cz-state,two-qubit-state,custom-two-qubit-state,"
         "dense-two-qubit-state,controlled-dense-two-qubit-state,"
-        "three-qubit-state")
+        "controlled-swap-state,three-qubit-state")
     assert gate_command[gate_command.index("--targets") + 1] == (
         "qpp-cpu,mklq-cpu")
     composite_command = plan["commands"]["composite_raw"]
@@ -946,7 +947,7 @@ def test_mklq_cpu_scaling_gate_plan_accepts_ansatz_case(tmp_path):
         "local-scaling-cpu-hardware-efficient-ansatz-q18-q22-2026-06-30")
 
 
-def test_mklq_cpu_scaling_gate_plan_accepts_two_custom_controlled_dense_three_qubit_cases(
+def test_mklq_cpu_scaling_gate_plan_accepts_two_custom_controlled_dense_swap_three_qubit_cases(
         tmp_path):
     module = _load_cpu_scaling_benchmark_gate_module()
     config = module.ScalingConfig(
@@ -965,13 +966,13 @@ def test_mklq_cpu_scaling_gate_plan_accepts_two_custom_controlled_dense_three_qu
         targets="qpp-cpu,mklq-cpu",
         cases=("two-qubit-state,custom-two-qubit-state,"
                "dense-two-qubit-state,controlled-dense-two-qubit-state,"
-               "three-qubit-state"),
+               "controlled-swap-state,three-qubit-state"),
         summary_id=
-        "local-scaling-cpu-two-qubit-custom-two-qubit-dense-two-qubit-controlled-dense-two-qubit-three-qubit-q18-q22-2026-07-08-dense-two-qubit-scaling",
+        "local-scaling-cpu-two-qubit-custom-two-qubit-dense-two-qubit-controlled-dense-two-qubit-controlled-swap-three-qubit-q18-q22-2026-07-08-dense-two-qubit-scaling",
         evidence_kind="clean_local_benchmark_evidence",
         ratio_group="clean_worktree_cross_target_ratio",
         performance_scope="local test only",
-        summary_text=("Synthetic two/custom/dense/controlled-dense/"
+        summary_text=("Synthetic two/custom/dense/controlled-dense/swap/"
                       "three-qubit scaling benchmark gate."),
         runtime_note="synthetic runtime note",
         allow_dirty=False,
@@ -982,20 +983,21 @@ def test_mklq_cpu_scaling_gate_plan_accepts_two_custom_controlled_dense_three_qu
     plan = module.build_plan(config)
 
     assert plan["paths"]["raw"].endswith(
-        "local-scaling-cpu-two-qubit-custom-two-qubit-dense-two-qubit-controlled-dense-two-qubit-three-qubit-q18-q22-2026-07-08-dense-two-qubit-scaling.json"
+        "local-scaling-cpu-two-qubit-custom-two-qubit-dense-two-qubit-controlled-dense-two-qubit-controlled-swap-three-qubit-q18-q22-2026-07-08-dense-two-qubit-scaling.json"
     )
     assert plan["paths"]["summary"].endswith(
-        "local-scaling-cpu-two-qubit-custom-two-qubit-dense-two-qubit-controlled-dense-two-qubit-three-qubit-q18-q22-2026-07-08-dense-two-qubit-scaling.summary.json"
+        "local-scaling-cpu-two-qubit-custom-two-qubit-dense-two-qubit-controlled-dense-two-qubit-controlled-swap-three-qubit-q18-q22-2026-07-08-dense-two-qubit-scaling.summary.json"
     )
     benchmark_command = plan["commands"]["raw"]
     assert benchmark_command[benchmark_command.index("--cases") + 1] == (
         "two-qubit-state,custom-two-qubit-state,dense-two-qubit-state,"
-        "controlled-dense-two-qubit-state,three-qubit-state")
+        "controlled-dense-two-qubit-state,controlled-swap-state,"
+        "three-qubit-state")
     assert benchmark_command[benchmark_command.index("--qubits") + 1] == (
         "18,20,22")
     summary_command = plan["commands"]["summary"]
     assert summary_command[summary_command.index("--summary-id") + 1] == (
-        "local-scaling-cpu-two-qubit-custom-two-qubit-dense-two-qubit-controlled-dense-two-qubit-three-qubit-q18-q22-2026-07-08-dense-two-qubit-scaling"
+        "local-scaling-cpu-two-qubit-custom-two-qubit-dense-two-qubit-controlled-dense-two-qubit-controlled-swap-three-qubit-q18-q22-2026-07-08-dense-two-qubit-scaling"
     )
 
 
@@ -8637,6 +8639,122 @@ def test_mklq_benchmark_dry_run_accepts_controlled_dense_two_qubit_case(
     assert rows[0]["status"] == "planned"
     assert rows[0]["case"] == "controlled-dense-two-qubit-state"
     assert rows[0]["estimated_state_bytes"] == 16 * (1 << 4)
+
+
+def test_mklq_benchmark_dry_run_accepts_controlled_swap_case(tmp_path):
+    repo_root = Path(__file__).resolve().parents[3]
+    script = repo_root / "benchmarks" / "mklq" / "bench_mklq_targets.py"
+    output = tmp_path / "dry-run-controlled-swap.json"
+    env = os.environ.copy()
+    env.pop("PYTHONPATH", None)
+
+    subprocess.run([
+        sys.executable,
+        str(script),
+        "--dry-run",
+        "--targets",
+        "mklq-metal",
+        "--cases",
+        "controlled-swap-state",
+        "--qubits",
+        "4",
+        "--output",
+        str(output),
+    ],
+                   check=True,
+                   capture_output=True,
+                   text=True,
+                   env=env)
+
+    report = json.loads(output.read_text(encoding="utf-8"))
+    assert report["config"]["cases"] == ["controlled-swap-state"]
+    rows = report["results"]
+    assert len(rows) == 1
+    assert rows[0]["status"] == "planned"
+    assert rows[0]["case"] == "controlled-swap-state"
+    assert rows[0]["estimated_state_bytes"] == 16 * (1 << 4)
+    metrics = rows[0]["metrics"]
+    assert metrics["metal_path_label"] == (
+        "mklq_metal_mixed_controlled_swap_state_host_readback")
+    assert metrics["metal_path_label_source"] == (
+        "benchmark_harness_static_case_map")
+    assert metrics["metal_runtime_counter"] is False
+
+
+def test_mklq_benchmark_controlled_swap_case_records_gate_metrics(
+        monkeypatch):
+    module = _load_benchmark_module()
+
+    class FakeKernel:
+
+        def __init__(self):
+            self.operations = []
+
+        def qalloc(self, qubits):
+            return list(range(qubits))
+
+        def ry(self, theta, target):
+            self.operations.append(("ry", theta, target))
+
+        def rz(self, theta, target):
+            self.operations.append(("rz", theta, target))
+
+        def cswap(self, control, first, second):
+            self.operations.append(("cswap", control, first, second))
+
+    class FakeCudaq:
+
+        def __init__(self):
+            self.kernels = []
+
+        def reset_target(self):
+            pass
+
+        def set_target(self, target):
+            assert target == "mklq-cpu"
+
+        def set_random_seed(self, seed):
+            assert seed == 13
+
+        def make_kernel(self):
+            kernel = FakeKernel()
+            self.kernels.append(kernel)
+            return kernel
+
+        def get_state(self, kernel):
+            return object()
+
+    def fake_timed_repeats(action, repeats):
+        assert repeats == 1
+        action()
+        return [0.5]
+
+    monkeypatch.setattr(module, "timed_repeats", fake_timed_repeats)
+    monkeypatch.setattr(module, "process_max_rss_bytes", lambda: 8192)
+
+    fake_cudaq = FakeCudaq()
+    row = module.run_case(fake_cudaq,
+                          "mklq-cpu",
+                          "controlled-swap-state",
+                          qubits=4,
+                          shots=16,
+                          repeats=1,
+                          warmups=0,
+                          layers=2)
+
+    assert row["status"] == "ok"
+    metrics = row["metrics"]
+    assert metrics["state_prep_gate_count"] == 6
+    assert metrics["controlled_swap_gate_count"] == 4
+    assert metrics["controlled_swap_gate_family"] == "built-in cswap"
+    assert metrics["gate_count"] == 10
+    assert metrics["layers"] == 2
+    assert metrics[
+        "controlled_swap_gate_state_throughput_per_second"] == 8
+    assert metrics["process_max_rss_bytes_cumulative"] == 8192
+    assert len(fake_cudaq.kernels) == 1
+    assert sum(1 for operation in fake_cudaq.kernels[0].operations
+               if operation[0] == "cswap") == 4
 
 
 def test_mklq_benchmark_dry_run_accepts_composite_state_cases(tmp_path):

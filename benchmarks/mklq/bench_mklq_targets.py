@@ -53,6 +53,9 @@ METAL_TWO_QUBIT_SCOPE = (
 METAL_CONTROLLED_TWO_QUBIT_SCOPE = (
     "experimental mixed-path controlled two-target gate update followed by "
     "host readback for cudaq.get_state")
+METAL_CONTROLLED_SWAP_SCOPE = (
+    "experimental mixed-path controlled built-in SWAP update followed by "
+    "host readback for cudaq.get_state")
 METAL_THREE_QUBIT_SCOPE = (
     "resident fp32 Metal three-target gate update followed by host readback for "
     "cudaq.get_state")
@@ -127,6 +130,9 @@ METAL_PATH_CASES = {
     "controlled-dense-two-qubit-state":
         ("mklq_metal_mixed_controlled_two_gate_state_host_readback",
          METAL_CONTROLLED_TWO_QUBIT_SCOPE),
+    "controlled-swap-state":
+        ("mklq_metal_mixed_controlled_swap_state_host_readback",
+         METAL_CONTROLLED_SWAP_SCOPE),
     "three-qubit-state": ("mklq_metal_resident_three_gate_state_host_readback",
                           METAL_THREE_QUBIT_SCOPE),
     "qft-like-state": ("mklq_metal_mixed_composite_state_host_readback",
@@ -226,6 +232,7 @@ DEFAULT_CASES = (
     "custom-two-qubit-state",
     "dense-two-qubit-state",
     "controlled-dense-two-qubit-state",
+    "controlled-swap-state",
     "three-qubit-state",
     "qft-like-state",
     "hardware-efficient-ansatz-state",
@@ -732,6 +739,33 @@ def build_controlled_dense_two_qubit_state_kernel(
       state_prep_gate_count + controlled_dense_two_qubit_gate_count)
   return (kernel, gate_count, state_prep_gate_count,
           controlled_dense_two_qubit_gate_count)
+
+
+def build_controlled_swap_state_kernel(
+    cudaq: Any, qubits: int, layers: int) -> tuple[Any, int, int, int]:
+  if qubits < 3:
+    raise ValueError("controlled SWAP benchmarks require at least 3 qubits")
+
+  kernel = cudaq.make_kernel()
+  q = kernel.qalloc(qubits)
+  state_prep_gate_count = 0
+  controlled_swap_gate_count = 0
+
+  for index in range(qubits):
+    theta = 0.043 + 0.0017 * index
+    kernel.ry(theta, q[index])
+    if index % 2:
+      kernel.rz(-0.5 * theta, q[index])
+      state_prep_gate_count += 1
+    state_prep_gate_count += 1
+
+  for _ in range(layers):
+    for index in range(qubits - 2):
+      kernel.cswap(q[index], q[index + 1], q[index + 2])
+      controlled_swap_gate_count += 1
+
+  gate_count = state_prep_gate_count + controlled_swap_gate_count
+  return (kernel, gate_count, state_prep_gate_count, controlled_swap_gate_count)
 
 
 def three_qubit_flip_all_matrix() -> list[list[int]]:
@@ -1371,6 +1405,24 @@ def run_case(cudaq: Any, target: str, case: str, qubits: int, shots: int,
           "controlled_dense_two_qubit_gate_state_throughput_per_second":
               gate_count_controlled / median if median > 0 else None,
       })
+    elif case == "controlled-swap-state":
+      kernel, gate_count, state_prep_gate_count, controlled_swap_gate_count = (
+          build_controlled_swap_state_kernel(cudaq, qubits, layers))
+      action = lambda: cudaq.get_state(kernel)
+      for _ in range(warmups):
+        action()
+      timings = timed_repeats(action, repeats)
+      metrics = summarize_timings(timings)
+      median = metrics["elapsed_seconds_median"]
+      metrics.update({
+          "gate_count": gate_count,
+          "state_prep_gate_count": state_prep_gate_count,
+          "controlled_swap_gate_count": controlled_swap_gate_count,
+          "controlled_swap_gate_family": "built-in cswap",
+          "layers": layers,
+          "controlled_swap_gate_state_throughput_per_second":
+              controlled_swap_gate_count / median if median > 0 else None,
+      })
     elif case == "three-qubit-state":
       kernel, gate_count, state_prep_gate_count, three_qubit_gate_count = (
           build_three_qubit_state_kernel(cudaq, qubits, layers))
@@ -1819,6 +1871,7 @@ def make_parser() -> argparse.ArgumentParser:
                             "custom-two-qubit-state,"
                             "dense-two-qubit-state,"
                             "controlled-dense-two-qubit-state,"
+                            "controlled-swap-state,"
                             "three-qubit-state,"
                             "qft-like-state,hardware-efficient-ansatz-state,"
                             "crz-distance-state,crz-distance-sweep-state,"
@@ -1856,6 +1909,7 @@ def make_parser() -> argparse.ArgumentParser:
                             "custom-two-qubit-state/"
                             "dense-two-qubit-state/"
                             "controlled-dense-two-qubit-state/"
+                            "controlled-swap-state/"
                             "three-qubit-state/"
                             "qft-like-state/crz-distance-state/"
                             "crz-distance-sweep-state/"

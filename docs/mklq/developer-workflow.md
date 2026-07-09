@@ -151,6 +151,9 @@ counter reports, regenerate the matching public Markdown and run the docs
 guards. When multiple bounded reports are tracked, aggregate counts in the
 generated docs are summed across reports; repeated daily probes intentionally
 count the same selected counter tests once per report.
+The default clean CPU benchmark gate also includes controlled built-in SWAP
+timing rows; collect that evidence only from a clean worktree and keep the raw
+JSON under ignored `benchmarks/mklq/results/`.
 Before describing the branch as public-ready, make sure the preflight
 `public_report_references` check passes. It fails when public docs or workflows
 reference untracked report files under `benchmarks/mklq/reports/*.json`.
