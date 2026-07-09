@@ -10177,6 +10177,76 @@ def test_mklq_benchmark_summary_records_two_three_scaling_evidence():
     ] == pytest.approx(90.91154571848728)
 
 
+def test_mklq_benchmark_summary_records_controlled_swap_scaling_evidence():
+    repo_root = Path(__file__).resolve().parents[3]
+    summary_path = (
+        repo_root / "benchmarks" / "mklq" / "reports" /
+        "local-scaling-cpu-controlled-swap-q18-q22-2026-07-09-controlled-swap-scaling.summary.json"
+    )
+
+    summary = json.loads(summary_path.read_text(encoding="utf-8"))
+
+    assert summary["schema_version"] == "mklq-benchmark-summary-v1"
+    assert summary["evidence_kind"] == "clean_local_benchmark_evidence"
+    assert summary["summary_id"] == (
+        "local-scaling-cpu-controlled-swap-q18-q22-2026-07-09-controlled-swap-scaling"
+    )
+    assert summary["git"]["commit"] == (
+        "1fde47ab75250c5d613ce93ec2faf257ed1757e8")
+    assert summary["git"]["dirty"] is False
+    assert summary["interpretation"]["clean_worktree"] is True
+    assert summary["interpretation"]["scaling_axis"] == "qubits"
+    assert summary["interpretation"]["scaling_qubits"] == [18, 20, 22]
+    assert summary["raw_results"][0]["path"] == (
+        "benchmarks/mklq/results/"
+        "local-scaling-cpu-controlled-swap-q18-q22-2026-07-09-controlled-swap-scaling.json"
+    )
+    assert summary["raw_results"][0]["sha256"] == (
+        "a44c5599a9d020f6026a2ce28012a4cf35e37b69f04ff5b9bc4445544c1cfc4e")
+    assert summary["raw_results"][0]["status_rows"] == {"ok": 6}
+    assert summary["raw_results"][0]["tracked"] is False
+    assert summary["machine"]["cpu_brand"] == "Apple M5"
+    assert summary["config"]["targets"] == ["qpp-cpu", "mklq-cpu"]
+    assert summary["config"]["cases"] == ["controlled-swap-state"]
+    assert summary["config"]["qubits"] == [18, 20, 22]
+    assert summary["config"]["repeats"] == 3
+    assert summary["config"]["warmups"] == 1
+    assert summary["config"]["layers"] == 8
+
+    rows = {
+        (row["target"], row["case"], row["qubits"]): row
+        for row in summary["rows"]
+    }
+    assert len(rows) == 6
+    expected_mklq = {
+        18: (0.03897566700106836, 155, 27, 128, 3284.100307930366),
+        20: (0.0522009580017766, 174, 30, 144, 2758.5700629306293),
+        22: (0.2809818749992701, 193, 33, 160, 569.4317471559888),
+    }
+    for qubits, (elapsed, gate_count, prep_count, cswap_count,
+                 throughput) in expected_mklq.items():
+        row = rows[("mklq-cpu", "controlled-swap-state", qubits)]
+        assert row["elapsed_seconds_median"] == pytest.approx(elapsed)
+        assert row["gate_count"] == gate_count
+        assert row["state_prep_gate_count"] == prep_count
+        assert row["controlled_swap_gate_count"] == cswap_count
+        assert row["controlled_swap_gate_family"] == "built-in cswap"
+        assert row[
+            "controlled_swap_gate_state_throughput_per_second"
+        ] == pytest.approx(throughput)
+
+    ratios = summary["comparison"]["clean_worktree_cross_target_ratio"]
+    assert ratios[
+        "qpp_cpu_over_mklq_cpu_controlled_swap_state_q18"
+    ] == pytest.approx(36.35788965360579)
+    assert ratios[
+        "qpp_cpu_over_mklq_cpu_controlled_swap_state_q20"
+    ] == pytest.approx(125.49785645274045)
+    assert ratios[
+        "qpp_cpu_over_mklq_cpu_controlled_swap_state_q22"
+    ] == pytest.approx(147.441824317345)
+
+
 def test_mklq_benchmark_summary_records_sanitized_sampling_evidence():
     repo_root = Path(__file__).resolve().parents[3]
     summary_path = (
