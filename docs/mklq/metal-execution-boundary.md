@@ -26,6 +26,7 @@ Current counter evidence tracks these resident Metal state routes:
 | Two-target and three-target updates | Counter tests grouped under `resident_gate` | Covered two-target updates include the builtin controlled-SWAP dispatcher route; this is not a broad arbitrary-unitary guarantee. |
 | Full-register probability fill | Counter tests grouped under `probability_sampling` | The probability vector is host-visible output by design. |
 | Marginal probability fill | Counter tests grouped under `probability_sampling` | Marginal output is host-visible by design. |
+| Zero-shot Z-parity expectation | Counter tests grouped under `probability_sampling` | Resident full or marginal probabilities cross to the host for a small parity reduction; the state vector remains resident. |
 | Requested-order partial-register sampling | Counter tests grouped under `probability_sampling` | The selected route proves resident marginal-probability work before counts-only Metal sample-count accumulation or sequential host draw/count accumulation. |
 | Deterministic sampling bypass | Counter tests grouped under `probability_sampling` | One-outcome sequential and counts-only distributions can materialize results directly after resident probability work; this is not a general on-device sampler. |
 | Full-register and partial-register counts-only draw/count accumulation | Counter tests grouped under `probability_sampling` | Selected counts-only paths can generate stochastic draws and accumulate outcome counts with Metal kernels after resident probability work; uniform-probability distributions can use a generated-count fast path without a cumulative-weight upload. |
@@ -66,7 +67,7 @@ Tracked fallback and synchronization boundaries include:
 | --- | --- | --- |
 | Unsupported custom operations with four or more target qubits | The target synchronizes the resident state before running the CPU oracle path. | `fallback_boundary` |
 | Reupload after unsupported fallback | A later supported operation can return to resident execution after the CPU oracle updates state. | `fallback_boundary` |
-| Zero-shot expectation or explicit state readback | Host-visible state or expectation paths may force synchronization. | `synchronization_boundary` |
+| Explicit state readback | Materializing amplitudes on the host synchronizes the resident state. | `synchronization_boundary` |
 | Device selection and runtime availability | The target records whether a Metal runtime was detected before resident routes are exercised. | `runtime_device` |
 
 A passing `mklq-metal` fixture therefore means the mixed path preserved CUDA-Q

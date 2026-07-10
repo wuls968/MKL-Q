@@ -1670,8 +1670,23 @@ protected:
     validateSampleQubits(qubits);
 
 #if defined(MKLQ_ENABLE_METAL_RUNTIME)
-    synchronizeHostStateFromMetal();
-    invalidateMetalResidentState();
+    if (metalExecutor.hasResidentState(state.size())) {
+      throwIfMetalResidentStatePoisoned("cannot compute expectation from");
+      std::vector<double> probabilities(1ULL << qubits.size(), 0.0);
+      fillMarginalProbabilities(probabilities, qubits);
+
+      double expectation = 0.0;
+      for (std::size_t outcome = 0; outcome < probabilities.size(); ++outcome) {
+        const auto evenParity = std::popcount(outcome) % 2 == 0;
+        expectation += (evenParity ? 1.0 : -1.0) * probabilities[outcome];
+      }
+      return expectation;
+    }
+
+    if (metalStateHostDirty) {
+      synchronizeHostStateFromMetal();
+      invalidateMetalResidentState();
+    }
 #endif
 
     std::size_t bitmask = 0;

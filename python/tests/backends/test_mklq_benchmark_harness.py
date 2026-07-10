@@ -3378,7 +3378,7 @@ def test_mklq_metal_runtime_counter_probe_tracks_runtime_counter_surface():
         "SimulatorThrowsWhenResidentMeasurementProbabilityFails",
         "SimulatorThrowsWhenResidentMeasurementCollapseFails",
         "SimulatorThrowsWhenResidentResetGateFails",
-        "SimulatorSynchronizesResidentStateBeforeZeroShotExpectation",
+        "SimulatorComputesZeroShotExpectationFromResidentProbabilities",
         "SimulatorSamplesDenseFullRegisterThroughMetalProbabilityFill",
     }
     metadata_only_suffixes = {

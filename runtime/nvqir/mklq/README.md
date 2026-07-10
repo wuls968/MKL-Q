@@ -56,7 +56,9 @@ python3 -m pytest \
 Run the backend C++ unit tests from the build tree:
 
 ```bash
-ctest --test-dir build-python -R "MKLQ(Metal|Cpu)Tester" --output-on-failure
+ctest --test-dir build-python \
+  -R "(mklq_(cpu|metal)_MKLQ|test_mklq_(cpu|metal)_backend)" \
+  --output-on-failure
 ```
 
 Check installed and source target configs with FileCheck:
