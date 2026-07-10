@@ -107,6 +107,7 @@ public:
   std::size_t uniformGeneratedSampleCountAccumulations() const;
   std::size_t residentStateUploads() const;
   std::size_t residentStateDownloads() const;
+  std::size_t residentGateCommandBufferSubmissions() const;
 
 private:
   struct Impl;

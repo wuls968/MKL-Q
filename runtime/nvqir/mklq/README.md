@@ -172,7 +172,10 @@ target-marker output.
   `qpp` backend and now links Metal/Foundation on Apple platforms for runtime
   device discovery plus a resident fp32 Metal state buffer for supported
   single-target gates, two-target gates, three-target gates, and dense full-register
-  probability-fill kernels. Partial-register sampling uses a cost-gated
+  probability-fill kernels. Consecutive resident gates share one Metal command
+  buffer while retaining separate encoders, then submit before host-visible,
+  CPU-oracle, probability, measurement, or state-replacement boundaries.
+  Partial-register sampling uses a cost-gated
   resident marginal probability kernel for small marginal buffers; when the
   marginal partial-sum work is no smaller than a full probability fill, it
   computes resident full-register probabilities once and folds them to

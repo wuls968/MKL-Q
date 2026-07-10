@@ -537,6 +537,8 @@ struct MetalStateVectorExecutor::Impl {
   id<MTLComputePipelineState> uniformGeneratedSampleCountPipeline = nil;
   id<MTLComputePipelineState> collapsePipeline = nil;
   id<MTLBuffer> residentStateBuffer = nil;
+  id<MTLCommandBuffer> residentGateCommandBuffer = nil;
+  NSMutableArray *residentGateBuffers = nil;
   std::size_t residentStateSize = 0;
   MetalDeviceInfo info;
   std::string error;
@@ -553,6 +555,7 @@ struct MetalStateVectorExecutor::Impl {
   std::size_t uniformGeneratedSampleCountAccumulations = 0;
   std::size_t residentUploads = 0;
   std::size_t residentDownloads = 0;
+  std::size_t residentGateCommandBufferSubmissions = 0;
 
   Impl() {
     @autoreleasepool {
@@ -566,6 +569,12 @@ struct MetalStateVectorExecutor::Impl {
       commandQueue = [device newCommandQueue];
       if (!commandQueue) {
         error = "failed to create Metal command queue.";
+        return;
+      }
+
+      residentGateBuffers = [[NSMutableArray alloc] init];
+      if (!residentGateBuffers) {
+        error = "failed to allocate Metal resident gate buffer tracking.";
         return;
       }
 
@@ -798,6 +807,8 @@ struct MetalStateVectorExecutor::Impl {
   }
 
   ~Impl() {
+    [residentGateCommandBuffer release];
+    [residentGateBuffers release];
     [residentStateBuffer release];
     [collapsePipeline release];
     [uniformGeneratedSampleCountPipeline release];
@@ -819,6 +830,61 @@ struct MetalStateVectorExecutor::Impl {
            marginalProbabilityPipeline && measurementProbabilityPipeline &&
            sampleCountPipeline && generatedSampleCountPipeline &&
            uniformGeneratedSampleCountPipeline && collapsePipeline;
+  }
+
+  bool beginResidentGateEncoding() {
+    if (residentGateCommandBuffer)
+      return true;
+
+    residentGateCommandBuffer = [[commandQueue commandBuffer] retain];
+    if (!residentGateCommandBuffer) {
+      error = "failed to create Metal resident gate command buffer.";
+      return false;
+    }
+
+    return true;
+  }
+
+  id<MTLComputeCommandEncoder> beginResidentGateEncoder() {
+    if (!beginResidentGateEncoding())
+      return nil;
+
+    id<MTLComputeCommandEncoder> encoder =
+        [residentGateCommandBuffer computeCommandEncoder];
+    if (!encoder)
+      error = "failed to create Metal resident gate command encoder.";
+    return encoder;
+  }
+
+  void retainResidentGateBuffers(id<MTLBuffer> matrixBuffer,
+                                 id<MTLBuffer> controlsBuffer,
+                                 id<MTLBuffer> paramsBuffer) {
+    [residentGateBuffers addObject:matrixBuffer];
+    [residentGateBuffers addObject:controlsBuffer];
+    [residentGateBuffers addObject:paramsBuffer];
+  }
+
+  bool flushResidentGateCommands() {
+    if (!residentGateCommandBuffer)
+      return true;
+
+    [residentGateCommandBuffer commit];
+    [residentGateCommandBuffer waitUntilCompleted];
+
+    const auto succeeded =
+        [residentGateCommandBuffer status] == MTLCommandBufferStatusCompleted;
+    if (!succeeded)
+      error = describeError([residentGateCommandBuffer error],
+                            "Metal resident gate command buffer failed.");
+
+    [residentGateCommandBuffer release];
+    residentGateCommandBuffer = nil;
+    [residentGateBuffers removeAllObjects];
+    if (!succeeded)
+      return false;
+
+    ++residentGateCommandBufferSubmissions;
+    return true;
   }
 };
 
@@ -855,6 +921,8 @@ bool MetalStateVectorExecutor::uploadState(const std::complex<double> *state,
     impl->error = "invalid Metal resident state upload input.";
     return false;
   }
+  if (!impl->flushResidentGateCommands())
+    return false;
 
   std::vector<MetalComplexFloat> gpuState(stateSize);
   for (std::size_t index = 0; index < stateSize; ++index)
@@ -891,6 +959,8 @@ bool MetalStateVectorExecutor::downloadState(std::complex<double> *state,
     impl->error = "invalid Metal resident state download input.";
     return false;
   }
+  if (!impl->flushResidentGateCommands())
+    return false;
 
   auto *residentState =
       reinterpret_cast<MetalComplexFloat *>([impl->residentStateBuffer contents]);
@@ -906,6 +976,8 @@ bool MetalStateVectorExecutor::downloadState(std::complex<double> *state,
 void MetalStateVectorExecutor::releaseResidentState() {
   if (!impl)
     return;
+  if (!impl->flushResidentGateCommands())
+    return;
   [impl->residentStateBuffer release];
   impl->residentStateBuffer = nil;
   impl->residentStateSize = 0;
@@ -913,6 +985,11 @@ void MetalStateVectorExecutor::releaseResidentState() {
 
 bool MetalStateVectorExecutor::hasResidentState(std::size_t stateSize) const {
   return impl && impl->residentStateBuffer && impl->residentStateSize == stateSize;
+}
+
+std::size_t
+MetalStateVectorExecutor::residentGateCommandBufferSubmissions() const {
+  return impl ? impl->residentGateCommandBufferSubmissions : 0;
 }
 
 bool MetalStateVectorExecutor::applyResidentSingleQubitGate(
@@ -990,14 +1067,11 @@ bool MetalStateVectorExecutor::applyResidentSingleQubitGate(
       return false;
     }
 
-    id<MTLCommandBuffer> commandBuffer = [impl->commandQueue commandBuffer];
-    id<MTLComputeCommandEncoder> encoder =
-        [commandBuffer computeCommandEncoder];
-    if (!commandBuffer || !encoder) {
+    id<MTLComputeCommandEncoder> encoder = impl->beginResidentGateEncoder();
+    if (!encoder) {
       [matrixBuffer release];
       [controlsBuffer release];
       [paramsBuffer release];
-      impl->error = "failed to create Metal resident command encoder.";
       return false;
     }
 
@@ -1015,20 +1089,7 @@ bool MetalStateVectorExecutor::applyResidentSingleQubitGate(
     [encoder dispatchThreads:MTLSizeMake(pairCount, 1, 1)
        threadsPerThreadgroup:MTLSizeMake(threadsPerThreadgroup, 1, 1)];
     [encoder endEncoding];
-    [commandBuffer commit];
-    [commandBuffer waitUntilCompleted];
-
-    const auto status = [commandBuffer status];
-    if (status != MTLCommandBufferStatusCompleted) {
-      impl->error =
-          describeError([commandBuffer error],
-                        "Metal resident command buffer failed.");
-      [matrixBuffer release];
-      [controlsBuffer release];
-      [paramsBuffer release];
-      return false;
-    }
-
+    impl->retainResidentGateBuffers(matrixBuffer, controlsBuffer, paramsBuffer);
     [matrixBuffer release];
     [controlsBuffer release];
     [paramsBuffer release];
@@ -1421,14 +1482,11 @@ bool MetalStateVectorExecutor::applyResidentTwoQubitGate(
       return false;
     }
 
-    id<MTLCommandBuffer> commandBuffer = [impl->commandQueue commandBuffer];
-    id<MTLComputeCommandEncoder> encoder =
-        [commandBuffer computeCommandEncoder];
-    if (!commandBuffer || !encoder) {
+    id<MTLComputeCommandEncoder> encoder = impl->beginResidentGateEncoder();
+    if (!encoder) {
       [matrixBuffer release];
       [controlsBuffer release];
       [paramsBuffer release];
-      impl->error = "failed to create Metal resident two-qubit command encoder.";
       return false;
     }
 
@@ -1446,20 +1504,7 @@ bool MetalStateVectorExecutor::applyResidentTwoQubitGate(
     [encoder dispatchThreads:MTLSizeMake(blockCount, 1, 1)
        threadsPerThreadgroup:MTLSizeMake(threadsPerThreadgroup, 1, 1)];
     [encoder endEncoding];
-    [commandBuffer commit];
-    [commandBuffer waitUntilCompleted];
-
-    const auto status = [commandBuffer status];
-    if (status != MTLCommandBufferStatusCompleted) {
-      impl->error =
-          describeError([commandBuffer error],
-                        "Metal resident two-qubit command buffer failed.");
-      [matrixBuffer release];
-      [controlsBuffer release];
-      [paramsBuffer release];
-      return false;
-    }
-
+    impl->retainResidentGateBuffers(matrixBuffer, controlsBuffer, paramsBuffer);
     [matrixBuffer release];
     [controlsBuffer release];
     [paramsBuffer release];
@@ -1559,15 +1604,11 @@ bool MetalStateVectorExecutor::applyResidentThreeQubitGate(
       return false;
     }
 
-    id<MTLCommandBuffer> commandBuffer = [impl->commandQueue commandBuffer];
-    id<MTLComputeCommandEncoder> encoder =
-        [commandBuffer computeCommandEncoder];
-    if (!commandBuffer || !encoder) {
+    id<MTLComputeCommandEncoder> encoder = impl->beginResidentGateEncoder();
+    if (!encoder) {
       [matrixBuffer release];
       [controlsBuffer release];
       [paramsBuffer release];
-      impl->error =
-          "failed to create Metal resident three-qubit command encoder.";
       return false;
     }
 
@@ -1585,20 +1626,7 @@ bool MetalStateVectorExecutor::applyResidentThreeQubitGate(
     [encoder dispatchThreads:MTLSizeMake(blockCount, 1, 1)
        threadsPerThreadgroup:MTLSizeMake(threadsPerThreadgroup, 1, 1)];
     [encoder endEncoding];
-    [commandBuffer commit];
-    [commandBuffer waitUntilCompleted];
-
-    const auto status = [commandBuffer status];
-    if (status != MTLCommandBufferStatusCompleted) {
-      impl->error =
-          describeError([commandBuffer error],
-                        "Metal resident three-qubit command buffer failed.");
-      [matrixBuffer release];
-      [controlsBuffer release];
-      [paramsBuffer release];
-      return false;
-    }
-
+    impl->retainResidentGateBuffers(matrixBuffer, controlsBuffer, paramsBuffer);
     [matrixBuffer release];
     [controlsBuffer release];
     [paramsBuffer release];
@@ -1710,6 +1738,8 @@ bool MetalStateVectorExecutor::fillResidentFullRegisterProbabilities(
     impl->error = "state size exceeds Metal probability-fill index range.";
     return false;
   }
+  if (!impl->flushResidentGateCommands())
+    return false;
 
   std::vector<float> gpuProbabilities(impl->residentStateSize, 0.0f);
 
@@ -1799,6 +1829,8 @@ bool MetalStateVectorExecutor::fillResidentMarginalProbabilities(
         "state size exceeds Metal marginal probability thread index range.";
     return false;
   }
+  if (!impl->flushResidentGateCommands())
+    return false;
 
   std::vector<std::uint64_t> qubitMasks(std::max<std::size_t>(qubitCount, 1),
                                         0);
@@ -2273,6 +2305,8 @@ bool MetalStateVectorExecutor::computeResidentQubitProbability(
         "state size exceeds Metal measurement probability thread index range.";
     return false;
   }
+  if (!impl->flushResidentGateCommands())
+    return false;
 
   constexpr NSUInteger measurementThreadsPerThreadgroup = 256;
   if ([impl->measurementProbabilityPipeline maxTotalThreadsPerThreadgroup] <
@@ -2380,6 +2414,8 @@ bool MetalStateVectorExecutor::collapseResidentQubit(
     impl->error = "state size exceeds Metal collapse thread index range.";
     return false;
   }
+  if (!impl->flushResidentGateCommands())
+    return false;
 
   const auto inverseNorm =
       static_cast<float>(1.0 / std::sqrt(branchProbability));
