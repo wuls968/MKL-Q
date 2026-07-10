@@ -35,7 +35,7 @@ CATEGORY_DESCRIPTIONS = {
     "two_qubit_fast_path":
         "Two-qubit gate fast-path counter tests",
     "three_qubit_fast_path":
-        "Three-qubit row-sparse fast-path counter tests",
+        "Three-qubit row-sparse and unit-permutation fast-path counter tests",
     "other":
         "Unclassified CPU gate counter tests",
 }
@@ -57,7 +57,10 @@ CATEGORY_RULES = (
         "RowSparseTwoQubit",
         "SwapFastPath",
     )),
-    ("three_qubit_fast_path", ("RowSparseThreeQubit",)),
+    ("three_qubit_fast_path", (
+        "RowSparseThreeQubit",
+        "UnitPermutationThreeQubit",
+    )),
     ("single_qubit_fast_path", (
         "XFastPath",
         "BuiltInSingleQubit",

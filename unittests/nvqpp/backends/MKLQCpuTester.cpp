@@ -221,6 +221,10 @@ public:
     return threeQubitRowSparseApplications;
   }
 
+  std::size_t threeQubitUnitPermutationApplicationsForTest() const {
+    return threeQubitUnitPermutationApplications;
+  }
+
   static std::size_t indexWithTwoZeroBitsForTest(std::size_t block,
                                                  std::size_t firstBit,
                                                  std::size_t secondBit) {
@@ -2060,11 +2064,44 @@ CUDAQ_TEST(MKLQCpuTester,
       {12.0, -3.0}, {13.0, -3.25}, {14.0, -3.5}, {15.0, -3.75},
   });
 
+  std::vector<std::complex<double>> phaseFlipAll(64, {0.0, 0.0});
+  for (std::size_t row = 0; row < 8; ++row)
+    phaseFlipAll[row * 8 + (7 - row)] = {0.0, 1.0};
+
+  sim.applyCustomOperation(phaseFlipAll, {3}, {2, 0, 1},
+                           "row_sparse_phase_flip_all");
+  sim.flushGateQueue();
+  const auto state = sim.stateVectorForTest();
+
+  ASSERT_EQ(state.size(), 16);
+  for (std::size_t index = 0; index < 8; ++index)
+    expectNear(state[index],
+               {static_cast<double>(index), -0.25 * static_cast<double>(index)});
+  for (std::size_t index = 8; index < 16; ++index) {
+    const auto source = index ^ 7;
+    expectNear(state[index],
+               {0.25 * static_cast<double>(source),
+                static_cast<double>(source)});
+  }
+  EXPECT_EQ(sim.threeQubitRowSparseApplicationsForTest(), 1);
+  EXPECT_EQ(sim.threeQubitUnitPermutationApplicationsForTest(), 0);
+}
+
+CUDAQ_TEST(MKLQCpuTester,
+           UnitPermutationThreeQubitCustomOperationUsesDedicatedFastPath) {
+  MklqCpuCircuitSimulatorTester sim;
+  sim.setStateForTest({
+      {0.0, 0.0},   {1.0, -0.25}, {2.0, -0.5},  {3.0, -0.75},
+      {4.0, -1.0},  {5.0, -1.25}, {6.0, -1.5},  {7.0, -1.75},
+      {8.0, -2.0},  {9.0, -2.25}, {10.0, -2.5}, {11.0, -2.75},
+      {12.0, -3.0}, {13.0, -3.25}, {14.0, -3.5}, {15.0, -3.75},
+  });
+
   std::vector<std::complex<double>> flipAll(64, {0.0, 0.0});
   for (std::size_t row = 0; row < 8; ++row)
     flipAll[row * 8 + (7 - row)] = {1.0, 0.0};
 
-  sim.applyCustomOperation(flipAll, {3}, {2, 0, 1}, "row_sparse_flip_all");
+  sim.applyCustomOperation(flipAll, {3}, {2, 0, 1}, "unit_permutation_flip_all");
   sim.flushGateQueue();
   const auto state = sim.stateVectorForTest();
 
@@ -2078,5 +2115,6 @@ CUDAQ_TEST(MKLQCpuTester,
                {static_cast<double>(source),
                 -0.25 * static_cast<double>(source)});
   }
-  EXPECT_EQ(sim.threeQubitRowSparseApplicationsForTest(), 1);
+  EXPECT_EQ(sim.threeQubitRowSparseApplicationsForTest(), 0);
+  EXPECT_EQ(sim.threeQubitUnitPermutationApplicationsForTest(), 1);
 }

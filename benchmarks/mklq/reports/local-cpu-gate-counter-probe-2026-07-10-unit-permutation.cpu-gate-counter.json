@@ -1,0 +1,425 @@
+{
+  "boundary": {
+    "cross_machine_performance_proof": false,
+    "gate_fast_path_counter_evidence": true,
+    "performance_benchmark": false,
+    "raw_logs_truncated": true,
+    "release_signoff": false,
+    "runtime_counter_evidence": true,
+    "runtime_counter_source": "build-tree ctest cases that assert MKL-Q mklq-cpu simulator test-accessor gate fast-path counters",
+    "single_control_rz_phase_counter_evidence": true
+  },
+  "created_at_utc": "2026-07-10T13:24:13.949275+00:00",
+  "evidence_kind": "local_runtime_counter_probe",
+  "execution": {
+    "returncode": 0,
+    "test_command_count": 22
+  },
+  "expected_counter_tests": [
+    "mklq_cpu_MKLQCpuTester.XFastPathAppliesUncontrolledSingleQubitGate",
+    "mklq_cpu_MKLQCpuTester.CnotFastPathAppliesControlledXGate",
+    "mklq_cpu_MKLQCpuTester.BuiltInSingleQubitFastPathsMatchMatrices",
+    "mklq_cpu_MKLQCpuTester.ControlledBuiltInSingleQubitFastPathsMatchMatrices",
+    "mklq_cpu_MKLQCpuTester.SingleControlBuiltInSingleQubitGatesUseDedicatedFastPath",
+    "mklq_cpu_MKLQCpuTester.SingleControlBuiltInHadamardGateUsesDedicatedFastPath",
+    "mklq_cpu_MKLQCpuTester.SingleControlBuiltInYGateUsesDedicatedFastPath",
+    "mklq_cpu_MKLQCpuTester.SingleControlBuiltInRxGateUsesDedicatedFastPath",
+    "mklq_cpu_MKLQCpuTester.SingleControlBuiltInRyGateUsesDedicatedFastPath",
+    "mklq_cpu_MKLQCpuTester.SingleControlRzUsesDedicatedPhaseFastPath",
+    "mklq_cpu_MKLQCpuTester.HardwareEfficientAnsatzCompositeUsesDedicatedFastPaths",
+    "mklq_cpu_MKLQCpuTester.MultiControlBuiltInSingleQubitGatesKeepGenericSpecializedPath",
+    "mklq_cpu_MKLQCpuTester.CzFastPathAppliesControlledZGate",
+    "mklq_cpu_MKLQCpuTester.UncontrolledDiagonalPhaseGatesUsePhaseFastPath",
+    "mklq_cpu_MKLQCpuTester.SingleControlDiagonalPhaseGatesUsePhaseFastPath",
+    "mklq_cpu_MKLQCpuTester.GenericTwoQubitBlockPathAppliesCustomGate",
+    "mklq_cpu_MKLQCpuTester.ControlledDenseTwoQubitBlockPathAppliesCustomGate",
+    "mklq_cpu_MKLQCpuTester.SwapFastPathAppliesUncontrolledTwoQubitGate",
+    "mklq_cpu_MKLQCpuTester.ControlledSwapFastPathAppliesBuiltInGate",
+    "mklq_cpu_MKLQCpuTester.RowSparseTwoQubitCustomOperationUsesDedicatedFastPath",
+    "mklq_cpu_MKLQCpuTester.RowSparseThreeQubitCustomOperationUsesDedicatedFastPath",
+    "mklq_cpu_MKLQCpuTester.UnitPermutationThreeQubitCustomOperationUsesDedicatedFastPath"
+  ],
+  "machine": {
+    "machine": "arm64",
+    "platform": "macOS-26.5.2-arm64-arm-64bit",
+    "processor": "arm"
+  },
+  "missing_counter_tests": [],
+  "schema_version": "mklq-cpu-gate-counter-probe-v1",
+  "source": {
+    "build_dir": "build-python",
+    "listing_command": [
+      "ctest",
+      "--test-dir",
+      "build-python",
+      "-N",
+      "-R",
+      "mklq_cpu_MKLQCpuTester"
+    ],
+    "probe_commands": [
+      [
+        "ctest",
+        "--test-dir",
+        "build-python",
+        "-R",
+        "^mklq_cpu_MKLQCpuTester\\.XFastPathAppliesUncontrolledSingleQubitGate$",
+        "--output-on-failure"
+      ],
+      [
+        "ctest",
+        "--test-dir",
+        "build-python",
+        "-R",
+        "^mklq_cpu_MKLQCpuTester\\.CnotFastPathAppliesControlledXGate$",
+        "--output-on-failure"
+      ],
+      [
+        "ctest",
+        "--test-dir",
+        "build-python",
+        "-R",
+        "^mklq_cpu_MKLQCpuTester\\.BuiltInSingleQubitFastPathsMatchMatrices$",
+        "--output-on-failure"
+      ],
+      [
+        "ctest",
+        "--test-dir",
+        "build-python",
+        "-R",
+        "^mklq_cpu_MKLQCpuTester\\.ControlledBuiltInSingleQubitFastPathsMatchMatrices$",
+        "--output-on-failure"
+      ],
+      [
+        "ctest",
+        "--test-dir",
+        "build-python",
+        "-R",
+        "^mklq_cpu_MKLQCpuTester\\.SingleControlBuiltInSingleQubitGatesUseDedicatedFastPath$",
+        "--output-on-failure"
+      ],
+      [
+        "ctest",
+        "--test-dir",
+        "build-python",
+        "-R",
+        "^mklq_cpu_MKLQCpuTester\\.SingleControlBuiltInHadamardGateUsesDedicatedFastPath$",
+        "--output-on-failure"
+      ],
+      [
+        "ctest",
+        "--test-dir",
+        "build-python",
+        "-R",
+        "^mklq_cpu_MKLQCpuTester\\.SingleControlBuiltInYGateUsesDedicatedFastPath$",
+        "--output-on-failure"
+      ],
+      [
+        "ctest",
+        "--test-dir",
+        "build-python",
+        "-R",
+        "^mklq_cpu_MKLQCpuTester\\.SingleControlBuiltInRxGateUsesDedicatedFastPath$",
+        "--output-on-failure"
+      ],
+      [
+        "ctest",
+        "--test-dir",
+        "build-python",
+        "-R",
+        "^mklq_cpu_MKLQCpuTester\\.SingleControlBuiltInRyGateUsesDedicatedFastPath$",
+        "--output-on-failure"
+      ],
+      [
+        "ctest",
+        "--test-dir",
+        "build-python",
+        "-R",
+        "^mklq_cpu_MKLQCpuTester\\.SingleControlRzUsesDedicatedPhaseFastPath$",
+        "--output-on-failure"
+      ],
+      [
+        "ctest",
+        "--test-dir",
+        "build-python",
+        "-R",
+        "^mklq_cpu_MKLQCpuTester\\.HardwareEfficientAnsatzCompositeUsesDedicatedFastPaths$",
+        "--output-on-failure"
+      ],
+      [
+        "ctest",
+        "--test-dir",
+        "build-python",
+        "-R",
+        "^mklq_cpu_MKLQCpuTester\\.MultiControlBuiltInSingleQubitGatesKeepGenericSpecializedPath$",
+        "--output-on-failure"
+      ],
+      [
+        "ctest",
+        "--test-dir",
+        "build-python",
+        "-R",
+        "^mklq_cpu_MKLQCpuTester\\.CzFastPathAppliesControlledZGate$",
+        "--output-on-failure"
+      ],
+      [
+        "ctest",
+        "--test-dir",
+        "build-python",
+        "-R",
+        "^mklq_cpu_MKLQCpuTester\\.UncontrolledDiagonalPhaseGatesUsePhaseFastPath$",
+        "--output-on-failure"
+      ],
+      [
+        "ctest",
+        "--test-dir",
+        "build-python",
+        "-R",
+        "^mklq_cpu_MKLQCpuTester\\.SingleControlDiagonalPhaseGatesUsePhaseFastPath$",
+        "--output-on-failure"
+      ],
+      [
+        "ctest",
+        "--test-dir",
+        "build-python",
+        "-R",
+        "^mklq_cpu_MKLQCpuTester\\.GenericTwoQubitBlockPathAppliesCustomGate$",
+        "--output-on-failure"
+      ],
+      [
+        "ctest",
+        "--test-dir",
+        "build-python",
+        "-R",
+        "^mklq_cpu_MKLQCpuTester\\.ControlledDenseTwoQubitBlockPathAppliesCustomGate$",
+        "--output-on-failure"
+      ],
+      [
+        "ctest",
+        "--test-dir",
+        "build-python",
+        "-R",
+        "^mklq_cpu_MKLQCpuTester\\.SwapFastPathAppliesUncontrolledTwoQubitGate$",
+        "--output-on-failure"
+      ],
+      [
+        "ctest",
+        "--test-dir",
+        "build-python",
+        "-R",
+        "^mklq_cpu_MKLQCpuTester\\.ControlledSwapFastPathAppliesBuiltInGate$",
+        "--output-on-failure"
+      ],
+      [
+        "ctest",
+        "--test-dir",
+        "build-python",
+        "-R",
+        "^mklq_cpu_MKLQCpuTester\\.RowSparseTwoQubitCustomOperationUsesDedicatedFastPath$",
+        "--output-on-failure"
+      ],
+      [
+        "ctest",
+        "--test-dir",
+        "build-python",
+        "-R",
+        "^mklq_cpu_MKLQCpuTester\\.RowSparseThreeQubitCustomOperationUsesDedicatedFastPath$",
+        "--output-on-failure"
+      ],
+      [
+        "ctest",
+        "--test-dir",
+        "build-python",
+        "-R",
+        "^mklq_cpu_MKLQCpuTester\\.UnitPermutationThreeQubitCustomOperationUsesDedicatedFastPath$",
+        "--output-on-failure"
+      ]
+    ],
+    "repo_root": "."
+  },
+  "summary": {
+    "expected": 22,
+    "failed": 0,
+    "missing": 0,
+    "passed": 22,
+    "selected": 22,
+    "status": "passed"
+  },
+  "tests": [
+    {
+      "counter_source": "MKL-Q mklq-cpu simulator test-accessor gate fast-path counters",
+      "ctest_regex": "^mklq_cpu_MKLQCpuTester\\.XFastPathAppliesUncontrolledSingleQubitGate$",
+      "elapsed_seconds": 1.95679187499627,
+      "name": "mklq_cpu_MKLQCpuTester.XFastPathAppliesUncontrolledSingleQubitGate",
+      "returncode": 0,
+      "status": "passed"
+    },
+    {
+      "counter_source": "MKL-Q mklq-cpu simulator test-accessor gate fast-path counters",
+      "ctest_regex": "^mklq_cpu_MKLQCpuTester\\.CnotFastPathAppliesControlledXGate$",
+      "elapsed_seconds": 1.9496208339987788,
+      "name": "mklq_cpu_MKLQCpuTester.CnotFastPathAppliesControlledXGate",
+      "returncode": 0,
+      "status": "passed"
+    },
+    {
+      "counter_source": "MKL-Q mklq-cpu simulator test-accessor gate fast-path counters",
+      "ctest_regex": "^mklq_cpu_MKLQCpuTester\\.BuiltInSingleQubitFastPathsMatchMatrices$",
+      "elapsed_seconds": 1.9643630420032423,
+      "name": "mklq_cpu_MKLQCpuTester.BuiltInSingleQubitFastPathsMatchMatrices",
+      "returncode": 0,
+      "status": "passed"
+    },
+    {
+      "counter_source": "MKL-Q mklq-cpu simulator test-accessor gate fast-path counters",
+      "ctest_regex": "^mklq_cpu_MKLQCpuTester\\.ControlledBuiltInSingleQubitFastPathsMatchMatrices$",
+      "elapsed_seconds": 1.965395040999283,
+      "name": "mklq_cpu_MKLQCpuTester.ControlledBuiltInSingleQubitFastPathsMatchMatrices",
+      "returncode": 0,
+      "status": "passed"
+    },
+    {
+      "counter_source": "MKL-Q mklq-cpu simulator test-accessor gate fast-path counters",
+      "ctest_regex": "^mklq_cpu_MKLQCpuTester\\.SingleControlBuiltInSingleQubitGatesUseDedicatedFastPath$",
+      "elapsed_seconds": 1.9496897499921033,
+      "name": "mklq_cpu_MKLQCpuTester.SingleControlBuiltInSingleQubitGatesUseDedicatedFastPath",
+      "returncode": 0,
+      "status": "passed"
+    },
+    {
+      "counter_source": "MKL-Q mklq-cpu simulator test-accessor gate fast-path counters",
+      "ctest_regex": "^mklq_cpu_MKLQCpuTester\\.SingleControlBuiltInHadamardGateUsesDedicatedFastPath$",
+      "elapsed_seconds": 1.9600046669947915,
+      "name": "mklq_cpu_MKLQCpuTester.SingleControlBuiltInHadamardGateUsesDedicatedFastPath",
+      "returncode": 0,
+      "status": "passed"
+    },
+    {
+      "counter_source": "MKL-Q mklq-cpu simulator test-accessor gate fast-path counters",
+      "ctest_regex": "^mklq_cpu_MKLQCpuTester\\.SingleControlBuiltInYGateUsesDedicatedFastPath$",
+      "elapsed_seconds": 1.9545021249941783,
+      "name": "mklq_cpu_MKLQCpuTester.SingleControlBuiltInYGateUsesDedicatedFastPath",
+      "returncode": 0,
+      "status": "passed"
+    },
+    {
+      "counter_source": "MKL-Q mklq-cpu simulator test-accessor gate fast-path counters",
+      "ctest_regex": "^mklq_cpu_MKLQCpuTester\\.SingleControlBuiltInRxGateUsesDedicatedFastPath$",
+      "elapsed_seconds": 1.9395190409995848,
+      "name": "mklq_cpu_MKLQCpuTester.SingleControlBuiltInRxGateUsesDedicatedFastPath",
+      "returncode": 0,
+      "status": "passed"
+    },
+    {
+      "counter_source": "MKL-Q mklq-cpu simulator test-accessor gate fast-path counters",
+      "ctest_regex": "^mklq_cpu_MKLQCpuTester\\.SingleControlBuiltInRyGateUsesDedicatedFastPath$",
+      "elapsed_seconds": 1.9225958750030259,
+      "name": "mklq_cpu_MKLQCpuTester.SingleControlBuiltInRyGateUsesDedicatedFastPath",
+      "returncode": 0,
+      "status": "passed"
+    },
+    {
+      "counter_source": "MKL-Q mklq-cpu simulator test-accessor gate fast-path counters",
+      "ctest_regex": "^mklq_cpu_MKLQCpuTester\\.SingleControlRzUsesDedicatedPhaseFastPath$",
+      "elapsed_seconds": 1.9496016670018435,
+      "name": "mklq_cpu_MKLQCpuTester.SingleControlRzUsesDedicatedPhaseFastPath",
+      "returncode": 0,
+      "status": "passed"
+    },
+    {
+      "counter_source": "MKL-Q mklq-cpu simulator test-accessor gate fast-path counters",
+      "ctest_regex": "^mklq_cpu_MKLQCpuTester\\.HardwareEfficientAnsatzCompositeUsesDedicatedFastPaths$",
+      "elapsed_seconds": 1.9469343749951804,
+      "name": "mklq_cpu_MKLQCpuTester.HardwareEfficientAnsatzCompositeUsesDedicatedFastPaths",
+      "returncode": 0,
+      "status": "passed"
+    },
+    {
+      "counter_source": "MKL-Q mklq-cpu simulator test-accessor gate fast-path counters",
+      "ctest_regex": "^mklq_cpu_MKLQCpuTester\\.MultiControlBuiltInSingleQubitGatesKeepGenericSpecializedPath$",
+      "elapsed_seconds": 1.9540675829921383,
+      "name": "mklq_cpu_MKLQCpuTester.MultiControlBuiltInSingleQubitGatesKeepGenericSpecializedPath",
+      "returncode": 0,
+      "status": "passed"
+    },
+    {
+      "counter_source": "MKL-Q mklq-cpu simulator test-accessor gate fast-path counters",
+      "ctest_regex": "^mklq_cpu_MKLQCpuTester\\.CzFastPathAppliesControlledZGate$",
+      "elapsed_seconds": 1.9715164999943227,
+      "name": "mklq_cpu_MKLQCpuTester.CzFastPathAppliesControlledZGate",
+      "returncode": 0,
+      "status": "passed"
+    },
+    {
+      "counter_source": "MKL-Q mklq-cpu simulator test-accessor gate fast-path counters",
+      "ctest_regex": "^mklq_cpu_MKLQCpuTester\\.UncontrolledDiagonalPhaseGatesUsePhaseFastPath$",
+      "elapsed_seconds": 1.9524468750023516,
+      "name": "mklq_cpu_MKLQCpuTester.UncontrolledDiagonalPhaseGatesUsePhaseFastPath",
+      "returncode": 0,
+      "status": "passed"
+    },
+    {
+      "counter_source": "MKL-Q mklq-cpu simulator test-accessor gate fast-path counters",
+      "ctest_regex": "^mklq_cpu_MKLQCpuTester\\.SingleControlDiagonalPhaseGatesUsePhaseFastPath$",
+      "elapsed_seconds": 2.0060304169892333,
+      "name": "mklq_cpu_MKLQCpuTester.SingleControlDiagonalPhaseGatesUsePhaseFastPath",
+      "returncode": 0,
+      "status": "passed"
+    },
+    {
+      "counter_source": "MKL-Q mklq-cpu simulator test-accessor gate fast-path counters",
+      "ctest_regex": "^mklq_cpu_MKLQCpuTester\\.GenericTwoQubitBlockPathAppliesCustomGate$",
+      "elapsed_seconds": 1.9784112499910407,
+      "name": "mklq_cpu_MKLQCpuTester.GenericTwoQubitBlockPathAppliesCustomGate",
+      "returncode": 0,
+      "status": "passed"
+    },
+    {
+      "counter_source": "MKL-Q mklq-cpu simulator test-accessor gate fast-path counters",
+      "ctest_regex": "^mklq_cpu_MKLQCpuTester\\.ControlledDenseTwoQubitBlockPathAppliesCustomGate$",
+      "elapsed_seconds": 1.957187249994604,
+      "name": "mklq_cpu_MKLQCpuTester.ControlledDenseTwoQubitBlockPathAppliesCustomGate",
+      "returncode": 0,
+      "status": "passed"
+    },
+    {
+      "counter_source": "MKL-Q mklq-cpu simulator test-accessor gate fast-path counters",
+      "ctest_regex": "^mklq_cpu_MKLQCpuTester\\.SwapFastPathAppliesUncontrolledTwoQubitGate$",
+      "elapsed_seconds": 1.9718581670022104,
+      "name": "mklq_cpu_MKLQCpuTester.SwapFastPathAppliesUncontrolledTwoQubitGate",
+      "returncode": 0,
+      "status": "passed"
+    },
+    {
+      "counter_source": "MKL-Q mklq-cpu simulator test-accessor gate fast-path counters",
+      "ctest_regex": "^mklq_cpu_MKLQCpuTester\\.ControlledSwapFastPathAppliesBuiltInGate$",
+      "elapsed_seconds": 1.948928750003688,
+      "name": "mklq_cpu_MKLQCpuTester.ControlledSwapFastPathAppliesBuiltInGate",
+      "returncode": 0,
+      "status": "passed"
+    },
+    {
+      "counter_source": "MKL-Q mklq-cpu simulator test-accessor gate fast-path counters",
+      "ctest_regex": "^mklq_cpu_MKLQCpuTester\\.RowSparseTwoQubitCustomOperationUsesDedicatedFastPath$",
+      "elapsed_seconds": 1.9675805410079192,
+      "name": "mklq_cpu_MKLQCpuTester.RowSparseTwoQubitCustomOperationUsesDedicatedFastPath",
+      "returncode": 0,
+      "status": "passed"
+    },
+    {
+      "counter_source": "MKL-Q mklq-cpu simulator test-accessor gate fast-path counters",
+      "ctest_regex": "^mklq_cpu_MKLQCpuTester\\.RowSparseThreeQubitCustomOperationUsesDedicatedFastPath$",
+      "elapsed_seconds": 1.960269708011765,
+      "name": "mklq_cpu_MKLQCpuTester.RowSparseThreeQubitCustomOperationUsesDedicatedFastPath",
+      "returncode": 0,
+      "status": "passed"
+    },
+    {
+      "counter_source": "MKL-Q mklq-cpu simulator test-accessor gate fast-path counters",
+      "ctest_regex": "^mklq_cpu_MKLQCpuTester\\.UnitPermutationThreeQubitCustomOperationUsesDedicatedFastPath$",
+      "elapsed_seconds": 2.021551666999585,
+      "name": "mklq_cpu_MKLQCpuTester.UnitPermutationThreeQubitCustomOperationUsesDedicatedFastPath",
+      "returncode": 0,
+      "status": "passed"
+    }
+  ]
+}

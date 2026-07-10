@@ -3706,6 +3706,7 @@ Test project /repo/build-python
   Test #713: mklq_cpu_MKLQCpuTester.RowSparseThreeQubitCustomOperationUsesDedicatedFastPath
   Test #714: mklq_cpu_MKLQCpuTester.GenericTwoQubitBlockPathAppliesCustomGate
   Test #715: mklq_cpu_MKLQCpuTester.RowSparseTwoQubitCustomOperationUsesDedicatedFastPath
+  Test #716: mklq_cpu_MKLQCpuTester.UnitPermutationThreeQubitCustomOperationUsesDedicatedFastPath
   Test #999: mklq_cpu_MKLQCpuTester.UnrelatedCorrectnessTest
   Test #1000: mklq_metal_MKLQMetalTester.SingleControlRzUsesDedicatedPhaseFastPath
 """
@@ -3719,6 +3720,7 @@ Test project /repo/build-python
         "mklq_cpu_MKLQCpuTester.GenericTwoQubitBlockPathAppliesCustomGate",
         "mklq_cpu_MKLQCpuTester.RowSparseTwoQubitCustomOperationUsesDedicatedFastPath",
         "mklq_cpu_MKLQCpuTester.RowSparseThreeQubitCustomOperationUsesDedicatedFastPath",
+        "mklq_cpu_MKLQCpuTester.UnitPermutationThreeQubitCustomOperationUsesDedicatedFastPath",
     ]
 
 
@@ -3834,6 +3836,7 @@ def _cpu_gate_counter_summary_fixture():
         "mklq_cpu_MKLQCpuTester.GenericTwoQubitBlockPathAppliesCustomGate",
         "mklq_cpu_MKLQCpuTester.RowSparseTwoQubitCustomOperationUsesDedicatedFastPath",
         "mklq_cpu_MKLQCpuTester.RowSparseThreeQubitCustomOperationUsesDedicatedFastPath",
+        "mklq_cpu_MKLQCpuTester.UnitPermutationThreeQubitCustomOperationUsesDedicatedFastPath",
     ]
     return {
         "schema_version": "mklq-cpu-gate-counter-probe-v1",
@@ -3875,7 +3878,7 @@ def test_mklq_cpu_gate_counter_summary_groups_fast_path_coverage(tmp_path):
 
     assert summary["schema_version"] == "mklq-cpu-gate-counter-summary-v1"
     assert summary["summary"]["status"] == "passed"
-    assert summary["summary"]["selected"] == 11
+    assert summary["summary"]["selected"] == 12
     assert summary["boundary"]["gate_fast_path_counter_evidence"] is True
     categories = {
         category["category"]: category
@@ -3885,7 +3888,7 @@ def test_mklq_cpu_gate_counter_summary_groups_fast_path_coverage(tmp_path):
     assert categories["controlled_single_qubit_fast_path"]["passed"] == 5
     assert categories["two_qubit_fast_path"]["passed"] == 2
     assert categories["composite_fast_path"]["passed"] == 1
-    assert categories["three_qubit_fast_path"]["passed"] == 1
+    assert categories["three_qubit_fast_path"]["passed"] == 2
 
 
 def test_mklq_cpu_gate_counter_summary_renders_markdown(tmp_path):

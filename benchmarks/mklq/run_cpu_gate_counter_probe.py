@@ -45,6 +45,7 @@ COUNTER_TEST_SUFFIXES = (
     "ControlledSwapFastPathAppliesBuiltInGate",
     "RowSparseTwoQubitCustomOperationUsesDedicatedFastPath",
     "RowSparseThreeQubitCustomOperationUsesDedicatedFastPath",
+    "UnitPermutationThreeQubitCustomOperationUsesDedicatedFastPath",
 )
 
 TEST_PREFIX = "mklq_cpu_MKLQCpuTester."
