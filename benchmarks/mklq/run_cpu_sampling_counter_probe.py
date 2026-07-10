@@ -36,6 +36,7 @@ COUNTER_TEST_SUFFIXES = (
 )
 
 TEST_PREFIX = "mklq_cpu_MKLQCpuTester."
+SINGLE_EXECUTABLE_TEST_NAME = "test_mklq_cpu_backend"
 TEST_LINE_RE = re.compile(r"Test #\d+:\s+(\S+)")
 TAIL_CHARS = 1200
 
@@ -111,6 +112,27 @@ def exact_ctest_regex(test_name: str) -> str:
     return f"^{re.escape(test_name)}$"
 
 
+def single_executable_test_command(
+        ctest_json: str) -> tuple[list[str], Path] | None:
+    try:
+        tests = json.loads(ctest_json).get("tests", [])
+    except json.JSONDecodeError:
+        return None
+    for test in tests:
+        if test.get("name") != SINGLE_EXECUTABLE_TEST_NAME:
+            continue
+        command = test.get("command")
+        if not isinstance(command, list) or not command:
+            return None
+        working_directory = None
+        for prop in test.get("properties", []):
+            if prop.get("name") == "WORKING_DIRECTORY":
+                working_directory = prop.get("value")
+                break
+        return command, Path(working_directory or ".")
+    return None
+
+
 def build_report(repo_root: Path, build_dir: Path) -> dict[str, Any]:
     root = repo_root.resolve()
     build_dir = build_dir.resolve()
@@ -128,28 +150,64 @@ def build_report(repo_root: Path, build_dir: Path) -> dict[str, Any]:
                                                   public_build_dir)
     selected = select_counter_tests(listing)
     missing = missing_counter_tests(selected)
+    execution_mode = "ctest-case"
+    ctest_json_command = None
+    executable_command = None
+    executable_working_directory = root
+    if not selected:
+        ctest_json_command = [
+            "ctest",
+            "--test-dir",
+            str(build_dir),
+            "--show-only=json-v1",
+        ]
+        standalone = single_executable_test_command(
+            command_output(root, ctest_json_command))
+        if standalone:
+            executable_command, executable_working_directory = standalone
+            if not executable_working_directory.is_absolute():
+                executable_working_directory = root / executable_working_directory
+            selected = expected_counter_tests()
+            missing = []
+            execution_mode = "ctest-executable-gtest-filter"
 
     tests: list[dict[str, Any]] = []
     probe_commands: list[list[str]] = []
     for test_name in selected:
-        run_command_args = [
-            "ctest",
-            "--test-dir",
-            str(build_dir),
-            "-R",
-            exact_ctest_regex(test_name),
-            "--output-on-failure",
-        ]
-        probe_commands.append(public_ctest_command(run_command_args,
-                                                   public_build_dir))
-        run_result = run_command(root, run_command_args)
+        if execution_mode == "ctest-case":
+            run_command_args = [
+                "ctest",
+                "--test-dir",
+                str(build_dir),
+                "-R",
+                exact_ctest_regex(test_name),
+                "--output-on-failure",
+            ]
+            probe_commands.append(public_ctest_command(run_command_args,
+                                                       public_build_dir))
+            run_result = run_command(root, run_command_args)
+            invocation = {"ctest_regex": exact_ctest_regex(test_name)}
+        else:
+            assert executable_command is not None
+            run_command_args = [
+                *executable_command,
+                f"--gtest_filter={test_name}",
+            ]
+            probe_commands.append([
+                command_path(root, Path(executable_command[0])),
+                *executable_command[1:],
+                f"--gtest_filter={test_name}",
+            ])
+            run_result = run_command(executable_working_directory,
+                                     run_command_args)
+            invocation = {"gtest_filter": test_name}
         passed = run_result["returncode"] == 0
         item: dict[str, Any] = {
             "name": test_name,
             "status": "passed" if passed else "failed",
             "counter_source": COUNTER_SOURCE,
-            "ctest_regex": exact_ctest_regex(test_name),
             "returncode": run_result["returncode"],
+            **invocation,
         }
         if "elapsed_seconds" in run_result:
             item["elapsed_seconds"] = run_result["elapsed_seconds"]
@@ -179,6 +237,10 @@ def build_report(repo_root: Path, build_dir: Path) -> dict[str, Any]:
             "repo_root": ".",
             "build_dir": public_build_dir,
             "listing_command": public_listing_command,
+            "ctest_json_command":
+                (public_ctest_command(ctest_json_command, public_build_dir)
+                 if ctest_json_command else None),
+            "execution_mode": execution_mode,
             "probe_commands": probe_commands,
         },
         "summary": {
@@ -194,7 +256,7 @@ def build_report(repo_root: Path, build_dir: Path) -> dict[str, Any]:
             "sampling_phase_counter_evidence": True,
             "probability_fill_counter_evidence": True,
             "runtime_counter_source":
-                f"build-tree ctest cases that assert {COUNTER_SOURCE}",
+                f"build-tree counter cases that assert {COUNTER_SOURCE}",
             "release_signoff": False,
             "performance_benchmark": False,
             "cross_machine_performance_proof": False,

@@ -238,7 +238,8 @@ def CombineMeasurements :
     }
     ```
   }];
-  let dependentDialects = ["cudaq::cc::CCDialect", "cudaq::quake::QuakeDialect"];
+  let dependentDialects = ["cudaq::cc::CCDialect",
+    "cudaq::quake::QuakeDialect"];
 }
 
 def CombineQuantumAllocations :
@@ -258,7 +259,8 @@ def CombineQuantumAllocations :
     combined deallocation will be added to each exit block.
   }];
 
-  let dependentDialects = ["cudaq::cc::CCDialect", "cudaq::quake::QuakeDialect"];
+  let dependentDialects = ["cudaq::cc::CCDialect",
+    "cudaq::quake::QuakeDialect"];
 }
 
 def ConstantPropagation : Pass<"constant-propagation", "mlir::func::FuncOp"> {
@@ -431,20 +433,14 @@ def DistributedDeviceCall : Pass<"distributed-device-call", "mlir::ModuleOp"> {
     distributed memory model.
   }];
 
-  // Realtime `stdvec` lowering may materialize `quake.discriminate` when
-  // converting measurement-handle vectors to boolean payload bytes.
-  let dependentDialects = ["mlir::LLVM::LLVMDialect",
-                           "cudaq::quake::QuakeDialect"];
+  let dependentDialects = ["mlir::LLVM::LLVMDialect"];
 
   let options = [
     Option<"insertTrapImplementation", "insert-trap", "bool",
       /*default=*/"false",
       "Enable pass to insert a default implementation (runtime trap) for "
       "device call (default=false). The default implementation has weak "
-      "linkage, i.e., allowed to be overridden at link time.">,
-    Option<"realtimeLowering", "realtime", "bool",
-      /*default=*/"false",
-      "Lower device calls to the realtime device-call frame ABI.">
+      "linkage, i.e., allowed to be overridden at link time.">
   ];
 }
 
@@ -866,6 +862,15 @@ def LoopUnroll : Pass<"cc-loop-unroll"> {
     necessary when synthesizing quantum circuits from CUDA-Q kernels, such
     as when generating a QIR base profile. A quantum circuit requires all loops
     be completely unrolled.
+
+    The unroll-only-wire-blocking-loops option opts in to selective unrolling
+    for a value-semantics (wire) pipeline: only loops that still access
+    quantum data by dynamic reference or slice (blocking wire conversion) are
+    unrolled. Counted loops whose quantum accesses can be represented with
+    static wireset indices are left rolled. A loop that blocks wire
+    conversion but cannot be unrolled (e.g. a non-constant trip
+    count) is a dead end and is reported as an error. This option defaults to
+    false, leaving the pass behavior unchanged for all existing pipelines.
   }];
 
   let dependentDialects = ["mlir::arith::ArithDialect",
@@ -878,7 +883,12 @@ def LoopUnroll : Pass<"cc-loop-unroll"> {
       "signal-failure-if-any-loop-cannot-be-completely-unrolled", "bool",
       /*default=*/"false", "Signal failure if pass can't unroll all loops.">,
     Option<"allowBreak", "allow-early-exit", "bool", /*default=*/"false",
-      "Allow unrolling of loop with early exit (i.e. break statement).">
+      "Allow unrolling of loop with early exit (i.e. break statement).">,
+    Option<"unrollOnlyWireBlockingLoops", "unroll-only-wire-blocking-loops",
+      "bool", /*default=*/"false",
+      "Unroll only loops that block wire conversion; keep counted loops "
+      "whose quantum accesses can be represented with static wireset indices "
+      "rolled (and error on a blocking loop that cannot be unrolled).">
   ];
 }
 
@@ -954,13 +964,13 @@ def MappingFunc: Pass<"qubit-mapping-func", "mlir::func::FuncOp"> {
            /*default=*/"0.5", "Extended layer weight">,
     Option<"decayDelta", "decay-delta", "float", /*default=*/"0.5",
            "Decay delta">,
-    Option<"roundsDecayReset", "rounds-decay-reset", "unsigned", /*default=*/"5",
-           "Number of rounds before decay is reset">,
+    Option<"roundsDecayReset", "rounds-decay-reset", "unsigned",
+           /*default=*/"5", "Number of rounds before decay is reset">,
     Option<"minStallSwapBudget", "min-stall-swap-budget", "unsigned",
            /*default=*/"64",
-           "Release valve floor: minimum number of consecutive swaps that route "
-           "no gate before a stuck front layer is force-routed along a shortest "
-           "path (advanced)">,
+           "Release valve floor: minimum number of consecutive swaps that "
+           "route no gate before a stuck front layer is force-routed along a "
+           "shortest path (advanced)">,
     Option<"stallSwapBudgetPerQubit", "stall-swap-budget-per-qubit", "unsigned",
            /*default=*/"4",
            "Release valve scaling: per-device-qubit stall budget. The budget "
@@ -1012,7 +1022,8 @@ def MemToReg : Pass<"memtoreg", "mlir::func::FuncOp"> {
     SSA semantics. A use can destroy the value itself, therefore it is required
     that `wire` values be threads in and out of each and every use.
   }];
-  let dependentDialects = ["cudaq::cc::CCDialect", "cudaq::quake::QuakeDialect"];
+  let dependentDialects = ["cudaq::cc::CCDialect",
+    "cudaq::quake::QuakeDialect"];
 
   let options = [
     Option<"classicalValues", "classical", "bool",
@@ -1086,7 +1097,8 @@ def PhaseFolding: Pass<"phase-folding", "mlir::func::FuncOp"> {
     "Minimumn percentage of rz ops in subcircuit to run phase folding">,
   ];
 
-  let dependentDialects = ["cudaq::cc::CCDialect", "cudaq::quake::QuakeDialect"];
+  let dependentDialects = ["cudaq::cc::CCDialect",
+    "cudaq::quake::QuakeDialect"];
 }
 
 def PromoteRefToVeqAlloc : Pass<"promote-qubit-allocation"> {
@@ -1233,6 +1245,38 @@ def QubitResetBeforeReuse :
 
 }
 
+def RealtimeDeviceCall : Pass<"realtime-device-call", "mlir::ModuleOp"> {
+  let summary = "Lower cc.device_call operations to the realtime frame ABI.";
+
+  let description = [{
+    Lower `cc.device_call` operations to the realtime device-call frame ABI.
+    Each device call is rewritten into a sequence of runtime calls operating
+    on a leased request/response frame: acquire a frame from the selected
+    device channel, marshal the operands into the request payload, dispatch
+    the frame, and read the response back before releasing the frame.
+
+    The generated code calls
+    `__cudaq_device_call_acquire_realtime_frame`,
+    `__cudaq_device_call_dispatch_realtime_frame`, and
+    `__cudaq_device_call_safely_release_realtime_frame`, so the final
+    executable must be linked against a runtime that provides this leased
+    frame API.
+
+    Boolean vector payloads are marshaled through the private
+    `__nvqpp_RealtimePackBits`, `__nvqpp_RealtimePackMeasurements`, and
+    `__nvqpp_RealtimeUnpackBits` intrinsic functions. Run the `inline`
+    pass afterwards to expand these helpers at their call sites.
+  }];
+
+  // The lowering materializes `cc` and `arith` ops for payload sizing and
+  // marshaling, `func` calls/declarations for the runtime ABI, and may
+  // materialize `quake.discriminate` (within the loaded packing intrinsics)
+  // when converting measurement-handle vectors to boolean payload bytes.
+  let dependentDialects = ["cudaq::cc::CCDialect", "mlir::arith::ArithDialect",
+                           "mlir::func::FuncDialect",
+                           "cudaq::quake::QuakeDialect"];
+}
+
 def RegToMem : Pass<"regtomem", "mlir::func::FuncOp"> {
   let summary = "Converts register-SSA to memory-SSA form.";
   let description = [{
@@ -1366,9 +1410,12 @@ def ResourceCountPreprocess :
 
   let options = [
     Option<"countGate", "count-gate",
-      "std::function<void(std::string,std::vector<std::size_t>,std::vector<std::size_t>,size_t)>",
-      /*default=*/"[](std::string,std::vector<std::size_t>,std::vector<std::size_t>,size_t){}",
-      "Closure that receives gate name, control qubit indices, target qubit indices, and multiplicity">,
+      "std::function<void(std::string,std::vector<std::size_t>,std::vector"
+      "<std::size_t>,size_t)>",
+      /*default=*/"[](std::string,std::vector<std::size_t>,std::vector"
+      "<std::size_t>,size_t){}",
+      "Closure that receives gate name, control qubit indices, target qubit "
+      "indices, and multiplicity">,
     Option<"dumpPreprocessed", "dump-preprocessed", "bool", /*default=*/"false",
       "Dump preprocessed gates instead of counting them (useful for testing)">,
   ];
@@ -1540,7 +1587,7 @@ def UnwindLowering : Pass<"unwind-lowering", "mlir::func::FuncOp"> {
   }];
 
   let dependentDialects = ["mlir::cf::ControlFlowDialect",
-                           "cudaq::quake::QuakeDialect", "cudaq::cc::CCDialect"];
+    "cudaq::quake::QuakeDialect", "cudaq::cc::CCDialect"];
 }
 
 def UpdateRegisterNames : Pass<"update-register-names"> {

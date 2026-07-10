@@ -337,7 +337,7 @@ Result: `2 passed`.
 
 ```bash
 ctest --test-dir build-python \
-  -R "(mklq_(cpu|metal)_MKLQ|backend_target_setter_check|TargetConfigTester)" \
+  -R "(mklq_(cpu|metal)_MKLQ|test_mklq_(cpu|metal)_backend|backend_target_setter_check|TargetConfigTester)" \
   --output-on-failure
 ```
 

@@ -84,7 +84,7 @@ static std::size_t getLinearStateIndexDimension(const state &state) {
 
   const auto numQubits = state.get_num_qubits();
   if (numQubits >= std::numeric_limits<std::size_t>::digits)
-    throw std::runtime_error("state index dimension exceeds size_t range.");
+    throw std::out_of_range("state index dimension exceeds size_t range.");
   return std::size_t{1} << numQubits;
 }
 
@@ -95,7 +95,7 @@ static std::size_t normalizePythonStateIndex(std::int64_t idx,
     const auto distanceFromEnd =
         static_cast<std::uint64_t>(-(idx + 1)) + 1;
     if (distanceFromEnd > dimension)
-      throw std::runtime_error(fmt::format(
+      throw std::out_of_range(fmt::format(
           "{} index out of range: {} for dimension {}.", context, idx,
           dimension));
     return dimension - static_cast<std::size_t>(distanceFromEnd);
@@ -103,7 +103,7 @@ static std::size_t normalizePythonStateIndex(std::int64_t idx,
 
   const auto positiveIndex = static_cast<std::uint64_t>(idx);
   if (positiveIndex >= dimension)
-    throw std::runtime_error(fmt::format(
+    throw std::out_of_range(fmt::format(
         "{} index out of range: {} for dimension {}.", context, idx,
         dimension));
 

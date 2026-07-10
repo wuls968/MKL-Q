@@ -22,7 +22,8 @@ from typing import Any
 
 SCHEMA_VERSION = "mklq-correctness-gate-v1"
 TARGET_CONFIG_REGEX = (
-    r"(mklq_(cpu|metal)_MKLQ|backend_target_setter_check|TargetConfigTester)")
+    r"(mklq_(cpu|metal)_MKLQ|test_mklq_(cpu|metal)_backend|"
+    r"backend_target_setter_check|TargetConfigTester)")
 DEFAULT_TIMEOUT_SECONDS = 600
 DEFAULT_TAIL_CHARS = 8000
 
