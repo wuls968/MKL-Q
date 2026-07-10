@@ -148,6 +148,10 @@ target-marker output.
   hardware-efficient
   ansatz composite counter fixture that verifies this mixed rotation, CNOT,
   CRZ, CZ, CRX, and SWAP path selection.
+  Three-target custom operations whose row-sparse matrices are unit-coefficient
+  involutive permutations use an in-place exchange path. Other three-target
+  row-sparse matrices, including phase-bearing permutations, retain the generic
+  row-sparse implementation.
   Sampling has a fast path for full-register measurements in natural qubit
   order, including a sparse-outcome path for basis/GHZ-like states.
   Dense sampling materializes deterministic one-outcome distributions directly

@@ -246,6 +246,7 @@ protected:
   mutable double sampleExpectationReductionSeconds = 0.0;
   mutable std::size_t metalCpuFallbackApplications = 0;
   mutable std::size_t threeQubitRowSparseApplications = 0;
+  mutable std::size_t threeQubitUnitPermutationApplications = 0;
 
   struct ScopedTestTimer {
     double &accumulator;
@@ -1358,6 +1359,59 @@ protected:
 #endif
   }
 
+  bool applyUnitInvolutionThreeQubitPermutation(
+      const std::array<std::size_t, 8> &sourceColumns,
+      const std::array<complexd, 8> &coefficients,
+      const std::array<bool, 8> &hasCoefficient,
+      const std::vector<std::size_t> &controls,
+      const std::vector<std::size_t> &targets) {
+    static constexpr std::size_t subspaceDim = 8;
+    for (std::size_t row = 0; row < subspaceDim; ++row) {
+      if (!hasCoefficient[row] || coefficients[row] != complexd{1.0, 0.0} ||
+          sourceColumns[sourceColumns[row]] != row)
+        return false;
+    }
+
+    const std::array<std::size_t, 3> targetMasks{
+        qubitMask(targets[0]),
+        qubitMask(targets[1]),
+        qubitMask(targets[2]),
+    };
+    std::array<std::size_t, 3> sortedTargets{
+        targets[0],
+        targets[1],
+        targets[2],
+    };
+    std::sort(sortedTargets.begin(), sortedTargets.end());
+
+    const auto blockCount = stateDimension >> 3;
+    const auto controlBits = controlMask(controls);
+#if defined(_OPENMP)
+    const auto threadCount = parallelThreadCount();
+#pragma omp parallel for num_threads(                                          \
+        threadCount) if (threadCount > 1 &&                                    \
+                             stateDimension >= parallelStateThreshold)
+#endif
+    for (std::size_t block = 0; block < blockCount; ++block) {
+      const auto base = indexWithThreeZeroBits(block, sortedTargets);
+      if (!controlsSatisfied(base, controlBits))
+        continue;
+
+      for (std::size_t row = 0; row < subspaceDim; ++row) {
+        const auto source = sourceColumns[row];
+        if (row >= source)
+          continue;
+        std::swap(state[indexWithThreeTargetBits(base, row, targetMasks)],
+                  state[indexWithThreeTargetBits(base, source, targetMasks)]);
+      }
+    }
+
+#if defined(MKLQ_ENABLE_TEST_ACCESSORS)
+    ++threeQubitUnitPermutationApplications;
+#endif
+    return true;
+  }
+
   bool applyRowSparseThreeQubitGate(const std::vector<complexd> &matrix,
                                     const std::vector<std::size_t> &controls,
                                     const std::vector<std::size_t> &targets) {
@@ -1378,6 +1432,10 @@ protected:
         coefficients[row] = coefficient;
       }
     }
+
+    if (applyUnitInvolutionThreeQubitPermutation(
+            sourceColumns, coefficients, hasCoefficient, controls, targets))
+      return true;
 
     const std::array<std::size_t, 3> targetMasks{
         qubitMask(targets[0]),
