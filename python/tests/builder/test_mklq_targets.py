@@ -479,7 +479,7 @@ def test_mklq_cpu_state_index_out_of_range_raises():
         kernel.h(qubits[0])
         state = cudaq.get_state(kernel)
 
-        with pytest.raises(RuntimeError, match="state index out of range"):
+        with pytest.raises(IndexError, match="state index out of range"):
             state[4]
     finally:
         cudaq.reset_target()

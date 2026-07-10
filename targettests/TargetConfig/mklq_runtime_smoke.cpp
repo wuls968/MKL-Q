@@ -218,7 +218,7 @@ static bool stateIndexOutOfRangeRaises() {
   auto state = cudaq::get_state(bell_state{});
   try {
     (void)state[4];
-  } catch (const std::runtime_error &error) {
+  } catch (const std::out_of_range &error) {
     return std::string(error.what()).find("state index out of range") !=
            std::string::npos;
   }

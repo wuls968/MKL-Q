@@ -4061,6 +4061,64 @@ Test project /tmp/build
             in report["missing_counter_tests"])
 
 
+@pytest.mark.parametrize(
+    ("loader", "ctest_name"),
+    [
+        (_load_cpu_gate_counter_probe_module, "test_mklq_cpu_backend"),
+        (_load_cpu_sampling_counter_probe_module, "test_mklq_cpu_backend"),
+        (_load_metal_runtime_counter_probe_module, "test_mklq_metal_backend"),
+    ],
+    ids=("cpu-gate", "cpu-sampling", "metal"),
+)
+def test_mklq_counter_probes_support_single_executable_ctest_mode(
+        monkeypatch, tmp_path, loader, ctest_name):
+    module = loader()
+    executable = tmp_path / "bin" / ctest_name
+    working_directory = tmp_path / "work"
+    expected_test_names = [
+        module.TEST_PREFIX + suffix for suffix in module.COUNTER_TEST_SUFFIXES
+    ]
+    run_commands = []
+
+    def fake_command_output(cwd, command):
+        if "--show-only=json-v1" in command:
+            return json.dumps({
+                "tests": [{
+                    "name": ctest_name,
+                    "command": [str(executable)],
+                    "properties": [{
+                        "name": "WORKING_DIRECTORY",
+                        "value": str(working_directory),
+                    }],
+                }],
+            })
+        return f"Test project /tmp/build\n  Test #17: {ctest_name}\n"
+
+    def fake_run_command(cwd, command):
+        run_commands.append((cwd, command))
+        return {
+            "returncode": 0,
+            "stdout": "counter assertion passed",
+            "stderr": "",
+        }
+
+    monkeypatch.setattr(module, "command_output", fake_command_output)
+    monkeypatch.setattr(module, "run_command", fake_run_command)
+
+    report = module.build_report(repo_root=tmp_path, build_dir=tmp_path)
+
+    assert report["summary"]["status"] == "passed"
+    assert report["summary"]["selected"] == len(expected_test_names)
+    assert report["source"]["execution_mode"] == "ctest-executable-gtest-filter"
+    assert [test["name"] for test in report["tests"]] == expected_test_names
+    assert len(run_commands) == len(expected_test_names)
+    assert all(cwd == working_directory for cwd, _ in run_commands)
+    assert all(command[0] == str(executable) for _, command in run_commands)
+    assert [command[-1] for _, command in run_commands] == [
+        f"--gtest_filter={name}" for name in expected_test_names
+    ]
+
+
 def _cpu_sampling_counter_summary_fixture():
     tests = [
         "mklq_cpu_MKLQCpuTester.SparseFullRegisterScanHitReportsNativePhases",

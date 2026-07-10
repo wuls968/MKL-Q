@@ -51,8 +51,16 @@ def test_state_vector_simple():
     np.isclose(want_state[2], got_state[2].real)
     np.isclose(want_state[3], got_state[3].real)
     assert np.isclose(want_state[-1], got_state[-1].real)
-    with pytest.raises(RuntimeError, match="state index out of range"):
-        got_state[len(want_state)]
+    assert np.isclose(want_state[0], got_state[-4].real)
+    # got_state[4]: index equals dimension.
+    with pytest.raises(IndexError, match="state index out of range"):
+        got_state[4]
+    # got_state[INT_MAX]: index exceeds dimension.
+    with pytest.raises(IndexError, match="state index out of range"):
+        got_state[2147483647]
+    # got_state[-5]: index below -dimension.
+    with pytest.raises(IndexError, match="state index out of range"):
+        got_state[-5]
 
     # Check the entire vector with numpy.
     got_vector = np.array(got_state, copy=False)
@@ -151,9 +159,9 @@ def test_state_density_matrix_simple():
     np.isclose(.5, got_state[3, 0].real)
     np.isclose(.5, got_state[3, 3].real)
     assert np.isclose(.5, got_state[-1, -1].real)
-    with pytest.raises(RuntimeError, match="density matrix row index out of range"):
+    with pytest.raises(IndexError, match="density matrix row index out of range"):
         got_state[4, 0]
-    with pytest.raises(RuntimeError,
+    with pytest.raises(IndexError,
                        match="density matrix column index out of range"):
         got_state[0, 4]
 

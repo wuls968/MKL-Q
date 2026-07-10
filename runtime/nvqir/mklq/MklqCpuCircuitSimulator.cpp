@@ -256,9 +256,14 @@ protected:
     explicit ScopedTestTimer(double &accumulator) : accumulator(accumulator) {}
 
     ~ScopedTestTimer() {
-      accumulator += std::chrono::duration<double>(
-                         std::chrono::steady_clock::now() - start)
-                         .count();
+      const auto elapsed = std::chrono::duration<double>(
+                               std::chrono::steady_clock::now() - start)
+                               .count();
+      // Counter probes use a positive value to distinguish an executed phase
+      // from one that was not reached. A sub-clock-tick phase is not a timing
+      // measurement, but it is still an executed phase.
+      accumulator += elapsed > 0.0 ? elapsed :
+                                   std::numeric_limits<double>::min();
     }
   };
 #endif

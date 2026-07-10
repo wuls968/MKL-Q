@@ -64,30 +64,36 @@ std::complex<double>
 state::operator()(const std::initializer_list<std::size_t> &indices,
                   std::size_t tensorIdx) const {
   std::vector<std::size_t> idxVec(indices.begin(), indices.end());
+  if (internal->isArrayLike()) {
+    // Array-like element extraction is indexed against the selected tensor's
+    // rank and per-axis extents. Hence, check indices against storage bounds.
+    const auto tensor = internal->getTensor(tensorIdx);
+    if (idxVec.size() != tensor.extents.size())
+      throw std::runtime_error("Invalid number of state indices.");
+    for (std::size_t i = 0; i < idxVec.size(); ++i)
+      if (idxVec[i] >= tensor.extents[i])
+        throw std::out_of_range("State index out of bounds.");
+  }
   return (*internal)(tensorIdx, idxVec);
 }
 
 std::complex<double> state::operator[](std::size_t idx) const {
   std::size_t numElements = internal->getNumElements();
-  const auto throwOutOfRange = [&]() {
-    throw std::runtime_error("state index out of range: " +
-                             std::to_string(idx) + " for dimension " +
-                             std::to_string(numElements) + ".");
+  const auto throwOutOfRange = [&](std::size_t dimension) {
+    throw std::out_of_range("state index out of range: " +
+                            std::to_string(idx) + " for dimension " +
+                            std::to_string(dimension) + ".");
   };
-  const auto isArrayLike = internal->isArrayLike();
 
-  if (isArrayLike) {
-    if (idx >= numElements)
-      throwOutOfRange();
-  } else {
-    std::size_t numQubits = internal->getNumQubits();
+  const std::size_t numQubits = internal->getNumQubits();
+  if (!internal->isArrayLike()) {
+    // Non-array-like tensor-network states are indexed in the logical N-qubit
+    // basis; their component-tensor element counts are not logical bounds.
     if (numQubits >= std::numeric_limits<std::size_t>::digits)
-      throw std::runtime_error("state index dimension exceeds size_t range.");
-    const auto dimension = 1ULL << numQubits;
+      throw std::out_of_range("state index dimension exceeds size_t range.");
+    const auto dimension = std::size_t{1} << numQubits;
     if (idx >= dimension)
-      throw std::runtime_error("state index out of range: " +
-                               std::to_string(idx) + " for dimension " +
-                               std::to_string(dimension) + ".");
+      throwOutOfRange(dimension);
     // Use amplitude accessor if linear indexing is not supported, e.g., tensor
     // network state.
     std::vector<int> basisState(numQubits, 0);
@@ -108,7 +114,10 @@ std::complex<double> state::operator[](std::size_t idx) const {
     return internal->getAmplitude(basisState);
   }
 
-  std::size_t numQubits = internal->getNumQubits();
+  // numElements is a valid flat-storage bound only for array-like state
+  // representations, including qubit and non-qubit state vectors.
+  if (idx >= numElements)
+    throwOutOfRange(numElements);
   std::size_t newIdx = 0;
   if (std::log2(numElements) / numQubits > 1) {
     newIdx = idx;
