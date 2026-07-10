@@ -3298,6 +3298,7 @@ def test_mklq_metal_runtime_counter_probe_tracks_runtime_counter_surface():
         "SimulatorSamplesDeterministicSparseStateWithOneBitStringConversion",
         "SimulatorSynchronizesResidentStateBeforeUnsupportedGate",
         "SimulatorKeepsThreeQubitGateResidentUntilReadback",
+        "SimulatorKeepsBuiltInControlledSwapResidentUntilReadback",
         "SimulatorReuploadsResidentStateAfterUnsupportedGateFallback",
         "SimulatorMeasuresAndResetsResidentStateWithoutReadback",
         "SimulatorResetsResidentNonzeroTargetWithoutReadback",
@@ -3320,7 +3321,7 @@ def test_mklq_metal_runtime_counter_probe_tracks_runtime_counter_surface():
 
     assert suffixes == expected_suffixes
     assert suffixes.isdisjoint(metadata_only_suffixes)
-    assert len(module.COUNTER_TEST_SUFFIXES) == 50
+    assert len(module.COUNTER_TEST_SUFFIXES) == 51
 
 
 def test_mklq_metal_runtime_counter_probe_builds_bounded_report(monkeypatch,
@@ -8707,7 +8708,10 @@ def test_mklq_benchmark_dry_run_accepts_controlled_swap_case(tmp_path):
     assert rows[0]["estimated_state_bytes"] == 16 * (1 << 4)
     metrics = rows[0]["metrics"]
     assert metrics["metal_path_label"] == (
-        "mklq_metal_mixed_controlled_swap_state_host_readback")
+        "mklq_metal_resident_controlled_swap_state_host_readback")
+    assert metrics["metal_path_scope"] == (
+        "resident fp32 Metal controlled built-in SWAP update followed by host "
+        "readback for cudaq.get_state")
     assert metrics["metal_path_label_source"] == (
         "benchmark_harness_static_case_map")
     assert metrics["metal_runtime_counter"] is False

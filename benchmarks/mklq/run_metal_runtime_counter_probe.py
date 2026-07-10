@@ -66,6 +66,7 @@ COUNTER_TEST_SUFFIXES = (
     "SimulatorSamplesDeterministicSparseStateWithOneBitStringConversion",
     "SimulatorSynchronizesResidentStateBeforeUnsupportedGate",
     "SimulatorKeepsThreeQubitGateResidentUntilReadback",
+    "SimulatorKeepsBuiltInControlledSwapResidentUntilReadback",
     "SimulatorReuploadsResidentStateAfterUnsupportedGateFallback",
     "SimulatorMeasuresAndResetsResidentStateWithoutReadback",
     "SimulatorResetsResidentNonzeroTargetWithoutReadback",
