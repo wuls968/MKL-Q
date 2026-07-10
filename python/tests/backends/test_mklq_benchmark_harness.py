@@ -4756,6 +4756,10 @@ def _readiness_repo_payload():
         "licenseInfo": {
             "key": "apache-2.0",
         },
+        "homepageUrl": "",
+        "hasIssuesEnabled": True,
+        "hasProjectsEnabled": False,
+        "hasWikiEnabled": False,
         "visibility": "PUBLIC",
         "url": "https://github.com/wuls968/MKL-Q",
     }
@@ -5034,6 +5038,34 @@ def test_mklq_public_readiness_audit_builds_passing_report(monkeypatch,
     assert checks["latest_public_hygiene"]["details"]["headSha"] == "abc123"
     assert checks["latest_apple_workflow"]["details"]["headSha"] == "abc123"
     assert any(call[:3] == ["gh", "repo", "view"] for call in calls)
+
+
+@pytest.mark.parametrize(("field", "value", "expected_message"), [
+    ("homepageUrl", "https://nvidia.github.io/cuda-quantum/",
+     "repository homepage is not empty"),
+    ("hasIssuesEnabled", False, "GitHub Issues are disabled"),
+    ("hasProjectsEnabled", True, "GitHub Projects are enabled"),
+    ("hasWikiEnabled", True, "GitHub Wiki is enabled"),
+])
+def test_mklq_public_readiness_audit_rejects_repository_surface_drift(
+        monkeypatch, tmp_path, field, value, expected_message):
+    module = _load_public_readiness_audit_module()
+    payload = _readiness_repo_payload()
+    payload[field] = value
+    config = module.AuditConfig(
+        repo_root=tmp_path,
+        repo="wuls968/MKL-Q",
+        workflow="MKL-Q public hygiene",
+        output=tmp_path / "readiness.json",
+    )
+
+    monkeypatch.setattr(module, "command_output",
+                        lambda cwd, command: json.dumps(payload))
+
+    result = module.check_repository(config)
+
+    assert result["status"] == "failed"
+    assert expected_message in result["message"]
 
 
 def test_mklq_public_readiness_audit_retries_live_command(monkeypatch,

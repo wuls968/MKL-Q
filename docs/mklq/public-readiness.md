@@ -4,7 +4,7 @@ This page records the public repository readiness snapshot for MKL-Q. It is a
 source-only repository audit, not a release certification, package
 certification, Apple Silicon CI replacement, or performance certification.
 
-Snapshot date: 2026-07-06.
+Snapshot date: 2026-07-10.
 
 ## Scope
 
@@ -37,6 +37,8 @@ The intended public repository is `wuls968/MKL-Q`:
 - Description: `CUDA-Q-compatible Apple Silicon simulator fork with MKL-Q targets`
 - Topics: `accelerate`, `apple-silicon`, `cuda-quantum`, `metal`, `mklq`,
   `quantum-computing`
+- Repository surface: GitHub Issues enabled; unused GitHub Projects and Wiki
+  disabled; homepage empty until MKL-Q publishes its own documentation site.
 
 MKL-Q keeps CUDA-Q public API compatibility for the first public source phase:
 Python users still import `cudaq`, and C++ users still compile with `nvq++`.
@@ -109,6 +111,9 @@ The public GitHub configuration is intentionally lightweight:
 - `.github/labels.yml` records the public triage label taxonomy.
 - `.github/branch-protection-main.json` records the intended `main` protection
   API payload.
+- The live repository keeps GitHub Issues enabled for the tracked forms, while
+  unused GitHub Projects and Wiki surfaces are disabled and the About homepage
+  is empty rather than pointing at NVIDIA's upstream documentation.
 
 The lightweight workflow checks source-only repository hygiene, public metadata,
 tracked benchmark summary parseability, bounded CPU gate fast-path, CPU
@@ -127,8 +132,9 @@ The pushed-public readiness audit is handled by
 identity and latest workflow status, it checks that the public issue template
 set is intentional, every issue-template label is declared in
 `.github/labels.yml`, live GitHub label metadata matches the tracked label
-taxonomy, live `main` branch protection matches
-`.github/branch-protection-main.json`, the latest pushed commit has a
+taxonomy, GitHub Issues are enabled, unused Projects and Wiki surfaces are
+disabled, the repository homepage is empty, live `main` branch protection
+matches `.github/branch-protection-main.json`, the latest pushed commit has a
 successful `MKL-Q public hygiene` run, the latest pushed commit has a
 successful `MKL-Q Apple Silicon correctness` run, and the public
 claim-boundary guard passes.
@@ -166,6 +172,19 @@ and the public readiness audit recorded 13/13 checks passed in
 `/tmp/mklq-public-readiness-audit-2026-07-08-7d623c08-after-manual-gate.json`.
 No tag, GitHub Release, wheel, installer, signed artifact, or package was
 created; this is live source-only evidence for the named commit.
+
+The current source-only gate was refreshed again on 2026-07-09 for protected
+`main` at `bc7008a42c4a6f23586650e4e7e915c8f17b7d37` after the controlled
+built-in SWAP benchmark evidence update. The public hygiene push run passed in
+<https://github.com/wuls968/MKL-Q/actions/runs/28995074311>, the Apple Silicon
+push guard passed in
+<https://github.com/wuls968/MKL-Q/actions/runs/28995074319>, and the manual
+`workflow_dispatch` full gate passed for the same commit in
+<https://github.com/wuls968/MKL-Q/actions/runs/28995114576>. The post-gate
+source tag preflight remained 9/9 and public readiness remained 13/13. On
+2026-07-10 the live repository collaboration surface was aligned with the
+tracked issue forms: Issues enabled, Projects and Wiki disabled, and the stale
+upstream homepage removed. No tag or release artifact was created.
 
 ## Branch Protection
 
