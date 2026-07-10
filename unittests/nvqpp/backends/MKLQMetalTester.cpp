@@ -2190,22 +2190,29 @@ CUDAQ_TEST(MKLQMetalTester, SimulatorThrowsWhenResidentResetGateFails) {
 }
 
 CUDAQ_TEST(MKLQMetalTester,
-           SimulatorSynchronizesResidentStateBeforeZeroShotExpectation) {
+           SimulatorComputesZeroShotExpectationFromResidentProbabilities) {
   const std::vector<std::complex<double>> xGate{{0.0, 0.0},
                                                 {1.0, 0.0},
                                                 {1.0, 0.0},
                                                 {0.0, 0.0}};
 
   MklqMetalCircuitSimulatorTester sim;
-  sim.setStateForTest({{1.0, 0.0}, {0.0, 0.0}});
+  sim.setStateForTest({{1.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0},
+                       {0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}});
   sim.applySingleQubitGateForTest(xGate, {}, 0);
+  sim.applySingleQubitGateForTest(xGate, {}, 2);
 
-  const auto counts = sim.sampleQubitsForTest({0}, 0);
+  const auto fullRegister = sim.sampleQubitsForTest({0, 1, 2}, 0);
+  const auto partialRegister = sim.sampleQubitsForTest({2, 0}, 0);
+  const auto singleQubit = sim.sampleQubitsForTest({0}, 0);
 
-  ASSERT_TRUE(counts.expectationValue.has_value());
-  EXPECT_NEAR(*counts.expectationValue, -1.0, 1.0e-12);
-  EXPECT_EQ(sim.residentStateDownloadsForTest(),
-            sim.metalRuntimeAvailableForTest() ? 1 : 0);
+  ASSERT_TRUE(fullRegister.expectationValue.has_value());
+  ASSERT_TRUE(partialRegister.expectationValue.has_value());
+  ASSERT_TRUE(singleQubit.expectationValue.has_value());
+  EXPECT_NEAR(*fullRegister.expectationValue, 1.0, 1.0e-12);
+  EXPECT_NEAR(*partialRegister.expectationValue, 1.0, 1.0e-12);
+  EXPECT_NEAR(*singleQubit.expectationValue, -1.0, 1.0e-12);
+  EXPECT_EQ(sim.residentStateDownloadsForTest(), 0);
 }
 
 CUDAQ_TEST(MKLQMetalTester,
