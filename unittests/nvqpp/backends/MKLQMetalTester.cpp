@@ -208,6 +208,14 @@ public:
 #endif
   }
 
+  std::size_t residentGateCommandBufferSubmissionsForTest() const {
+#if defined(MKLQ_ENABLE_METAL_RUNTIME)
+    return metalExecutor.residentGateCommandBufferSubmissions();
+#else
+    return 0;
+#endif
+  }
+
   std::size_t metalCpuFallbackApplicationsForTest() const {
 #if defined(MKLQ_ENABLE_TEST_ACCESSORS)
     return metalCpuFallbackApplications;
@@ -942,6 +950,7 @@ CUDAQ_TEST(MKLQMetalTester,
   sim.applySingleQubitGateForTest(hGate, {}, 0);
   sim.applySingleQubitGateForTest(xGate, {0}, 1);
 
+  EXPECT_EQ(sim.residentGateCommandBufferSubmissionsForTest(), 0);
   const auto state = sim.stateVectorForTest();
 
   ASSERT_EQ(state.size(), 4);
@@ -954,6 +963,8 @@ CUDAQ_TEST(MKLQMetalTester,
   EXPECT_EQ(sim.residentStateUploadsForTest(),
             sim.metalRuntimeAvailableForTest() ? 1 : 0);
   EXPECT_EQ(sim.residentStateDownloadsForTest(),
+            sim.metalRuntimeAvailableForTest() ? 1 : 0);
+  EXPECT_EQ(sim.residentGateCommandBufferSubmissionsForTest(),
             sim.metalRuntimeAvailableForTest() ? 1 : 0);
 }
 

@@ -33,6 +33,13 @@ Current counter evidence tracks these resident Metal state routes:
 | Native sampling phase timing telemetry | Counter tests grouped under `probability_sampling` | Test-accessor timing accumulators separate probability fill, draw/count, and expectation-reduction phases for selected fixtures; this is not release timing evidence. |
 | Measurement, collapse, and reset | Counter tests grouped under `measurement_reset` | Measurement results and sampled counts cross the host boundary. |
 
+Consecutive supported resident gates are encoded in separate compute encoders
+within one Metal command buffer. The command buffer is submitted before a
+host-visible result, CPU-oracle fallback, probability/measurement operation, or
+resident-state replacement. This preserves gate ordering while avoiding one
+commit-and-wait cycle per covered gate; it does not extend the supported gate
+surface or make the target fully Metal-native.
+
 The counter summary is rendered by:
 
 ```bash
