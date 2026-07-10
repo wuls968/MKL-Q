@@ -23,7 +23,7 @@ Current counter evidence tracks these resident Metal state routes:
 | --- | --- | --- |
 | Single-target gates | `mklq_metal_MKLQMetalTester.*` counter tests and `run_metal_runtime_counter_probe.py` | No user-visible host readback is required for the covered gate update itself. |
 | Controlled and multi-control single-target gates | Counter tests grouped under `resident_gate` in `docs/mklq/metal-runtime-counters.md` | Coverage is finite and test-selected. |
-| Two-target and three-target updates | Counter tests grouped under `resident_gate` | This is not a broad arbitrary-unitary guarantee. |
+| Two-target and three-target updates | Counter tests grouped under `resident_gate` | Covered two-target updates include the builtin controlled-SWAP dispatcher route; this is not a broad arbitrary-unitary guarantee. |
 | Full-register probability fill | Counter tests grouped under `probability_sampling` | The probability vector is host-visible output by design. |
 | Marginal probability fill | Counter tests grouped under `probability_sampling` | Marginal output is host-visible by design. |
 | Requested-order partial-register sampling | Counter tests grouped under `probability_sampling` | The selected route proves resident marginal-probability work before counts-only Metal sample-count accumulation or sequential host draw/count accumulation. |

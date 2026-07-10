@@ -54,8 +54,8 @@ METAL_CONTROLLED_TWO_QUBIT_SCOPE = (
     "experimental mixed-path controlled two-target gate update followed by "
     "host readback for cudaq.get_state")
 METAL_CONTROLLED_SWAP_SCOPE = (
-    "experimental mixed-path controlled built-in SWAP update followed by "
-    "host readback for cudaq.get_state")
+    "resident fp32 Metal controlled built-in SWAP update followed by host "
+    "readback for cudaq.get_state")
 METAL_THREE_QUBIT_SCOPE = (
     "resident fp32 Metal three-target gate update followed by host readback for "
     "cudaq.get_state")
@@ -131,7 +131,7 @@ METAL_PATH_CASES = {
         ("mklq_metal_mixed_controlled_two_gate_state_host_readback",
          METAL_CONTROLLED_TWO_QUBIT_SCOPE),
     "controlled-swap-state":
-        ("mklq_metal_mixed_controlled_swap_state_host_readback",
+        ("mklq_metal_resident_controlled_swap_state_host_readback",
          METAL_CONTROLLED_SWAP_SCOPE),
     "three-qubit-state": ("mklq_metal_resident_three_gate_state_host_readback",
                           METAL_THREE_QUBIT_SCOPE),

@@ -80,9 +80,10 @@ public:
   void applyGateTaskForTest(const std::string &name,
                             const std::vector<std::complex<double>> &matrix,
                             const std::vector<std::size_t> &controls,
-                            const std::vector<std::size_t> &targets) {
+                            const std::vector<std::size_t> &targets,
+                            bool isBuiltInOperation = false) {
     nvqir::CircuitSimulatorBase<double>::GateApplicationTask task(
-        name, matrix, controls, targets, {});
+        name, matrix, controls, targets, {}, isBuiltInOperation);
     applyGate(task);
   }
 
@@ -170,6 +171,14 @@ public:
   std::size_t singleQubitApplicationsForTest() const {
 #if defined(MKLQ_ENABLE_METAL_RUNTIME)
     return metalExecutor.singleQubitGateApplications();
+#else
+    return 0;
+#endif
+  }
+
+  std::size_t twoQubitApplicationsForTest() const {
+#if defined(MKLQ_ENABLE_METAL_RUNTIME)
+    return metalExecutor.twoQubitGateApplications();
 #else
     return 0;
 #endif
@@ -1748,6 +1757,39 @@ CUDAQ_TEST(MKLQMetalTester,
   expectNear(output[3], {invSqrt2, 0.0});
   for (std::size_t index = 4; index < output.size(); ++index)
     expectNear(output[index], {0.0, 0.0});
+  EXPECT_EQ(sim.residentStateDownloadsForTest(),
+            sim.metalRuntimeAvailableForTest() ? 1 : 0);
+}
+
+CUDAQ_TEST(MKLQMetalTester,
+           SimulatorKeepsBuiltInControlledSwapResidentUntilReadback) {
+  const std::vector<std::complex<double>> swapGate{
+      {1.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0},
+      {0.0, 0.0}, {0.0, 0.0}, {1.0, 0.0}, {0.0, 0.0},
+      {0.0, 0.0}, {1.0, 0.0}, {0.0, 0.0}, {0.0, 0.0},
+      {0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {1.0, 0.0},
+  };
+
+  MklqMetalCircuitSimulatorTester sim;
+  std::vector<std::complex<double>> state(8, {0.0, 0.0});
+  state[3] = {1.0, 0.0};
+  sim.setStateForTest(std::move(state));
+
+  sim.applyGateTaskForTest("swap", swapGate, {0}, {1, 2}, true);
+
+  EXPECT_EQ(sim.twoQubitApplicationsForTest(),
+            sim.metalRuntimeAvailableForTest() ? 1 : 0);
+  EXPECT_EQ(sim.residentStateUploadsForTest(),
+            sim.metalRuntimeAvailableForTest() ? 1 : 0);
+  EXPECT_EQ(sim.residentStateDownloadsForTest(), 0);
+  EXPECT_EQ(sim.metalCpuFallbackApplicationsForTest(), 0);
+
+  const auto output = sim.stateVectorForTest();
+
+  ASSERT_EQ(output.size(), 8);
+  for (std::size_t index = 0; index < output.size(); ++index)
+    expectNear(output[index], index == 5 ? std::complex<double>{1.0, 0.0}
+                                         : std::complex<double>{0.0, 0.0});
   EXPECT_EQ(sim.residentStateDownloadsForTest(),
             sim.metalRuntimeAvailableForTest() ? 1 : 0);
 }
