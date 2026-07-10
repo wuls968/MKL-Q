@@ -59,6 +59,18 @@ def _load_summary_generator_module():
     return module
 
 
+def _load_public_report_path_guard_module():
+    repo_root = Path(__file__).resolve().parents[3]
+    script = repo_root / "benchmarks" / "mklq" / (
+        "check_public_report_paths.py")
+    spec = importlib.util.spec_from_file_location("check_public_report_paths",
+                                                  script)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    return module
+
+
 def _load_clean_benchmark_gate_module():
     repo_root = Path(__file__).resolve().parents[3]
     script = repo_root / "benchmarks" / "mklq" / "run_clean_cpu_benchmark.py"
@@ -470,13 +482,13 @@ def test_mklq_summary_generator_builds_sanitized_summary(tmp_path):
     ]
     gate_path = tmp_path / "gate.json"
     sampling_path = tmp_path / "sampling.json"
-    gate_path.write_text(json.dumps(
-        _raw_benchmark_report(cases=["y-state"], results=gate_rows)),
-                         encoding="utf-8")
-    sampling_path.write_text(json.dumps(
-        _raw_benchmark_report(cases=["sample-full-register"],
-                              results=sampling_rows)),
-                             encoding="utf-8")
+    gate_report = _raw_benchmark_report(cases=["y-state"], results=gate_rows)
+    sampling_report = _raw_benchmark_report(
+        cases=["sample-full-register"], results=sampling_rows)
+    gate_report["machine"]["python_executable"] = "/opt/local/bin/python3"
+    sampling_report["machine"]["python_executable"] = "/opt/local/bin/python3"
+    gate_path.write_text(json.dumps(gate_report), encoding="utf-8")
+    sampling_path.write_text(json.dumps(sampling_report), encoding="utf-8")
 
     summary = module.build_summary(
         raw_paths=[gate_path, sampling_path],
@@ -493,6 +505,13 @@ def test_mklq_summary_generator_builds_sanitized_summary(tmp_path):
     assert summary["schema_version"] == module.SUMMARY_SCHEMA_VERSION
     assert summary["evidence_kind"] == "clean_local_benchmark_evidence"
     assert summary["git"]["dirty"] is False
+    assert "root" not in summary["git"]
+    assert "status_short" not in summary["git"]
+    assert "PYTHONPATH" not in summary["environment"]
+    assert "DYLD_LIBRARY_PATH" not in summary["environment"]
+    assert "cudaq_module_file" not in summary["runtime"]
+    assert "python_prefix" not in summary["runtime"]
+    assert "python_executable" not in summary["machine"]
     assert summary["interpretation"]["clean_worktree"] is True
     assert summary["interpretation"]["runtime_build_note"] == (
         "synthetic runtime note")
@@ -515,6 +534,40 @@ def test_mklq_summary_generator_builds_sanitized_summary(tmp_path):
     ] == 10.0
     elapsed = summary["comparison"]["mklq_cpu_elapsed_seconds_median"]
     assert elapsed["sample_full_register_q20_1024_shots"] == 1.0
+
+
+def test_mklq_public_report_path_guard_rejects_private_absolute_paths(tmp_path):
+    module = _load_public_report_path_guard_module()
+    report_dir = tmp_path / "reports"
+    report_dir.mkdir()
+    (report_dir / "safe.summary.json").write_text(
+        json.dumps({"source": {"repo_root": "."}}), encoding="utf-8")
+    (report_dir / "unsafe.counter.json").write_text(
+        json.dumps({"source": {"repo_root": "/Users/example/MKL-Q"}}),
+        encoding="utf-8")
+
+    result = module.check_reports(report_dir)
+
+    assert result["status"] == "failed"
+    assert result["details"]["report_count"] == 2
+    assert result["details"]["violation_count"] == 1
+    assert result["details"]["violations"] == [{
+        "json_path": "$.source.repo_root",
+        "path": "unsafe.counter.json",
+        "prefix": "/Users/",
+    }]
+    assert "/Users/example" not in json.dumps(result)
+
+
+def test_mklq_public_report_path_guard_rejects_all_absolute_paths():
+    module = _load_public_report_path_guard_module()
+
+    assert module.private_path_prefix("/opt/local/bin/python3") == (
+        "<unix-absolute-path>")
+    assert module.private_path_prefix(r"C:\Users\example\MKL-Q") == (
+        "<windows-user-path>")
+    assert module.private_path_prefix(
+        "https://github.com/wuls968/MKL-Q") is None
 
 
 def test_mklq_summary_generator_preserves_sampling_profile_flag(tmp_path):
@@ -2573,6 +2626,23 @@ def test_mklq_public_healthcheck_bans_internal_plan_references(monkeypatch,
                for failure in result["details"]["banned_token_failures"])
 
 
+def test_mklq_public_healthcheck_bans_private_paths_in_public_metadata(
+        monkeypatch, tmp_path):
+    module = _load_public_healthcheck_module()
+    config = _public_healthcheck_config(module, tmp_path)
+    readme = tmp_path / "README.md"
+    readme.write_text("Install from /Users/example/MKL-Q\n", encoding="utf-8")
+
+    monkeypatch.setattr(module, "public_metadata_requirements", lambda: [])
+    monkeypatch.setattr(module, "public_metadata_paths", lambda root: [readme])
+
+    result = module.run_public_metadata_check(config)
+
+    assert result["status"] == "failed"
+    assert any("/Users/" in failure
+               for failure in result["details"]["banned_token_failures"])
+
+
 def test_mklq_public_healthcheck_can_run_only_named_steps(tmp_path):
     module = _load_public_healthcheck_module()
     base = _public_healthcheck_config(module, tmp_path)
@@ -3378,6 +3448,11 @@ def test_mklq_metal_runtime_counter_probe_builds_bounded_report(monkeypatch,
     assert all(test["counter_source"] == module.COUNTER_SOURCE
                for test in report["tests"])
     assert all("stdout" not in test for test in report["tests"])
+    assert report["source"]["repo_root"] == "."
+    assert report["source"]["build_dir"] == "."
+    assert report["source"]["listing_command"][2] == "."
+    assert all(command[2] == "."
+               for command in report["source"]["probe_commands"])
     run_commands = [command for command in commands if command[:1] == ["ctest"]
                     and "--output-on-failure" in command]
     assert len(run_commands) == len(expected_test_names)
@@ -3699,6 +3774,11 @@ def test_mklq_cpu_gate_counter_probe_builds_bounded_report(monkeypatch,
     assert all(test["counter_source"] == module.COUNTER_SOURCE
                for test in report["tests"])
     assert all("stdout" not in test for test in report["tests"])
+    assert report["source"]["repo_root"] == "."
+    assert report["source"]["build_dir"] == "."
+    assert report["source"]["listing_command"][2] == "."
+    assert all(command[2] == "."
+               for command in report["source"]["probe_commands"])
     run_commands = [command for command in commands if command[:1] == ["ctest"]
                     and "--output-on-failure" in command]
     assert len(run_commands) == len(expected_test_names)
@@ -3930,6 +4010,11 @@ def test_mklq_cpu_sampling_counter_probe_builds_bounded_report(monkeypatch,
     assert all(test["counter_source"] == module.COUNTER_SOURCE
                for test in report["tests"])
     assert all("stdout" not in test for test in report["tests"])
+    assert report["source"]["repo_root"] == "."
+    assert report["source"]["build_dir"] == "."
+    assert report["source"]["listing_command"][2] == "."
+    assert all(command[2] == "."
+               for command in report["source"]["probe_commands"])
     run_commands = [command for command in commands if command[:1] == ["ctest"]
                     and "--output-on-failure" in command]
     assert len(run_commands) == len(expected_test_names)
@@ -10439,6 +10524,55 @@ def test_mklq_benchmark_summary_records_metal_count_accumulation_q22():
     assert summary["raw_results"][0]["status_rows"] == {"ok": 8}
     assert summary["config"]["targets"] == ["mklq-metal"]
     assert summary["config"]["qubits"] == [22]
+
+
+def test_mklq_benchmark_summary_records_metal_controlled_swap_evidence():
+    repo_root = Path(__file__).resolve().parents[3]
+    summary_path = (
+        repo_root / "benchmarks" / "mklq" / "reports" /
+        "local-metal-controlled-swap-q16-2026-07-10.summary.json")
+
+    summary = json.loads(summary_path.read_text(encoding="utf-8"))
+
+    assert summary["schema_version"] == "mklq-benchmark-summary-v1"
+    assert summary["evidence_kind"] == "local_tuning_evidence"
+    assert summary["summary_id"] == (
+        "local-metal-controlled-swap-q16-2026-07-10")
+    assert summary["raw_results"][0]["path"] == (
+        "benchmarks/mklq/results/"
+        "local-metal-controlled-swap-q16-2026-07-10.json")
+    assert summary["raw_results"][0]["sha256"] == (
+        "f7ac23cb4f900d8c7a65244e11ee48a4d651dce390872d33e1f68165c1e689e5")
+    assert summary["raw_results"][0]["status_rows"] == {"ok": 2}
+    assert summary["machine"]["cpu_brand"] == "Apple M5"
+    assert summary["config"]["targets"] == ["qpp-cpu", "mklq-metal"]
+    assert summary["config"]["cases"] == ["controlled-swap-state"]
+    assert summary["config"]["qubits"] == [16]
+    assert summary["config"]["repeats"] == 3
+    assert summary["config"]["layers"] == 6
+    assert summary["interpretation"]["clean_worktree"] is True
+    assert summary["interpretation"][
+        "do_not_treat_as_clean_release_provenance"] is True
+    assert summary["interpretation"]["metal_path_labels_are_static_case_map"]
+    assert summary["interpretation"]["metal_runtime_counter"] is False
+    assert "local Apple M5 q16" in summary["interpretation"][
+        "performance_claim_scope"]
+
+    rows = {row["target"]: row for row in summary["rows"]}
+    assert set(rows) == {"qpp-cpu", "mklq-metal"}
+    metal_row = rows["mklq-metal"]
+    assert metal_row["status"] == "ok"
+    assert metal_row["controlled_swap_gate_count"] == 84
+    assert metal_row["metal_path_label"] == (
+        "mklq_metal_resident_controlled_swap_state_host_readback")
+    assert metal_row["metal_path_scope"] == (
+        "resident fp32 Metal controlled built-in SWAP update followed by host "
+        "readback for cudaq.get_state")
+    assert metal_row["metal_runtime_counter"] is False
+    assert metal_row["metal_full_native"] is False
+    assert metal_row["elapsed_seconds_median"] > 0.0
+    assert summary["comparison"]["same_day_cross_target_ratio"][
+        "qpp_cpu_over_mklq_metal_controlled_swap_state_q16"] > 0.0
 
 
 def test_mklq_benchmark_summary_records_metal_partial_count_accumulation_q24(

@@ -1,0 +1,152 @@
+{
+  "comparison": {
+    "mklq_metal_elapsed_seconds_median": {
+      "controlled_swap_state_q16": 0.04268066601071041
+    },
+    "same_day_cross_target_ratio": {
+      "qpp_cpu_over_mklq_metal_controlled_swap_state_q16": 5.669575304668257
+    }
+  },
+  "config": {
+    "cases": [
+      "controlled-swap-state"
+    ],
+    "commands": [
+      [
+        "benchmarks/mklq/bench_mklq_targets.py",
+        "--isolate-rows",
+        "--targets",
+        "qpp-cpu,mklq-metal",
+        "--cases",
+        "controlled-swap-state",
+        "--qubits",
+        "16",
+        "--shots",
+        "1024",
+        "--repeats",
+        "3",
+        "--warmups",
+        "1",
+        "--layers",
+        "6",
+        "--output",
+        "benchmarks/mklq/results/local-metal-controlled-swap-q16-2026-07-10.json"
+      ]
+    ],
+    "isolate_rows": true,
+    "layers": 6,
+    "profile_sampling_breakdown": false,
+    "qubits": [
+      16
+    ],
+    "repeats": 3,
+    "shot_counts": [
+      1024
+    ],
+    "shots": 1024,
+    "targets": [
+      "qpp-cpu",
+      "mklq-metal"
+    ],
+    "warmups": 1
+  },
+  "environment": {
+    "MKL_NUM_THREADS": null,
+    "OMP_DYNAMIC": "false",
+    "OMP_NUM_THREADS": "10",
+    "OMP_PLACES": null,
+    "OMP_PROC_BIND": "close",
+    "VECLIB_MAXIMUM_THREADS": "1"
+  },
+  "evidence_kind": "local_tuning_evidence",
+  "git": {
+    "branch": "codex/metal-controlled-swap-residency-20260710",
+    "commit": "887b4818a47cecfe88b28754f3cebbda43e3f745",
+    "dirty": false
+  },
+  "interpretation": {
+    "clean_worktree": true,
+    "do_not_treat_as_clean_release_provenance": true,
+    "metal_path_labels_are_static_case_map": true,
+    "metal_path_scope": "resident fp32 Metal controlled built-in SWAP update followed by host readback for cudaq.get_state",
+    "metal_runtime_counter": false,
+    "performance_claim_scope": "local Apple M5 q16 experimental mklq-metal controlled built-in SWAP timing only; not a cross-machine or release benchmark",
+    "raw_json_files_are_ignored": true,
+    "runtime_build_note": "Collected after adding the controlled-SWAP resident-path counter fixture; mklq-metal remains experimental and mixed-path outside the covered gate route.",
+    "summary": "Clean-worktree local q16 timing run comparing qpp-cpu and experimental mklq-metal for controlled built-in SWAP state updates; static case-map labels remain separate from runtime-counter evidence."
+  },
+  "machine": {
+    "cpu_brand": "Apple M5",
+    "logical_cores": 10,
+    "machine": "arm64",
+    "macos_version": "26.5.2",
+    "memory_bytes": 17179869184,
+    "platform": "macOS-26.5.2-arm64-arm-64bit",
+    "processor": "arm",
+    "python": "3.12.2"
+  },
+  "raw_results": [
+    {
+      "path": "benchmarks/mklq/results/local-metal-controlled-swap-q16-2026-07-10.json",
+      "sha256": "f7ac23cb4f900d8c7a65244e11ee48a4d651dce390872d33e1f68165c1e689e5",
+      "status_rows": {
+        "ok": 2
+      },
+      "tracked": false
+    }
+  ],
+  "rows": [
+    {
+      "case": "controlled-swap-state",
+      "controlled_swap_gate_count": 84,
+      "controlled_swap_gate_family": "built-in cswap",
+      "controlled_swap_gate_state_throughput_per_second": 347.1343337535947,
+      "elapsed_seconds_max": 0.2560335410089465,
+      "elapsed_seconds_median": 0.2419812500011176,
+      "elapsed_seconds_min": 0.24043433400220238,
+      "estimated_state_bytes": 1048576,
+      "gate_count": 108,
+      "layers": 6,
+      "process_max_rss_bytes_cumulative": 180830208,
+      "qubits": 16,
+      "repeats": 3,
+      "shots": 1024,
+      "state_prep_gate_count": 24,
+      "status": "ok",
+      "target": "qpp-cpu",
+      "warmups": 1
+    },
+    {
+      "case": "controlled-swap-state",
+      "controlled_swap_gate_count": 84,
+      "controlled_swap_gate_family": "built-in cswap",
+      "controlled_swap_gate_state_throughput_per_second": 1968.1042460518493,
+      "elapsed_seconds_max": 0.049505582996062,
+      "elapsed_seconds_median": 0.04268066601071041,
+      "elapsed_seconds_min": 0.04205320798791945,
+      "estimated_state_bytes": 1048576,
+      "gate_count": 108,
+      "layers": 6,
+      "metal_evidence_boundary": "benchmark harness static case-map label only; not a runtime counter, release sign-off, or proof that every operation stayed on Metal",
+      "metal_full_native": false,
+      "metal_path_label": "mklq_metal_resident_controlled_swap_state_host_readback",
+      "metal_path_label_source": "benchmark_harness_static_case_map",
+      "metal_path_scope": "resident fp32 Metal controlled built-in SWAP update followed by host readback for cudaq.get_state",
+      "metal_runtime_counter": false,
+      "process_max_rss_bytes_cumulative": 181436416,
+      "qubits": 16,
+      "repeats": 3,
+      "shots": 1024,
+      "state_prep_gate_count": 24,
+      "status": "ok",
+      "target": "mklq-metal",
+      "warmups": 1
+    }
+  ],
+  "runtime": {
+    "cudaq_version": "CUDA-Q Version  (https://github.com/NVIDIA/cuda-quantum b7bf192c47c17be85a895fe588ae50a9336b363b)",
+    "module_from_build_tree": false
+  },
+  "schema_version": "mklq-benchmark-summary-v1",
+  "summary_id": "local-metal-controlled-swap-q16-2026-07-10"
+}

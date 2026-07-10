@@ -63,27 +63,18 @@
     "warmups": 1
   },
   "environment": {
-    "DYLD_LIBRARY_PATH": null,
     "MKL_NUM_THREADS": null,
     "OMP_DYNAMIC": null,
     "OMP_NUM_THREADS": "10",
     "OMP_PLACES": null,
     "OMP_PROC_BIND": null,
-    "PYTHONPATH": "/Users/a0000/.cudaq-mklq",
     "VECLIB_MAXIMUM_THREADS": null
   },
   "evidence_kind": "local_tuning_evidence",
   "git": {
     "branch": "codex/uniform-sampling-benchmark-20260705",
     "commit": "b870df24289823c91bac53e31babbb3058e8b28b",
-    "dirty": true,
-    "root": "/Users/a0000/Documents/MKL-Q",
-    "status_short": [
-      "M benchmarks/mklq/README.md",
-      " M benchmarks/mklq/bench_mklq_targets.py",
-      " M python/tests/backends/test_mklq_benchmark_harness.py",
-      "?? \"benchmarks/mklq/reports/local-metal-runtime-counter-probe-2026-07-05-uniform-sampler.counter 2.json\""
-    ]
+    "dirty": true
   },
   "interpretation": {
     "clean_worktree": false,
@@ -91,7 +82,7 @@
     "metal_path_scope": "mixed-path Metal marginal probability fill plus the uniform-probability generated-count fast path for counts-only partial-register sample-count accumulation",
     "performance_claim_scope": "local tuning benchmark evidence only; not cross-machine performance certification",
     "raw_json_files_are_ignored": true,
-    "runtime_build_note": "Built and installed locally to /Users/a0000/.cudaq-mklq before this run; macOS loadables were re-signed with repair_macos_install_signatures.py.",
+    "runtime_build_note": "Built and installed locally to ${HOME}/.cudaq-mklq before this run; macOS loadables were re-signed with repair_macos_install_signatures.py.",
     "sequential_data_accessor_not_invoked": true,
     "standard_sample_counts_only_path": true,
     "summary": "Focused mklq-metal q20/q22/q24 uniform partial-register counts-only sampling fixture for the uniform-probability generated-count fast path.",
@@ -105,8 +96,7 @@
     "memory_bytes": 17179869184,
     "platform": "macOS-26.5.1-arm64-arm-64bit",
     "processor": "arm",
-    "python": "3.12.2",
-    "python_executable": "/opt/anaconda3/bin/python3"
+    "python": "3.12.2"
   },
   "raw_results": [
     {
@@ -445,10 +435,8 @@
     }
   ],
   "runtime": {
-    "cudaq_module_file": "/Users/a0000/.cudaq-mklq/cudaq/__init__.py",
     "cudaq_version": "CUDA-Q Version  (https://github.com/NVIDIA/cuda-quantum b870df24289823c91bac53e31babbb3058e8b28b)",
-    "module_from_build_tree": false,
-    "python_prefix": "/opt/anaconda3"
+    "module_from_build_tree": false
   },
   "schema_version": "mklq-benchmark-summary-v1",
   "summary_id": "local-metal-uniform-partial-sampling-q20-q24-2026-07-05"

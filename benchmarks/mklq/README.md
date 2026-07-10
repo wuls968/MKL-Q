@@ -95,6 +95,20 @@ python3 benchmarks/mklq/bench_mklq_targets.py \
 
 ## Output
 
+Raw local benchmark JSON is intentionally ignored under
+`benchmarks/mklq/results/`. It can contain machine-local diagnostics needed
+only for local analysis. Tracked public summaries and counter reports must use
+relative repository paths, omit local environment/runtime paths, and pass:
+
+```bash
+python3 benchmarks/mklq/check_public_report_paths.py
+```
+
+The guard parses every JSON report under `benchmarks/mklq/reports/` and rejects
+Unix absolute paths plus common Windows user-home path patterns without
+echoing their values. Run it after adding or regenerating public benchmark
+evidence.
+
 The JSON report includes:
 
 - machine metadata: platform, macOS version, CPU brand, core count, memory

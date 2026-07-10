@@ -116,6 +116,7 @@ BENCHMARK_HELPERS = (
     "benchmarks/mklq/check_metal_runtime_counter_docs.py",
     "benchmarks/mklq/check_performance_evidence.py",
     "benchmarks/mklq/check_public_claims.py",
+    "benchmarks/mklq/check_public_report_paths.py",
     "benchmarks/mklq/check_sampling_profile_evidence.py",
     "benchmarks/mklq/make_summary.py",
     "benchmarks/mklq/repair_macos_install_signatures.py",
@@ -620,6 +621,10 @@ def banned_tokens() -> list[str]:
         "ops-" + "bot",
         "copy-pr-" + "bot",
         "docs/superpowers/plans/",
+        "/Users/",
+        "/home/",
+        "/private/var/folders/",
+        "/Volumes/",
     ]
 
 
@@ -768,12 +773,27 @@ def run_benchmark_summary_parse(config: HealthcheckConfig) -> dict[str, Any]:
     summaries = sorted(report_dir.glob("*.summary.json"))
     if not summaries:
         return failed("no sanitized MKL-Q benchmark summaries found")
+    script = config.repo_root / "benchmarks" / "mklq" / (
+        "check_public_report_paths.py")
+    command = [
+        config.python_executable,
+        str(script),
+        "--reports",
+        str(report_dir),
+    ]
+    result = run_command(config, command)
+    if result["returncode"] != 0:
+        return failed("public benchmark report path guard failed", result)
     parsed: list[str] = []
     for path in summaries:
         with path.open("r", encoding="utf-8") as handle:
             json.load(handle)
         parsed.append(command_path(config.repo_root, path))
-    return passed({"summary_count": len(parsed), "summaries": parsed})
+    return passed({
+        "summary_count": len(parsed),
+        "summaries": parsed,
+        "report_path_guard": "passed",
+    })
 
 
 def run_performance_evidence_check(config: HealthcheckConfig) -> dict[str, Any]:
@@ -1765,7 +1785,8 @@ def build_steps(config: HealthcheckConfig) -> list[Step]:
         Step("public_claim_boundary",
              "Check public release, Metal, and performance claim boundaries.",
              run_public_claim_boundary_check),
-        Step("benchmark_summary_parse", "Parse sanitized benchmark summary JSON.",
+        Step("benchmark_summary_parse",
+             "Parse sanitized reports and reject private path values.",
              run_benchmark_summary_parse),
         Step("performance_evidence_guard",
              "Check accepted clean CPU benchmark evidence ratios.",

@@ -21,6 +21,16 @@ from typing import Any
 
 RAW_SCHEMA_VERSION = "mklq-benchmark-v1"
 SUMMARY_SCHEMA_VERSION = "mklq-benchmark-summary-v1"
+PUBLIC_ENVIRONMENT_KEYS = (
+    "MKL_NUM_THREADS",
+    "OMP_DYNAMIC",
+    "OMP_NUM_THREADS",
+    "OMP_PLACES",
+    "OMP_PROC_BIND",
+    "VECLIB_MAXIMUM_THREADS",
+)
+PUBLIC_GIT_KEYS = ("branch", "commit", "dirty")
+PUBLIC_RUNTIME_KEYS = ("cudaq_version", "module_from_build_tree")
 DEFAULT_EVIDENCE_KIND = "clean_local_benchmark_evidence"
 DEFAULT_PERFORMANCE_SCOPE = (
     "local benchmark evidence only; not cross-machine performance "
@@ -118,6 +128,80 @@ def raw_runtime(report: dict[str, Any]) -> dict[str, Any]:
                                                     dict):
             return isolated["runtime"]
     return {}
+
+
+def public_projection(values: dict[str, Any], keys: tuple[str, ...]) -> dict[str,
+                                                                              Any]:
+    return {key: values[key] for key in keys if key in values}
+
+
+def is_absolute_path(value: Any) -> bool:
+    if not isinstance(value, str):
+        return False
+    return (Path(value).is_absolute() or
+            (len(value) >= 3 and value[1] == ":" and value[2] in ("/", "\\")))
+
+
+def public_machine(report: dict[str, Any]) -> dict[str, Any]:
+    machine = report.get("machine", {})
+    if not isinstance(machine, dict):
+        return {}
+    return {
+        key: value for key, value in machine.items()
+        if not is_absolute_path(value)
+    }
+
+
+def public_path(value: str, git_root: str | None = None) -> str:
+    path = Path(value)
+    if not path.is_absolute():
+        return value
+    if git_root:
+        try:
+            return path.relative_to(Path(git_root)).as_posix()
+        except ValueError:
+            pass
+    return "<external-local-path>"
+
+
+def public_text(value: str, git_root: str | None = None) -> str:
+    if git_root:
+        value = value.replace(git_root, "${REPO_ROOT}")
+    home = Path.home().as_posix()
+    if home and home != "/":
+        value = value.replace(home, "${HOME}")
+    return value
+
+
+def public_value(value: Any, git_root: str | None = None) -> Any:
+    if isinstance(value, str):
+        return public_text(value, git_root)
+    if isinstance(value, list):
+        return [public_value(item, git_root) for item in value]
+    if isinstance(value, dict):
+        return {
+            key: public_value(item, git_root)
+            for key, item in value.items()
+        }
+    return value
+
+
+def public_command(command: Any, git_root: str | None) -> Any:
+    if not isinstance(command, list):
+        return command
+    return [
+        public_path(argument, git_root)
+        if isinstance(argument, str) else argument for argument in command
+    ]
+
+
+def public_raw_result_path(path: Path, report: dict[str, Any]) -> str:
+    if not path.is_absolute():
+        return path.as_posix()
+    git_root = raw_git(report).get("root")
+    if isinstance(git_root, str):
+        return public_path(path.as_posix(), git_root)
+    return path.name
 
 
 def validate_reports(reports: list[dict[str, Any]],
@@ -288,7 +372,11 @@ def build_config(reports: list[dict[str, Any]]) -> dict[str, Any]:
         "layers": require_same("layers", [cfg.get("layers") for cfg in configs]),
         "isolate_rows": require_same(
             "isolate_rows", [cfg.get("isolate_rows") for cfg in configs]),
-        "commands": [cfg.get("command") for cfg in configs if cfg.get("command")],
+        "commands": [
+            public_command(raw_config(report).get("command"),
+                           raw_git(report).get("root")) for report in reports
+            if raw_config(report).get("command")
+        ],
     }
     if profile_sampling_values:
         config["profile_sampling_breakdown"] = require_same(
@@ -314,39 +402,40 @@ def build_summary(raw_paths: list[Path],
     validate_reports(reports, allow_dirty=allow_dirty, allow_errors=allow_errors)
     rows = collect_rows(reports)
     first = reports[0]
-    runtime = raw_runtime(first)
-    git = raw_git(first)
+    runtime = public_projection(raw_runtime(first), PUBLIC_RUNTIME_KEYS)
+    raw_git_data = raw_git(first)
+    git = public_projection(raw_git_data, PUBLIC_GIT_KEYS)
+    git_root = raw_git_data.get("root")
+    if not isinstance(git_root, str):
+        git_root = None
 
     interpretation = {
         "clean_worktree": not bool(git.get("dirty")),
         "raw_json_files_are_ignored": True,
-        "performance_claim_scope": performance_scope,
-        "summary": summary_text,
+        "performance_claim_scope": public_text(performance_scope, git_root),
+        "summary": public_text(summary_text, git_root),
     }
     if runtime_note:
-        interpretation["runtime_build_note"] = runtime_note
+        interpretation["runtime_build_note"] = public_text(runtime_note,
+                                                             git_root)
     if extra_interpretation:
-        interpretation.update(extra_interpretation)
+        interpretation.update(public_value(extra_interpretation, git_root))
 
     return {
         "schema_version": SUMMARY_SCHEMA_VERSION,
         "evidence_kind": evidence_kind,
         "summary_id": summary_id,
         "raw_results": [{
-            "path": path.as_posix(),
+            "path": public_raw_result_path(path, report),
             "sha256": sha256_file(path),
             "status_rows": status_counts(report),
             "tracked": False,
         } for path, report in zip(raw_paths, reports)],
-        "machine": first.get("machine", {}),
-        "environment": raw_environment(first),
+        "machine": public_machine(first),
+        "environment": public_projection(raw_environment(first),
+                                            PUBLIC_ENVIRONMENT_KEYS),
         "git": git,
-        "runtime": {
-            "cudaq_module_file": runtime.get("cudaq_module_file"),
-            "cudaq_version": runtime.get("cudaq_version"),
-            "module_from_build_tree": runtime.get("module_from_build_tree"),
-            "python_prefix": runtime.get("python_prefix"),
-        },
+        "runtime": runtime,
         "config": build_config(reports),
         "rows": rows,
         "comparison": build_comparison(rows, reference_target,

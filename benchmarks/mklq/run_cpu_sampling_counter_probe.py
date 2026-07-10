@@ -73,7 +73,13 @@ def command_path(root: Path, path: Path) -> str:
     try:
         return path.relative_to(root).as_posix()
     except ValueError:
-        return path.as_posix()
+        return "<external-local-path>"
+
+
+def public_ctest_command(command: list[str], build_dir: str) -> list[str]:
+    public = list(command)
+    public[public.index("--test-dir") + 1] = build_dir
+    return public
 
 
 def expected_counter_tests() -> list[str]:
@@ -117,6 +123,9 @@ def build_report(repo_root: Path, build_dir: Path) -> dict[str, Any]:
         "mklq_cpu_MKLQCpuTester",
     ]
     listing = command_output(root, listing_command)
+    public_build_dir = command_path(root, build_dir)
+    public_listing_command = public_ctest_command(listing_command,
+                                                  public_build_dir)
     selected = select_counter_tests(listing)
     missing = missing_counter_tests(selected)
 
@@ -131,7 +140,8 @@ def build_report(repo_root: Path, build_dir: Path) -> dict[str, Any]:
             exact_ctest_regex(test_name),
             "--output-on-failure",
         ]
-        probe_commands.append(run_command_args)
+        probe_commands.append(public_ctest_command(run_command_args,
+                                                   public_build_dir))
         run_result = run_command(root, run_command_args)
         passed = run_result["returncode"] == 0
         item: dict[str, Any] = {
@@ -166,9 +176,9 @@ def build_report(repo_root: Path, build_dir: Path) -> dict[str, Any]:
             "processor": platform.processor(),
         },
         "source": {
-            "repo_root": root.as_posix(),
-            "build_dir": command_path(root, build_dir),
-            "listing_command": listing_command,
+            "repo_root": ".",
+            "build_dir": public_build_dir,
+            "listing_command": public_listing_command,
             "probe_commands": probe_commands,
         },
         "summary": {

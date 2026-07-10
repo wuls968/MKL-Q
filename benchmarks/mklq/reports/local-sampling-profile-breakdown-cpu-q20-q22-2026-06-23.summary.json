@@ -58,29 +58,25 @@
     "warmups": 1
   },
   "environment": {
-    "DYLD_LIBRARY_PATH": null,
     "MKL_NUM_THREADS": null,
     "OMP_DYNAMIC": null,
     "OMP_NUM_THREADS": "10",
     "OMP_PLACES": null,
     "OMP_PROC_BIND": null,
-    "PYTHONPATH": "/Users/a0000/.cudaq-mklq",
     "VECLIB_MAXIMUM_THREADS": null
   },
   "evidence_kind": "local_tuning_evidence",
   "git": {
     "branch": "main",
     "commit": "3fc83d7466d635ce69e201a249e88783625c83be",
-    "dirty": false,
-    "root": "/Users/a0000/Documents/MKL-Q",
-    "status_short": []
+    "dirty": false
   },
   "interpretation": {
     "clean_worktree": true,
     "do_not_treat_as_clean_release_provenance": true,
     "performance_claim_scope": "local sampling profiling evidence only; not cross-machine performance certification or native backend internal phase counters",
     "raw_json_files_are_ignored": true,
-    "runtime_build_note": "Built from local MKL-Q install prefix /Users/a0000/.cudaq-mklq.",
+    "runtime_build_note": "Built from local MKL-Q install prefix ${HOME}/.cudaq-mklq.",
     "sampling_profile_boundary": "benchmark harness diagnostic timing, not native backend internal phase counters",
     "summary": "Local q20/q22 sampling profiling shows Python-visible kernel build and count-map materialization are small relative to cudaq.sample call time."
   },
@@ -92,8 +88,7 @@
     "memory_bytes": 17179869184,
     "platform": "macOS-26.5.1-arm64-arm-64bit",
     "processor": "arm",
-    "python": "3.12.2",
-    "python_executable": "/opt/anaconda3/bin/python3"
+    "python": "3.12.2"
   },
   "raw_results": [
     {
@@ -356,10 +351,8 @@
     }
   ],
   "runtime": {
-    "cudaq_module_file": "/Users/a0000/.cudaq-mklq/cudaq/__init__.py",
     "cudaq_version": "CUDA-Q Version  (https://github.com/NVIDIA/cuda-quantum b0b1978f680a9ea2d625cedaf8aac0e99ff6f3ec)",
-    "module_from_build_tree": false,
-    "python_prefix": "/opt/anaconda3"
+    "module_from_build_tree": false
   },
   "schema_version": "mklq-benchmark-summary-v1",
   "summary_id": "local-sampling-profile-breakdown-cpu-q20-q22-2026-06-23"
