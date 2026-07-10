@@ -226,6 +226,14 @@ To audit the planned `mklq-v0.1.0-source` tag draft without creating a tag, run:
 python3 benchmarks/mklq/run_source_release_tag_audit.py
 ```
 
+## Reporting Issues
+
+Use the public [MKL-Q issue tracker](https://github.com/wuls968/MKL-Q/issues)
+for reproducible bugs and focused feature requests. Include the source commit,
+macOS and Apple Silicon model, target name, build or run command, and the
+smallest relevant output. Security reports should follow [`SECURITY.md`](SECURITY.md)
+instead of being filed as public issues.
+
 ## Upstream And License
 
 MKL-Q is derived from NVIDIA CUDA-Q and keeps CUDA-Q API compatibility where

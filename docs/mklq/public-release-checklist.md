@@ -83,6 +83,9 @@ Check:
   current upstream sync procedure and dry-run audit command.
 - [ ] GitHub About metadata describes MKL-Q, uses Apache-2.0, and avoids stale
   NVIDIA workflow or badge links.
+- [ ] GitHub Issues are enabled for the tracked issue forms, unused Projects
+  and Wiki surfaces are disabled, and the repository homepage is empty until
+  MKL-Q publishes its own documentation site.
 
 ## Tree Hygiene
 

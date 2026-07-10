@@ -349,7 +349,8 @@ def check_repository(config: AuditConfig) -> dict[str, Any]:
             config.repo,
             "--json",
             "nameWithOwner,isFork,parent,defaultBranchRef,url,description,"
-            "repositoryTopics,licenseInfo,visibility",
+            "repositoryTopics,licenseInfo,visibility,homepageUrl,"
+            "hasIssuesEnabled,hasProjectsEnabled,hasWikiEnabled",
         ]), {})
     failures: list[str] = []
     parent = payload.get("parent") or {}
@@ -369,6 +370,14 @@ def check_repository(config: AuditConfig) -> dict[str, Any]:
         failures.append("license is not Apache-2.0")
     if payload.get("description") != EXPECTED_DESCRIPTION:
         failures.append("description does not match MKL-Q public metadata")
+    if payload.get("homepageUrl") not in {None, ""}:
+        failures.append("repository homepage is not empty")
+    if payload.get("hasIssuesEnabled") is not True:
+        failures.append("GitHub Issues are disabled")
+    if payload.get("hasProjectsEnabled") is not False:
+        failures.append("GitHub Projects are enabled")
+    if payload.get("hasWikiEnabled") is not False:
+        failures.append("GitHub Wiki is enabled")
     missing_topics = sorted(EXPECTED_TOPICS - topics)
     if missing_topics:
         failures.append("expected topics are missing")

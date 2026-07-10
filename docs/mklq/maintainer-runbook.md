@@ -41,7 +41,8 @@ git remote -v
 git rev-parse --is-shallow-repository
 git log --oneline --decorate -5
 git ls-files .github | sort
-gh repo view wuls968/MKL-Q --json nameWithOwner,isFork,parent,defaultBranchRef,url
+gh repo view wuls968/MKL-Q \
+  --json nameWithOwner,isFork,parent,defaultBranchRef,url,homepageUrl,hasIssuesEnabled,hasProjectsEnabled,hasWikiEnabled
 gh run list --repo wuls968/MKL-Q --branch main --limit 5
 python3 benchmarks/mklq/run_preflight_audit.py
 python3 benchmarks/mklq/run_public_readiness_audit.py
@@ -60,6 +61,8 @@ Expected state:
 - `upstream` points to `https://github.com/NVIDIA/cuda-quantum.git`.
 - The repository is not shallow.
 - `.github/workflows/` contains only intentionally reviewed MKL-Q workflows.
+- GitHub Issues are enabled, GitHub Projects and Wiki are disabled, and the
+  repository homepage is empty until MKL-Q has its own documentation site.
 - The latest pushed commit has a completed `MKL-Q public hygiene` run.
 - The latest pushed commit has a completed `MKL-Q Apple Silicon correctness`
   guard run; a skipped manual correctness job is acceptable unless the
