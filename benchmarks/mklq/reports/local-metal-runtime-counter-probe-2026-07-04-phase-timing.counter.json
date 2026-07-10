@@ -69,7 +69,7 @@
     "listing_command": [
       "ctest",
       "--test-dir",
-      "/Users/a0000/Documents/MKL-Q/build-python",
+      "build-python",
       "-N",
       "-R",
       "mklq_metal_MKLQMetalTester"
@@ -78,7 +78,7 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_metal_MKLQMetalTester\\.MetalRuntimeAppliesSingleQubitGate$",
         "--output-on-failure"
@@ -86,7 +86,7 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_metal_MKLQMetalTester\\.MetalRuntimeAppliesControlledSingleQubitGate$",
         "--output-on-failure"
@@ -94,7 +94,7 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_metal_MKLQMetalTester\\.MetalRuntimeAppliesTwoQubitGate$",
         "--output-on-failure"
@@ -102,7 +102,7 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_metal_MKLQMetalTester\\.MetalRuntimeAppliesControlledTwoQubitGate$",
         "--output-on-failure"
@@ -110,7 +110,7 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_metal_MKLQMetalTester\\.MetalRuntimeAppliesResidentThreeQubitGate$",
         "--output-on-failure"
@@ -118,7 +118,7 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_metal_MKLQMetalTester\\.MetalRuntimeFillsFullRegisterProbabilities$",
         "--output-on-failure"
@@ -126,7 +126,7 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_metal_MKLQMetalTester\\.MetalRuntimeProbabilityFillMatchesCpuNorms$",
         "--output-on-failure"
@@ -134,7 +134,7 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_metal_MKLQMetalTester\\.MetalRuntimeFillsResidentMarginalProbabilities$",
         "--output-on-failure"
@@ -142,7 +142,7 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_metal_MKLQMetalTester\\.MetalRuntimeComputesAndCollapsesResidentQubitProbability$",
         "--output-on-failure"
@@ -150,7 +150,7 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_metal_MKLQMetalTester\\.MetalRuntimeKeepsResidentStateAcrossGateSequence$",
         "--output-on-failure"
@@ -158,7 +158,7 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_metal_MKLQMetalTester\\.MetalRuntimeKeepsResidentYAndControlledYSequence$",
         "--output-on-failure"
@@ -166,7 +166,7 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_metal_MKLQMetalTester\\.MetalRuntimeFillsResidentProbabilitiesWithoutStateReadback$",
         "--output-on-failure"
@@ -174,7 +174,7 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_metal_MKLQMetalTester\\.MetalRuntimeRejectsTargetsOutsideStateRange$",
         "--output-on-failure"
@@ -182,7 +182,7 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_metal_MKLQMetalTester\\.SimulatorUsesMetalFullRegisterProbabilityFill$",
         "--output-on-failure"
@@ -190,7 +190,7 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_metal_MKLQMetalTester\\.SimulatorKeepsSupportedGateSequenceResidentUntilReadback$",
         "--output-on-failure"
@@ -198,7 +198,7 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_metal_MKLQMetalTester\\.SimulatorKeepsYAndControlledYResidentUntilReadback$",
         "--output-on-failure"
@@ -206,7 +206,7 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_metal_MKLQMetalTester\\.SimulatorKeepsBuiltInYAndControlledYResidentUntilReadback$",
         "--output-on-failure"
@@ -214,7 +214,7 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_metal_MKLQMetalTester\\.SimulatorKeepsBuiltInRxAndControlledRxResidentUntilReadback$",
         "--output-on-failure"
@@ -222,7 +222,7 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_metal_MKLQMetalTester\\.SimulatorKeepsBuiltInRyAndControlledRyResidentUntilReadback$",
         "--output-on-failure"
@@ -230,7 +230,7 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_metal_MKLQMetalTester\\.SimulatorKeepsBuiltInRzAndControlledRzResidentUntilReadback$",
         "--output-on-failure"
@@ -238,7 +238,7 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_metal_MKLQMetalTester\\.SimulatorKeepsBuiltInPhaseFamilyResidentUntilReadback$",
         "--output-on-failure"
@@ -246,7 +246,7 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_metal_MKLQMetalTester\\.SimulatorKeepsMultiControlSingleQubitResidentUntilReadback$",
         "--output-on-failure"
@@ -254,7 +254,7 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_metal_MKLQMetalTester\\.SimulatorSamplesResidentDenseStateWithoutReadback$",
         "--output-on-failure"
@@ -262,7 +262,7 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_metal_MKLQMetalTester\\.SimulatorSamplesLargeResidentPartialRegisterThroughFullProbability$",
         "--output-on-failure"
@@ -270,7 +270,7 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_metal_MKLQMetalTester\\.SimulatorSamplesSmallResidentPartialRegisterThroughMarginalProbability$",
         "--output-on-failure"
@@ -278,7 +278,7 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_metal_MKLQMetalTester\\.SimulatorSamplesRequestedOrderPartialRegisterThroughMarginalProbability$",
         "--output-on-failure"
@@ -286,7 +286,7 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_metal_MKLQMetalTester\\.SimulatorSamplesResidentPartialRegisterWithHostSequentialDrawTelemetry$",
         "--output-on-failure"
@@ -294,7 +294,7 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_metal_MKLQMetalTester\\.SimulatorSamplesResidentPartialRegisterWithHostCountsOnlyDrawTelemetry$",
         "--output-on-failure"
@@ -302,7 +302,7 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_metal_MKLQMetalTester\\.SimulatorSamplesResidentPartialRegisterReportsNativePhaseTiming$",
         "--output-on-failure"
@@ -310,7 +310,7 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_metal_MKLQMetalTester\\.SimulatorSamplesDeterministicSparseStateWithOneBitStringConversion$",
         "--output-on-failure"
@@ -318,7 +318,7 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_metal_MKLQMetalTester\\.SimulatorSynchronizesResidentStateBeforeUnsupportedGate$",
         "--output-on-failure"
@@ -326,7 +326,7 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_metal_MKLQMetalTester\\.SimulatorKeepsThreeQubitGateResidentUntilReadback$",
         "--output-on-failure"
@@ -334,7 +334,7 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_metal_MKLQMetalTester\\.SimulatorReuploadsResidentStateAfterUnsupportedGateFallback$",
         "--output-on-failure"
@@ -342,7 +342,7 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_metal_MKLQMetalTester\\.SimulatorMeasuresAndResetsResidentStateWithoutReadback$",
         "--output-on-failure"
@@ -350,7 +350,7 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_metal_MKLQMetalTester\\.SimulatorResetsResidentNonzeroTargetWithoutReadback$",
         "--output-on-failure"
@@ -358,7 +358,7 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_metal_MKLQMetalTester\\.SimulatorPoisonsResidentStateWhenSingleGateFails$",
         "--output-on-failure"
@@ -366,7 +366,7 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_metal_MKLQMetalTester\\.SimulatorPoisonsResidentStateWhenTwoGateFails$",
         "--output-on-failure"
@@ -374,7 +374,7 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_metal_MKLQMetalTester\\.SimulatorPoisonsResidentStateWhenThreeGateFails$",
         "--output-on-failure"
@@ -382,7 +382,7 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_metal_MKLQMetalTester\\.SimulatorThrowsWhenResidentMeasurementProbabilityFails$",
         "--output-on-failure"
@@ -390,7 +390,7 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_metal_MKLQMetalTester\\.SimulatorThrowsWhenResidentMeasurementCollapseFails$",
         "--output-on-failure"
@@ -398,7 +398,7 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_metal_MKLQMetalTester\\.SimulatorThrowsWhenResidentResetGateFails$",
         "--output-on-failure"
@@ -406,7 +406,7 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_metal_MKLQMetalTester\\.SimulatorSynchronizesResidentStateBeforeZeroShotExpectation$",
         "--output-on-failure"
@@ -414,13 +414,13 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_metal_MKLQMetalTester\\.SimulatorSamplesDenseFullRegisterThroughMetalProbabilityFill$",
         "--output-on-failure"
       ]
     ],
-    "repo_root": "/Users/a0000/Documents/MKL-Q"
+    "repo_root": "."
   },
   "summary": {
     "expected": 43,

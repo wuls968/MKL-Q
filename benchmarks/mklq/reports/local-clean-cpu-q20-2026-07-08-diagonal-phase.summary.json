@@ -68,7 +68,7 @@
     ],
     "commands": [
       [
-        "/Users/a0000/Documents/MKL-Q/benchmarks/mklq/bench_mklq_targets.py",
+        "benchmarks/mklq/bench_mklq_targets.py",
         "--isolate-rows",
         "--targets",
         "qpp-cpu,mklq-cpu",
@@ -88,7 +88,7 @@
         "benchmarks/mklq/results/local-clean-cpu-gate-y-diagonal-phase-ch-cy-crx-cry-crz-cz-two-qubit-custom-two-qubit-dense-two-qubit-controlled-dense-two-qubit-three-qubit-q20-2026-07-08-diagonal-phase.json"
       ],
       [
-        "/Users/a0000/Documents/MKL-Q/benchmarks/mklq/bench_mklq_targets.py",
+        "benchmarks/mklq/bench_mklq_targets.py",
         "--isolate-rows",
         "--targets",
         "qpp-cpu,mklq-cpu",
@@ -108,7 +108,7 @@
         "benchmarks/mklq/results/local-clean-cpu-composite-qft-like-seeded-clifford-hardware-efficient-ansatz-q20-2026-07-08-diagonal-phase.json"
       ],
       [
-        "/Users/a0000/Documents/MKL-Q/benchmarks/mklq/bench_mklq_targets.py",
+        "benchmarks/mklq/bench_mklq_targets.py",
         "--isolate-rows",
         "--targets",
         "qpp-cpu,mklq-cpu",
@@ -147,22 +147,18 @@
     "warmups": 1
   },
   "environment": {
-    "DYLD_LIBRARY_PATH": null,
     "MKL_NUM_THREADS": null,
     "OMP_DYNAMIC": "false",
     "OMP_NUM_THREADS": "10",
     "OMP_PLACES": null,
     "OMP_PROC_BIND": "close",
-    "PYTHONPATH": "/Users/a0000/.cudaq-mklq",
     "VECLIB_MAXIMUM_THREADS": "1"
   },
   "evidence_kind": "clean_local_benchmark_evidence",
   "git": {
     "branch": "codex/diagonal-phase-benchmark-20260708",
     "commit": "c7c9177f4227a8c4bdce3d3a3383f85a85435d05",
-    "dirty": false,
-    "root": "/Users/a0000/Documents/MKL-Q",
-    "status_short": []
+    "dirty": false
   },
   "interpretation": {
     "clean_worktree": true,
@@ -179,8 +175,7 @@
     "memory_bytes": 17179869184,
     "platform": "macOS-26.5.1-arm64-arm-64bit",
     "processor": "arm",
-    "python": "3.12.2",
-    "python_executable": "/opt/anaconda3/bin/python3"
+    "python": "3.12.2"
   },
   "raw_results": [
     {
@@ -985,10 +980,8 @@
     }
   ],
   "runtime": {
-    "cudaq_module_file": "/Users/a0000/.cudaq-mklq/cudaq/__init__.py",
     "cudaq_version": "CUDA-Q Version  (https://github.com/NVIDIA/cuda-quantum b7bf192c47c17be85a895fe588ae50a9336b363b)",
-    "module_from_build_tree": false,
-    "python_prefix": "/opt/anaconda3"
+    "module_from_build_tree": false
   },
   "schema_version": "mklq-benchmark-summary-v1",
   "summary_id": "local-clean-cpu-q20-2026-07-08-diagonal-phase"

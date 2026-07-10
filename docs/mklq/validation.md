@@ -11,7 +11,7 @@ boundary and evidence limits.
 - CPU: Apple M5, 10 logical cores
 - Memory: 16 GB RAM
 - OS: macOS 26.5.1
-- Install prefix used for the public bootstrap gate: `/Users/a0000/.cudaq-mklq`
+- Install prefix used for the public bootstrap gate: `${HOME}/.cudaq-mklq`
 
 ## Current Evidence Snapshot
 
@@ -93,7 +93,14 @@ The current refresh includes the earlier Metal counter-evidence work:
 resident built-in Rx/Ry/Rz, controlled-Rx/Ry/Rz, phase-family S/T/Sdg/Tdg,
 multi-control single-qubit resident, resident three-target gates, and
 four-or-more-target unsupported gate fallback/reupload fixtures. The
-2026-07-04 Metal counter refresh adds a requested-order partial-register
+2026-07-10 Metal counter refresh adds a builtin controlled-SWAP fixture that
+asserts the resident two-qubit Metal dispatch, one resident upload, no host
+download before explicit state readback, and no CPU fallback for the covered
+route. Its paired Python fixture compares a controlled-SWAP circuit with the
+qpp-cpu state oracle. The corresponding q16 local timing summary is static
+path-label and local performance evidence only; it is not a runtime counter,
+release result, or cross-machine comparison. The 2026-07-04 Metal counter
+refresh adds a requested-order partial-register
 sampling fixture that asserts the resident marginal probability route, no
 full-register probability fill, and no resident download for that selected
 path. The later 2026-07-04 Metal counter refresh adds explicit host-side
@@ -166,7 +173,7 @@ sampling/probability counter evidence includes three bounded reports, each with
 explicit full-register and
 marginal probability-fill counter ctests alongside the existing sampling phase
 counter ctests. The current tracked Metal runtime counter evidence includes
-thirteen bounded reports. Counter-summary aggregate counts are summed
+fourteen bounded reports. Counter-summary aggregate counts are summed
 across tracked reports, so repeated daily probes intentionally count the same
 selected tests once per report.
 
@@ -264,9 +271,10 @@ Latest full 2026-07-08 result: `36/36` steps passed.
   rotation, CNOT, CRZ, CZ, CRX, and SWAP fast paths, plus the resident
   full-register Metal sampling telemetry and selected sample-count accumulation
   fixtures.
-- Current tracked `metal_runtime_counter_probe`: 13 bounded reports, 535
-  expected, 535 selected, 0 missing, and 0 failures. The latest tracked report
-  runs 50 counter ctests independently, including the direct Metal
+- Current tracked `metal_runtime_counter_probe`: 14 bounded reports, 586
+  expected, 586 selected, 0 missing, and 0 failures. The latest tracked report
+  runs 51 counter ctests independently, including the builtin controlled-SWAP
+  resident-dispatch fixture, the direct Metal
   sample-count accumulation kernel fixture, the direct Metal generated-draw
   sample-count fixture, selected full-register and partial-register
   counts-only Metal generated-draw/count accumulation, the uniform-probability
@@ -305,10 +313,10 @@ cmake --build build-python --target install -j 6
 ```
 
 Result: passed in the latest local refresh, installing to
-`/Users/a0000/.cudaq-mklq`.
+`${HOME}/.cudaq-mklq`.
 
 ```bash
-PYTHONPATH=/Users/a0000/.cudaq-mklq \
+PYTHONPATH="${HOME}/.cudaq-mklq" \
 python3 -m pytest \
   python/tests/backends/test_mklq_python_api.py \
   python/tests/builder/test_mklq_targets.py \
@@ -318,8 +326,8 @@ python3 -m pytest \
 Result: `37 passed in 4.46s` in the latest local refresh.
 
 ```bash
-CUDAQ_NVQPP=/Users/a0000/.cudaq-mklq/bin/nvq++ \
-PYTHONPATH=/Users/a0000/.cudaq-mklq \
+CUDAQ_NVQPP="${HOME}/.cudaq-mklq/bin/nvq++" \
+PYTHONPATH="${HOME}/.cudaq-mklq" \
 python3 -m pytest python/tests/backends/test_mklq_nvqpp_smoke.py -q
 ```
 
@@ -336,7 +344,7 @@ ctest --test-dir build-python \
 Result in the latest standalone correctness-gate refresh: `104/104 passed`.
 
 ```bash
-PYTHONPATH=/Users/a0000/Documents/MKL-Q/build-python/python \
+PYTHONPATH="$(pwd)/build-python/python" \
 python3 -m pytest \
   python/tests/backends/test_mklq_nvqpp_smoke.py \
   python/tests/backends/test_mklq_benchmark_harness.py \
@@ -350,12 +358,12 @@ part of the latest full public healthcheck; the install-prefix correctness
 wrapper is the current public readiness gate.
 
 ```bash
-PYTHONPATH=/Users/a0000/Documents/MKL-Q/tpls/llvm/llvm/utils/lit \
-/opt/anaconda3/bin/python3 /Users/a0000/.local/llvm/bin/llvm-lit \
+PYTHONPATH="$(pwd)/tpls/llvm/llvm/utils/lit" \
+llvm-lit \
   -j 1 -sv \
   --filter 'mklq_(targets|runtime_smoke)' \
-  --param cudaq_site_config=/Users/a0000/Documents/MKL-Q/build-python/targettests/lit.site.cfg.py \
-  /Users/a0000/Documents/MKL-Q/build-python/targettests/TargetConfig
+  --param cudaq_site_config="$(pwd)/build-python/targettests/lit.site.cfg.py" \
+  "$(pwd)/build-python/targettests/TargetConfig"
 ```
 
 Historical bootstrap result: 2 selected MKL-Q TargetConfig tests passed. The
@@ -430,8 +438,8 @@ For build-tree-only experiments, override the runtime paths explicitly:
 
 ```bash
 python3 benchmarks/mklq/run_correctness_gate.py \
-  --pythonpath /Users/a0000/Documents/MKL-Q/build-python/python \
-  --nvqpp /Users/a0000/Documents/MKL-Q/build-python/bin/nvq++ \
+  --pythonpath "$(pwd)/build-python/python" \
+  --nvqpp "$(pwd)/build-python/bin/nvq++" \
   --build-dir build-python
 ```
 
@@ -609,7 +617,7 @@ cross-machine performance certification.
 
 The focused CRZ distance-sweep summary was generated against
 `a311c8749bbf5edfa553f64eb71a79faeafdd803` on 2026-07-01 after installing the
-current local MKL-Q build to `/Users/a0000/.cudaq-mklq`. It compares q20
+current local MKL-Q build to `${HOME}/.cudaq-mklq`. It compares q20
 `qpp-cpu` and `mklq-cpu` on `crz-distance-sweep-state` for distances 1 through
 19 with `repeats=2`, `warmups=1`, `layers=8`, and isolated rows. All 38 rows
 completed with `status == "ok"`, and the minimum local `qpp-cpu` over
@@ -619,21 +627,21 @@ summary.
 
 The focused multi-control summary was generated against
 `4ece8d2396e8feee1c59a04e58324c529564f487` on 2026-06-22 after installing the
-current local MKL-Q build to `/Users/a0000/.cudaq-mklq`. It compares q20
+current local MKL-Q build to `${HOME}/.cudaq-mklq`. It compares q20
 `qpp-cpu` and `mklq-cpu` on `multi-control-state` with `repeats=5`,
 `warmups=2`, `layers=8`, and isolated rows. The public healthcheck now includes
 a dedicated `multi_control_evidence_guard` for this summary.
 
 The focused CPU scaling summary was generated against
 `e632e65f45645c9648523d86cb7612ab96d31023` on 2026-06-22 after installing the
-current local MKL-Q build to `/Users/a0000/.cudaq-mklq`. It compares q18/q20/q22
+current local MKL-Q build to `${HOME}/.cudaq-mklq`. It compares q18/q20/q22
 `qpp-cpu` and `mklq-cpu` on `multi-control-state` with `repeats=3`,
 `warmups=1`, `layers=8`, and isolated rows. The public healthcheck now includes
 a dedicated `cpu_scaling_evidence_guard` for this summary.
 
 The focused hardware-efficient ansatz scaling summary was generated against
 `f2d87a4bf1e0d0163481a560df868292715a660a` on 2026-06-30 after installing the
-current local MKL-Q build to `/Users/a0000/.cudaq-mklq`. It compares q18/q20/q22
+current local MKL-Q build to `${HOME}/.cudaq-mklq`. It compares q18/q20/q22
 `qpp-cpu` and `mklq-cpu` on `hardware-efficient-ansatz-state` with
 `repeats=3`, `warmups=1`, `layers=8`, and isolated rows. The public
 healthcheck now includes a dedicated `ansatz_scaling_evidence_guard` for this
@@ -641,7 +649,7 @@ summary.
 
 The focused two/three-qubit CPU scaling summary was generated against
 `cb688b20c825a970965ffe41ca84757287abf847` on 2026-07-03 after installing the
-current local MKL-Q build to `/Users/a0000/.cudaq-mklq`. It compares q18/q20/q22
+current local MKL-Q build to `${HOME}/.cudaq-mklq`. It compares q18/q20/q22
 `qpp-cpu` and `mklq-cpu` on `two-qubit-state` and `three-qubit-state` with
 `repeats=3`, `warmups=1`, `layers=8`, and isolated rows. All 12 rows completed
 with `status == "ok"`. The public healthcheck now includes a dedicated
@@ -649,7 +657,7 @@ with `status == "ok"`. The public healthcheck now includes a dedicated
 
 The focused sampling scaling summary was generated against
 `0cb821897fc158c9755173da70953444099a1e64` on 2026-06-23 after installing the
-current local MKL-Q build to `/Users/a0000/.cudaq-mklq`. It compares q18/q20/q22
+current local MKL-Q build to `${HOME}/.cudaq-mklq`. It compares q18/q20/q22
 `qpp-cpu` and `mklq-cpu` on full-register and partial-register sampling at 1024
 and 65536 shots with `repeats=2`, `warmups=1`, `layers=8`, and isolated rows.
 The public healthcheck now includes a dedicated

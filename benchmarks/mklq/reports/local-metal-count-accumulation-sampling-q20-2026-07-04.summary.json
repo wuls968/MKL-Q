@@ -58,22 +58,18 @@
     "warmups": 1
   },
   "environment": {
-    "DYLD_LIBRARY_PATH": null,
     "MKL_NUM_THREADS": null,
     "OMP_DYNAMIC": null,
     "OMP_NUM_THREADS": null,
     "OMP_PLACES": null,
     "OMP_PROC_BIND": null,
-    "PYTHONPATH": "/Users/a0000/.cudaq-mklq",
     "VECLIB_MAXIMUM_THREADS": null
   },
   "evidence_kind": "local_tuning_evidence",
   "git": {
     "branch": "codex/metal-count-accumulation-evidence-20260704",
     "commit": "ce2df173da82fd2a5630f8281f79066e5e92fc8c",
-    "dirty": false,
-    "root": "/Users/a0000/Documents/MKL-Q",
-    "status_short": []
+    "dirty": false
   },
   "interpretation": {
     "clean_worktree": true,
@@ -95,8 +91,7 @@
     "memory_bytes": 17179869184,
     "platform": "macOS-26.5.1-arm64-arm-64bit",
     "processor": "arm",
-    "python": "3.12.2",
-    "python_executable": "/opt/anaconda3/bin/python3"
+    "python": "3.12.2"
   },
   "raw_results": [
     {
@@ -303,10 +298,8 @@
     }
   ],
   "runtime": {
-    "cudaq_module_file": "/Users/a0000/.cudaq-mklq/cudaq/__init__.py",
     "cudaq_version": "CUDA-Q Version  (https://github.com/NVIDIA/cuda-quantum db9d1d311818759b5922f82fff73ce7863fbc0b1)",
-    "module_from_build_tree": false,
-    "python_prefix": "/opt/anaconda3"
+    "module_from_build_tree": false
   },
   "schema_version": "mklq-benchmark-summary-v1",
   "summary_id": "local-metal-count-accumulation-sampling-q20-2026-07-04"

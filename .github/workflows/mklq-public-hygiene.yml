@@ -57,23 +57,11 @@ jobs:
           set -euo pipefail
           python3 benchmarks/mklq/run_self_hosted_ci_audit.py
 
-      - name: Parse benchmark summaries
+      - name: Parse benchmark summaries and check public report paths
         shell: bash
         run: |
           set -euo pipefail
-          python3 - <<'PY'
-          import json
-          from pathlib import Path
-
-          report_dir = Path("benchmarks/mklq/reports")
-          summaries = sorted(report_dir.glob("*.summary.json"))
-          if not summaries:
-              raise SystemExit("No sanitized MKL-Q benchmark summaries found.")
-          for path in summaries:
-              with path.open("r", encoding="utf-8") as handle:
-                  json.load(handle)
-          print(f"Parsed {len(summaries)} benchmark summary file(s).")
-          PY
+          python3 benchmarks/mklq/check_public_report_paths.py
 
       - name: Check clean CPU performance evidence
         shell: bash

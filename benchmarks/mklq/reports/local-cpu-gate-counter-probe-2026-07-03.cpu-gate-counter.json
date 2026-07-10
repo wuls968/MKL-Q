@@ -44,7 +44,7 @@
     "listing_command": [
       "ctest",
       "--test-dir",
-      "/Users/a0000/Documents/MKL-Q/build-python",
+      "build-python",
       "-N",
       "-R",
       "mklq_cpu_MKLQCpuTester"
@@ -53,7 +53,7 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_cpu_MKLQCpuTester\\.XFastPathAppliesUncontrolledSingleQubitGate$",
         "--output-on-failure"
@@ -61,7 +61,7 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_cpu_MKLQCpuTester\\.CnotFastPathAppliesControlledXGate$",
         "--output-on-failure"
@@ -69,7 +69,7 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_cpu_MKLQCpuTester\\.BuiltInSingleQubitFastPathsMatchMatrices$",
         "--output-on-failure"
@@ -77,7 +77,7 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_cpu_MKLQCpuTester\\.ControlledBuiltInSingleQubitFastPathsMatchMatrices$",
         "--output-on-failure"
@@ -85,7 +85,7 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_cpu_MKLQCpuTester\\.SingleControlBuiltInSingleQubitGatesUseDedicatedFastPath$",
         "--output-on-failure"
@@ -93,7 +93,7 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_cpu_MKLQCpuTester\\.SingleControlBuiltInHadamardGateUsesDedicatedFastPath$",
         "--output-on-failure"
@@ -101,7 +101,7 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_cpu_MKLQCpuTester\\.SingleControlBuiltInYGateUsesDedicatedFastPath$",
         "--output-on-failure"
@@ -109,7 +109,7 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_cpu_MKLQCpuTester\\.SingleControlBuiltInRxGateUsesDedicatedFastPath$",
         "--output-on-failure"
@@ -117,7 +117,7 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_cpu_MKLQCpuTester\\.SingleControlBuiltInRyGateUsesDedicatedFastPath$",
         "--output-on-failure"
@@ -125,7 +125,7 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_cpu_MKLQCpuTester\\.SingleControlRzUsesDedicatedPhaseFastPath$",
         "--output-on-failure"
@@ -133,7 +133,7 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_cpu_MKLQCpuTester\\.HardwareEfficientAnsatzCompositeUsesDedicatedFastPaths$",
         "--output-on-failure"
@@ -141,7 +141,7 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_cpu_MKLQCpuTester\\.MultiControlBuiltInSingleQubitGatesKeepGenericSpecializedPath$",
         "--output-on-failure"
@@ -149,7 +149,7 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_cpu_MKLQCpuTester\\.CzFastPathAppliesControlledZGate$",
         "--output-on-failure"
@@ -157,7 +157,7 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_cpu_MKLQCpuTester\\.SwapFastPathAppliesUncontrolledTwoQubitGate$",
         "--output-on-failure"
@@ -165,13 +165,13 @@
       [
         "ctest",
         "--test-dir",
-        "/Users/a0000/Documents/MKL-Q/build-python",
+        "build-python",
         "-R",
         "^mklq_cpu_MKLQCpuTester\\.RowSparseThreeQubitCustomOperationUsesDedicatedFastPath$",
         "--output-on-failure"
       ]
     ],
-    "repo_root": "/Users/a0000/Documents/MKL-Q"
+    "repo_root": "."
   },
   "summary": {
     "expected": 15,

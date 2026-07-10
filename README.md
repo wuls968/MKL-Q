@@ -23,9 +23,9 @@ ability.
 
 ## Build
 
-MKL-Q is intended to be built from source on Apple Silicon macOS. The local
-install prefix used during development is `/Users/a0000/.cudaq-mklq`; override
-it through CMake if you need a different prefix.
+MKL-Q is intended to be built from source on Apple Silicon macOS. The default
+development install prefix is `${HOME}/.cudaq-mklq`; override it through CMake
+if you need a different prefix.
 
 ```bash
 git clone --recursive https://github.com/wuls968/MKL-Q.git
