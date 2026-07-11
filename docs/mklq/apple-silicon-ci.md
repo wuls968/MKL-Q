@@ -73,6 +73,16 @@ build, MKL-Q docs, benchmark harness, `docs/sphinx/examples/mklq`, and
 `docs/sphinx/targets`, then fetches `origin/main` with
 `http.version=HTTP/1.1`, `--depth=1`, and `--filter=blob:none` using the explicit
 `+refs/heads/main:refs/remotes/origin/main` refspec.
+When available, a runner-owned Git object cache at
+`${RUNNER_TOOL_CACHE}/mklq-git-cache/mklq-origin.git` is attached through
+`.git/objects/info/alternates` before the first fetch. When its local `main`
+ref is available, the checkout creates `refs/mklq-cache/main` only inside the
+ephemeral job repository so the later full-history fetch can negotiate against
+the cached ancestry. The cache contains Git objects only, is optional, and
+avoids repeatedly transferring already-known history; it does not replace the
+origin or upstream remotes, create a public branch, or contain credentials.
+If cache ref/object verification or local attachment fails, the job removes the
+attempted local cache state and fetches normally from the remote.
 The later remote-normalization step restores full-history evidence with retried
 fetch commands using `http.version=HTTP/1.1`, `--unshallow`, and
 `--filter=blob:none` with explicit `origin/main` and `upstream/main` refspecs
@@ -127,6 +137,20 @@ find "${workspace}" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
 
 git init "${workspace}"
 cd "${workspace}"
+cache_root="${RUNNER_TOOL_CACHE:-${RUNNER_TEMP:?}}/mklq-git-cache"
+origin_object_cache="${cache_root}/mklq-origin.git"
+if [ -d "${origin_object_cache}/objects" ] && \
+  cache_main="$(git -C "${origin_object_cache}" rev-parse \
+    --verify refs/heads/main 2>/dev/null)" && \
+  git -C "${origin_object_cache}" cat-file -e "${cache_main}^{commit}" 2>/dev/null && \
+  printf '%s\n' "${origin_object_cache}/objects" > .git/objects/info/alternates
+  git update-ref refs/mklq-cache/main "${cache_main}"; then
+  echo "Using the runner Git object cache for full-history negotiation."
+else
+  rm -f .git/objects/info/alternates
+  git update-ref -d refs/mklq-cache/main 2>/dev/null || true
+  echo "Runner Git object cache is unavailable; fetching history normally."
+fi
 git remote add origin https://github.com/wuls968/MKL-Q.git
 git remote add upstream https://github.com/NVIDIA/cuda-quantum.git
 git sparse-checkout init --cone
@@ -216,6 +240,7 @@ cmake -S . -B build-python -G Ninja \
 
 The tracked workflow invokes the same gate after preparing a manual sparse
 checkout with an explicit checkout timeout, selecting the effective Python,
+optionally attaching a runner-owned Git object cache from `RUNNER_TOOL_CACHE`,
 normalizing `origin` and `upstream`, unshallowing `origin/main` with
 `filter=blob:none`, `http.version=HTTP/1.1`, and an explicit main refspec,
 fetching `upstream/main` with an explicit main refspec,
@@ -278,7 +303,8 @@ Before making the full self-hosted job automatic or branch-protected:
 - Confirm the job has explicit `timeout-minutes` and `concurrency` settings.
 - Confirm checkout uses manual sparse checkout with a checkout timeout, cleans
   only `${GITHUB_WORKSPACE}`, does not use `actions/checkout`, keeps credentials
-  out of the working tree, and restores full-history evidence later with
+  out of the working tree, uses the optional Git object cache only through
+  `.git/objects/info/alternates`, and restores full-history evidence later with
   retried `http.version=HTTP/1.1` unshallow fetches using `filter=blob:none`.
 - Confirm source submodule bootstrapping is a visible step before CMake
   configure, uses limited retry for transient submodule network failures, and

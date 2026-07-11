@@ -63,6 +63,12 @@ REQUIRED_TOKENS = (
     "checkout timeout",
     "http.version=HTTP/1.1",
     "--unshallow",
+    "RUNNER_TOOL_CACHE",
+    "Git object cache",
+    "objects/info/alternates",
+    "refs/mklq-cache/main",
+    "ephemeral job repository",
+    "create a public branch",
     "concurrency",
     "workflow_dispatch",
     "run_full_gate",
@@ -130,6 +136,10 @@ APPLE_WORKFLOW_REQUIRED_TOKENS = (
     "+refs/heads/main:refs/remotes/upstream/main",
     "--unshallow",
     "--filter=blob:none",
+    "RUNNER_TOOL_CACHE",
+    "mklq-origin.git",
+    "objects/info/alternates",
+    "refs/mklq-cache/main",
     "run_public_healthcheck.py",
     "--full",
     "--require-clean",
@@ -155,6 +165,19 @@ APPLE_WORKFLOW_FORBIDDEN_LINE_PATTERNS = (
     (re.compile(r"twine\s+upload"), "twine upload"),
     (re.compile(r"\.whl\b"), ".whl"),
     (re.compile(r"\$\{\{\s*runner\."), "${{ runner."),
+)
+
+APPLE_WORKFLOW_CACHE_GUARD_PATTERNS = (
+    (re.compile(
+        r'\bgit\s+-C\s+"\$\{origin_object_cache\}"\s+cat-file\s+-e\s+'
+        r'"\$\{cache_main\}\^\{commit\}"', re.MULTILINE),
+     'git -C "${origin_object_cache}" cat-file -e "${cache_main}^{commit}"'),
+    (re.compile(
+        r'\bgit\s+update-ref\s+refs/mklq-cache/main\s+'
+        r'"\$\{cache_main\}"', re.MULTILINE),
+     'git update-ref refs/mklq-cache/main "${cache_main}"'),
+    (re.compile(r'^\s*rm\s+-f\s+\.git/objects/info/alternates\s*$',
+                re.MULTILINE), "rm -f .git/objects/info/alternates"),
 )
 
 
@@ -262,6 +285,15 @@ def forbidden_manual_workflow_lines(text: str) -> list[dict[str, Any]]:
     return matches
 
 
+def missing_cache_workflow_guards(text: str) -> list[str]:
+    code_text = "\n".join(line.split("#", maxsplit=1)[0]
+                          for line in text.splitlines())
+    return [
+        label for pattern, label in APPLE_WORKFLOW_CACHE_GUARD_PATTERNS
+        if not pattern.search(code_text)
+    ]
+
+
 def check_doc_exists(config: AuditConfig) -> dict[str, Any]:
     path = config.repo_root / DOC_PATH
     details = {"path": DOC_PATH.as_posix(), "exists": path.exists()}
@@ -310,11 +342,13 @@ def check_workflow_boundary(config: AuditConfig) -> dict[str, Any]:
 
     manual_path = config.repo_root / APPLE_SILICON_WORKFLOW
     manual_missing_tokens: list[str] = []
+    manual_missing_cache_guards: list[str] = []
     manual_forbidden: list[dict[str, Any]] = []
     if manual_path.exists():
         manual_text = manual_path.read_text(encoding="utf-8", errors="replace")
         manual_missing_tokens = missing_tokens(manual_text,
                                                APPLE_WORKFLOW_REQUIRED_TOKENS)
+        manual_missing_cache_guards = missing_cache_workflow_guards(manual_text)
         manual_forbidden = forbidden_manual_workflow_lines(manual_text)
 
     details = {
@@ -326,9 +360,11 @@ def check_workflow_boundary(config: AuditConfig) -> dict[str, Any]:
         "manual_workflow": APPLE_SILICON_WORKFLOW,
         "lightweight_forbidden_lines": lightweight_forbidden,
         "manual_missing_tokens": manual_missing_tokens,
+        "manual_missing_cache_guards": manual_missing_cache_guards,
         "manual_forbidden_lines": manual_forbidden,
     }
     failures = unexpected + missing + lightweight_forbidden + manual_missing_tokens
+    failures += manual_missing_cache_guards
     failures += manual_forbidden
     return failed(
         "workflow_boundary",
