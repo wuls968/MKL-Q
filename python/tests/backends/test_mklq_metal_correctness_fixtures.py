@@ -171,6 +171,22 @@ def _custom_three_target_fallback_reupload_kernel():
     return kernel
 
 
+def _custom_four_target_resident_kernel():
+    flip_all = np.fliplr(np.eye(16, dtype=np.complex128))
+    cudaq.register_operation("mklq_custom_flip_all_4", flip_all)
+
+    kernel = cudaq.make_kernel()
+    qubits = kernel.qalloc(4)
+
+    kernel.h(qubits[0])
+    kernel.ry(0.17, qubits[1])
+    kernel.mklq_custom_flip_all_4(qubits[0], qubits[1], qubits[2], qubits[3])
+    kernel.rz(-0.29, qubits[0])
+    kernel.x(qubits[3])
+
+    return kernel
+
+
 def _qft_like_resident_kernel(qubit_count):
     kernel = cudaq.make_kernel()
     qubits = kernel.qalloc(qubit_count)
@@ -313,6 +329,10 @@ def test_mklq_metal_controlled_swap_resident_fixture_matches_qpp():
 
 def test_mklq_metal_custom_three_target_fallback_reupload_matches_qpp():
     _assert_metal_matches_qpp(_custom_three_target_fallback_reupload_kernel())
+
+
+def test_mklq_metal_custom_four_target_resident_fixture_matches_qpp():
+    _assert_metal_matches_qpp(_custom_four_target_resident_kernel())
 
 
 @pytest.mark.parametrize("qubit_count", [4, 5])

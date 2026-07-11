@@ -13,8 +13,8 @@ ON only for Apple Silicon (`Darwin arm64/aarch64`) builds.
   and tuning work. Accelerate/vDSP dense-probability variants are benchmarked
   separately before being admitted into the default runtime path.
 - `mklq-metal`: experimental Apple GPU target name. It registers an MKL-Q
-  mixed-path simulator as `mklq_metal`: supported single-target, two-target,
-  and three-target updates, including controlled one-/two-target forms, can
+  mixed-path simulator as `mklq_metal`: supported single-target through
+  four-target updates, including selected controlled forms, can
   stay in a resident fp32 Metal state buffer across supported gate sequences.
   Dense full-register probability
   fills, cost-gated resident marginal probability fills, and selected zero-shot
@@ -174,7 +174,7 @@ target-marker output.
 - `mklq-metal` remains experimental. It no longer routes through the upstream
   `qpp` backend and now links Metal/Foundation on Apple platforms for runtime
   device discovery plus a resident fp32 Metal state buffer for supported
-  single-target gates, two-target gates, three-target gates, and dense full-register
+  single-target gates, two-target gates, three-target gates, four-target gates, and dense full-register
   probability-fill kernels. Consecutive resident gates share one Metal command
   buffer while retaining separate encoders, then submit before host-visible,
   CPU-oracle, probability, measurement, or state-replacement boundaries.

@@ -73,6 +73,10 @@ public:
                                    const std::size_t *controlQubits,
                                    std::size_t controlCount,
                                    const std::size_t *targetQubits);
+  bool applyResidentFourQubitGate(const std::complex<double> *matrix,
+                                  const std::size_t *controlQubits,
+                                  std::size_t controlCount,
+                                  const std::size_t *targetQubits);
   bool fillResidentFullRegisterProbabilities(double *probabilities,
                                              std::size_t probabilityCount);
   bool fillResidentMarginalProbabilities(const std::size_t *qubits,
@@ -101,6 +105,7 @@ public:
   std::size_t singleQubitGateApplications() const;
   std::size_t twoQubitGateApplications() const;
   std::size_t threeQubitGateApplications() const;
+  std::size_t fourQubitGateApplications() const;
   std::size_t probabilityFillApplications() const;
   std::size_t marginalProbabilityApplications() const;
   std::size_t measurementProbabilityApplications() const;
