@@ -206,6 +206,27 @@ def _dense_four_target_resident_kernel():
     return kernel
 
 
+def _complex_dense_four_target_resident_kernel():
+    hadamard = np.array([[1.0, 1.0], [1.0, -1.0]], dtype=np.complex128)
+    dense_tensor = hadamard
+    for _ in range(3):
+        dense_tensor = np.kron(dense_tensor, hadamard)
+    phases = np.exp(1j * 0.17 * np.arange(16, dtype=np.float64))
+    cudaq.register_operation("mklq_custom_complex_dense_h4",
+                             phases[:, np.newaxis] * dense_tensor / 4.0)
+
+    kernel = cudaq.make_kernel()
+    qubits = kernel.qalloc(4)
+    kernel.ry(0.17, qubits[0])
+    kernel.rz(-0.29, qubits[1])
+    kernel.x(qubits[3])
+    kernel.mklq_custom_complex_dense_h4(qubits[0], qubits[1], qubits[2],
+                                        qubits[3])
+    kernel.ry(0.11, qubits[2])
+
+    return kernel
+
+
 def _controlled_four_target_resident_kernel():
     flip_all = np.fliplr(np.eye(16, dtype=np.complex128))
     cudaq.register_operation("mklq_custom_controlled_flip_all_4", flip_all)
@@ -376,6 +397,10 @@ def test_mklq_metal_custom_four_target_resident_fixture_matches_qpp():
 
 def test_mklq_metal_dense_four_target_resident_fixture_matches_qpp():
     _assert_metal_matches_qpp(_dense_four_target_resident_kernel())
+
+
+def test_mklq_metal_complex_dense_four_target_resident_fixture_matches_qpp():
+    _assert_metal_matches_qpp(_complex_dense_four_target_resident_kernel())
 
 
 def test_mklq_metal_controlled_four_target_resident_fixture_matches_qpp():

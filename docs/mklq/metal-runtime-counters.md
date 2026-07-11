@@ -11,11 +11,11 @@ Aggregate counts are summed across tracked reports; repeated daily probes intent
 | Field | Value |
 | --- | --- |
 | `status` | passed |
-| `report_count` | 19 |
-| `expected` | 855 |
-| `selected` | 855 |
+| `report_count` | 20 |
+| `expected` | 912 |
+| `selected` | 912 |
 | `missing` | 0 |
-| `passed` | 855 |
+| `passed` | 912 |
 | `failed` | 0 |
 
 ## Evidence Boundary
@@ -31,12 +31,12 @@ Aggregate counts are summed across tracked reports; repeated daily probes intent
 
 | Category | Passed | Failed | Other | Description |
 | --- | ---: | ---: | ---: | --- |
-| error_boundary | 110 | 0 | 0 | Resident Metal error and poisoned-state boundary tests |
-| fallback_boundary | 19 | 0 | 0 | Unsupported-gate fallback and reupload boundary tests |
-| measurement_reset | 57 | 0 | 0 | Measurement, collapse, and reset counter tests |
-| probability_sampling | 319 | 0 | 0 | Resident probability fill and sampling counter tests |
-| resident_gate | 305 | 0 | 0 | Resident Metal gate/update counter tests |
-| runtime_device | 17 | 0 | 0 | Runtime/device boundary counter tests |
+| error_boundary | 119 | 0 | 0 | Resident Metal error and poisoned-state boundary tests |
+| fallback_boundary | 20 | 0 | 0 | Unsupported-gate fallback and reupload boundary tests |
+| measurement_reset | 60 | 0 | 0 | Measurement, collapse, and reset counter tests |
+| probability_sampling | 342 | 0 | 0 | Resident probability fill and sampling counter tests |
+| resident_gate | 325 | 0 | 0 | Resident Metal gate/update counter tests |
+| runtime_device | 18 | 0 | 0 | Runtime/device boundary counter tests |
 | synchronization_boundary | 28 | 0 | 0 | Resident state synchronization boundary tests |
 
 ## Counter Tests
@@ -127,6 +127,7 @@ Aggregate counts are summed across tracked reports; repeated daily probes intent
 | benchmarks/mklq/reports/local-metal-runtime-counter-probe-2026-07-10-controlled-swap.counter.json | 2026-07-10T12:12:51.173674+00:00 | passed | 51 | 51 | 0 | 51 | 0 |
 | benchmarks/mklq/reports/local-metal-runtime-counter-probe-2026-07-10-gate-batching.counter.json | 2026-07-10T15:07:39.107079+00:00 | passed | 51 | 51 | 0 | 51 | 0 |
 | benchmarks/mklq/reports/local-metal-runtime-counter-probe-2026-07-10-resident-expectation.counter.json | 2026-07-10T16:37:22.000075+00:00 | passed | 51 | 51 | 0 | 51 | 0 |
+| benchmarks/mklq/reports/local-metal-runtime-counter-probe-2026-07-11-complex-dense-four-qubit.counter.json | 2026-07-11T15:37:37.450330+00:00 | passed | 57 | 57 | 0 | 57 | 0 |
 | benchmarks/mklq/reports/local-metal-runtime-counter-probe-2026-07-11-dense-four-qubit.counter.json | 2026-07-11T15:25:50.196759+00:00 | passed | 57 | 57 | 0 | 57 | 0 |
 | benchmarks/mklq/reports/local-metal-runtime-counter-probe-2026-07-11-device-z-parity-expectation.counter.json | 2026-07-11T02:24:45.173955+00:00 | passed | 54 | 54 | 0 | 54 | 0 |
 | benchmarks/mklq/reports/local-metal-runtime-counter-probe-2026-07-11-four-qubit.counter.json | 2026-07-11T14:58:19.711049+00:00 | passed | 56 | 56 | 0 | 56 | 0 |
