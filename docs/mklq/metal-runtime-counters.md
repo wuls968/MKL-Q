@@ -11,11 +11,11 @@ Aggregate counts are summed across tracked reports; repeated daily probes intent
 | Field | Value |
 | --- | --- |
 | `status` | passed |
-| `report_count` | 16 |
-| `expected` | 688 |
-| `selected` | 688 |
+| `report_count` | 17 |
+| `expected` | 742 |
+| `selected` | 742 |
 | `missing` | 0 |
-| `passed` | 688 |
+| `passed` | 742 |
 | `failed` | 0 |
 
 ## Evidence Boundary
@@ -31,18 +31,20 @@ Aggregate counts are summed across tracked reports; repeated daily probes intent
 
 | Category | Passed | Failed | Other | Description |
 | --- | ---: | ---: | ---: | --- |
-| error_boundary | 84 | 0 | 0 | Resident Metal error and poisoned-state boundary tests |
-| fallback_boundary | 16 | 0 | 0 | Unsupported-gate fallback and reupload boundary tests |
-| measurement_reset | 48 | 0 | 0 | Measurement, collapse, and reset counter tests |
-| probability_sampling | 250 | 0 | 0 | Resident probability fill and sampling counter tests |
-| resident_gate | 249 | 0 | 0 | Resident Metal gate/update counter tests |
-| runtime_device | 14 | 0 | 0 | Runtime/device boundary counter tests |
-| synchronization_boundary | 27 | 0 | 0 | Resident state synchronization boundary tests |
+| error_boundary | 92 | 0 | 0 | Resident Metal error and poisoned-state boundary tests |
+| fallback_boundary | 17 | 0 | 0 | Unsupported-gate fallback and reupload boundary tests |
+| measurement_reset | 51 | 0 | 0 | Measurement, collapse, and reset counter tests |
+| probability_sampling | 273 | 0 | 0 | Resident probability fill and sampling counter tests |
+| resident_gate | 266 | 0 | 0 | Resident Metal gate/update counter tests |
+| runtime_device | 15 | 0 | 0 | Runtime/device boundary counter tests |
+| synchronization_boundary | 28 | 0 | 0 | Resident state synchronization boundary tests |
 
 ## Counter Tests
 
 | Category | Test |
 | --- | --- |
+| error_boundary | `mklq_metal_MKLQMetalTester.SimulatorFallsBackToCpuWhenResidentExpectationReadFails` |
+| error_boundary | `mklq_metal_MKLQMetalTester.SimulatorPoisonsResidentStateWhenExpectationFlushFails` |
 | error_boundary | `mklq_metal_MKLQMetalTester.SimulatorPoisonsResidentStateWhenSingleGateFails` |
 | error_boundary | `mklq_metal_MKLQMetalTester.SimulatorPoisonsResidentStateWhenThreeGateFails` |
 | error_boundary | `mklq_metal_MKLQMetalTester.SimulatorPoisonsResidentStateWhenTwoGateFails` |
@@ -61,6 +63,8 @@ Aggregate counts are summed across tracked reports; repeated daily probes intent
 | probability_sampling | `mklq_metal_MKLQMetalTester.MetalRuntimeGeneratesUniformSampleCountsOnDevice` |
 | probability_sampling | `mklq_metal_MKLQMetalTester.MetalRuntimeProbabilityFillMatchesCpuNorms` |
 | probability_sampling | `mklq_metal_MKLQMetalTester.SimulatorComputesZeroShotExpectationFromResidentProbabilities` |
+| probability_sampling | `mklq_metal_MKLQMetalTester.SimulatorComputesZeroShotZParityExpectationFromResidentState` |
+| probability_sampling | `mklq_metal_MKLQMetalTester.SimulatorReducesLargeNonuniformZeroShotExpectationOnMetalWithoutProbabilityFill` |
 | probability_sampling | `mklq_metal_MKLQMetalTester.SimulatorSamplesDenseFullRegisterThroughMetalProbabilityFill` |
 | probability_sampling | `mklq_metal_MKLQMetalTester.SimulatorSamplesDeterministicSparseStateWithOneBitStringConversion` |
 | probability_sampling | `mklq_metal_MKLQMetalTester.SimulatorSamplesLargeResidentPartialRegisterThroughFullProbability` |
@@ -118,6 +122,7 @@ Aggregate counts are summed across tracked reports; repeated daily probes intent
 | benchmarks/mklq/reports/local-metal-runtime-counter-probe-2026-07-10-controlled-swap.counter.json | 2026-07-10T12:12:51.173674+00:00 | passed | 51 | 51 | 0 | 51 | 0 |
 | benchmarks/mklq/reports/local-metal-runtime-counter-probe-2026-07-10-gate-batching.counter.json | 2026-07-10T15:07:39.107079+00:00 | passed | 51 | 51 | 0 | 51 | 0 |
 | benchmarks/mklq/reports/local-metal-runtime-counter-probe-2026-07-10-resident-expectation.counter.json | 2026-07-10T16:37:22.000075+00:00 | passed | 51 | 51 | 0 | 51 | 0 |
+| benchmarks/mklq/reports/local-metal-runtime-counter-probe-2026-07-11-device-z-parity-expectation.counter.json | 2026-07-11T02:24:45.173955+00:00 | passed | 54 | 54 | 0 | 54 | 0 |
 
 Regenerate with:
 

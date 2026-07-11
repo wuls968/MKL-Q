@@ -66,6 +66,8 @@ bool MetalStateVectorExecutor::hasResidentState(std::size_t) const {
   return false;
 }
 
+bool MetalStateVectorExecutor::flushResidentGateCommands() { return false; }
+
 bool MetalStateVectorExecutor::applyResidentSingleQubitGate(
     const std::complex<double> *, const std::size_t *, std::size_t,
     std::size_t) {
@@ -91,6 +93,11 @@ bool MetalStateVectorExecutor::fillResidentFullRegisterProbabilities(
 
 bool MetalStateVectorExecutor::fillResidentMarginalProbabilities(
     const std::size_t *, std::size_t, double *, std::size_t) {
+  return false;
+}
+
+bool MetalStateVectorExecutor::computeResidentZParityExpectation(
+    const std::size_t *, std::size_t, double *) {
   return false;
 }
 

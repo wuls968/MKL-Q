@@ -65,6 +65,19 @@ struct MeasurementProbabilityParams {
   std::uint32_t padding = 0;
 };
 
+struct ZParityExpectationParams {
+  std::uint64_t qubitMask;
+  std::uint32_t stateSize;
+  std::uint32_t padding = 0;
+};
+
+struct FloatReductionParams {
+  std::uint32_t inputCount;
+  std::uint32_t padding0 = 0;
+  std::uint32_t padding1 = 0;
+  std::uint32_t padding2 = 0;
+};
+
 struct MarginalProbabilityParams {
   std::uint32_t stateSize;
   std::uint32_t qubitCount;
@@ -128,6 +141,19 @@ struct MeasurementProbabilityParams {
   ulong targetMask;
   uint stateSize;
   uint padding;
+};
+
+struct ZParityExpectationParams {
+  ulong qubitMask;
+  uint stateSize;
+  uint padding;
+};
+
+struct FloatReductionParams {
+  uint inputCount;
+  uint padding0;
+  uint padding1;
+  uint padding2;
 };
 
 struct MarginalProbabilityParams {
@@ -351,6 +377,58 @@ kernel void mklq_measure_qubit_probability(
     partialSums[groupPosition.x] = scratch[0];
 }
 
+kernel void mklq_compute_z_parity_expectation(
+    device const ComplexFloat *state [[buffer(0)]],
+    device float *partialSums [[buffer(1)]],
+    constant ZParityExpectationParams &params [[buffer(2)]],
+    threadgroup float *scratch [[threadgroup(0)]],
+    uint localIndex [[thread_index_in_threadgroup]],
+    uint3 groupPosition [[threadgroup_position_in_grid]]) {
+  const uint index = groupPosition.x * 256u + localIndex;
+  float value = 0.0f;
+  if (index < params.stateSize) {
+    const ComplexFloat amplitude = state[index];
+    const float probability =
+        amplitude.real * amplitude.real + amplitude.imag * amplitude.imag;
+    value = (popcount(ulong(index) & params.qubitMask) & 1u) == 0u
+                ? probability
+                : -probability;
+  }
+
+  scratch[localIndex] = value;
+  threadgroup_barrier(mem_flags::mem_threadgroup);
+
+  for (uint stride = 128u; stride > 0u; stride >>= 1u) {
+    if (localIndex < stride)
+      scratch[localIndex] += scratch[localIndex + stride];
+    threadgroup_barrier(mem_flags::mem_threadgroup);
+  }
+
+  if (localIndex == 0)
+    partialSums[groupPosition.x] = scratch[0];
+}
+
+kernel void mklq_reduce_float_sums(
+    device const float *input [[buffer(0)]],
+    device float *output [[buffer(1)]],
+    constant FloatReductionParams &params [[buffer(2)]],
+    threadgroup float *scratch [[threadgroup(0)]],
+    uint localIndex [[thread_index_in_threadgroup]],
+    uint3 groupPosition [[threadgroup_position_in_grid]]) {
+  const uint index = groupPosition.x * 256u + localIndex;
+  scratch[localIndex] = index < params.inputCount ? input[index] : 0.0f;
+  threadgroup_barrier(mem_flags::mem_threadgroup);
+
+  for (uint stride = 128u; stride > 0u; stride >>= 1u) {
+    if (localIndex < stride)
+      scratch[localIndex] += scratch[localIndex + stride];
+    threadgroup_barrier(mem_flags::mem_threadgroup);
+  }
+
+  if (localIndex == 0)
+    output[groupPosition.x] = scratch[0];
+}
+
 inline uint mklq_select_sample_outcome(
     constant float *cumulativeWeights, uint outcomeCount, float draw) {
   uint low = 0u;
@@ -532,6 +610,8 @@ struct MetalStateVectorExecutor::Impl {
   id<MTLComputePipelineState> probabilityPipeline = nil;
   id<MTLComputePipelineState> marginalProbabilityPipeline = nil;
   id<MTLComputePipelineState> measurementProbabilityPipeline = nil;
+  id<MTLComputePipelineState> zParityExpectationPipeline = nil;
+  id<MTLComputePipelineState> floatReductionPipeline = nil;
   id<MTLComputePipelineState> sampleCountPipeline = nil;
   id<MTLComputePipelineState> generatedSampleCountPipeline = nil;
   id<MTLComputePipelineState> uniformGeneratedSampleCountPipeline = nil;
@@ -542,6 +622,7 @@ struct MetalStateVectorExecutor::Impl {
   std::size_t residentStateSize = 0;
   MetalDeviceInfo info;
   std::string error;
+  std::string zParityExpectationPipelineError;
   std::size_t singleQubitApplications = 0;
   std::size_t twoQubitApplications = 0;
   std::size_t threeQubitApplications = 0;
@@ -714,6 +795,40 @@ struct MetalStateVectorExecutor::Impl {
         return;
       }
 
+      function =
+          [library newFunctionWithName:@"mklq_compute_z_parity_expectation"];
+      if (!function) {
+        zParityExpectationPipelineError =
+            "failed to load mklq_compute_z_parity_expectation Metal kernel.";
+      } else {
+        pipelineError = nil;
+        zParityExpectationPipeline =
+            [device newComputePipelineStateWithFunction:function
+                                                  error:&pipelineError];
+        [function release];
+        if (!zParityExpectationPipeline)
+          zParityExpectationPipelineError = describeError(
+              pipelineError,
+              "failed to create Metal Z-parity expectation compute pipeline.");
+      }
+
+      function = [library newFunctionWithName:@"mklq_reduce_float_sums"];
+      if (!function) {
+        if (zParityExpectationPipelineError.empty())
+          zParityExpectationPipelineError =
+              "failed to load mklq_reduce_float_sums Metal kernel.";
+      } else {
+        pipelineError = nil;
+        floatReductionPipeline =
+            [device newComputePipelineStateWithFunction:function
+                                                  error:&pipelineError];
+        [function release];
+        if (!floatReductionPipeline && zParityExpectationPipelineError.empty())
+          zParityExpectationPipelineError = describeError(
+              pipelineError,
+              "failed to create Metal float-reduction compute pipeline.");
+      }
+
       function = [library newFunctionWithName:@"mklq_accumulate_sample_counts"];
       if (!function) {
         [library release];
@@ -814,6 +929,8 @@ struct MetalStateVectorExecutor::Impl {
     [uniformGeneratedSampleCountPipeline release];
     [generatedSampleCountPipeline release];
     [sampleCountPipeline release];
+    [floatReductionPipeline release];
+    [zParityExpectationPipeline release];
     [measurementProbabilityPipeline release];
     [marginalProbabilityPipeline release];
     [probabilityPipeline release];
@@ -985,6 +1102,10 @@ void MetalStateVectorExecutor::releaseResidentState() {
 
 bool MetalStateVectorExecutor::hasResidentState(std::size_t stateSize) const {
   return impl && impl->residentStateBuffer && impl->residentStateSize == stateSize;
+}
+
+bool MetalStateVectorExecutor::flushResidentGateCommands() {
+  return impl && impl->available() && impl->flushResidentGateCommands();
 }
 
 std::size_t
@@ -1970,6 +2091,192 @@ bool MetalStateVectorExecutor::fillResidentMarginalProbabilities(
 
   impl->error.clear();
   ++impl->marginalProbabilityApplications;
+  return true;
+}
+
+bool MetalStateVectorExecutor::computeResidentZParityExpectation(
+    const std::size_t *qubits, std::size_t qubitCount, double *expectation) {
+  if (!impl || !impl->available())
+    return false;
+  if (!impl->zParityExpectationPipeline || !impl->floatReductionPipeline) {
+    impl->error = impl->zParityExpectationPipelineError.empty()
+                      ? "Metal Z-parity expectation pipelines are unavailable."
+                      : impl->zParityExpectationPipelineError;
+    return false;
+  }
+  if ((!qubits && qubitCount != 0) || !expectation ||
+      !impl->residentStateBuffer || !isPowerOfTwo(impl->residentStateSize)) {
+    if (impl)
+      impl->error = "invalid Metal resident Z-parity expectation input.";
+    return false;
+  }
+  if (!fitsKernelThreadIndex(impl->residentStateSize)) {
+    impl->error =
+        "state size exceeds Metal Z-parity expectation thread index range.";
+    return false;
+  }
+  if (!impl->flushResidentGateCommands())
+    return false;
+
+  std::uint64_t qubitMask = 0;
+  for (std::size_t index = 0; index < qubitCount; ++index) {
+    if (!qubitWithinState(qubits[index], impl->residentStateSize)) {
+      impl->error = "Z-parity expectation qubit exceeds Metal state range.";
+      return false;
+    }
+    for (std::size_t previous = 0; previous < index; ++previous) {
+      if (qubits[index] == qubits[previous]) {
+        impl->error = "duplicate Z-parity expectation qubit.";
+        return false;
+      }
+    }
+    qubitMask |= std::uint64_t{1} << qubits[index];
+  }
+
+  constexpr NSUInteger reductionThreadsPerThreadgroup = 256;
+  if ([impl->zParityExpectationPipeline maxTotalThreadsPerThreadgroup] <
+          reductionThreadsPerThreadgroup ||
+      [impl->floatReductionPipeline maxTotalThreadsPerThreadgroup] <
+          reductionThreadsPerThreadgroup) {
+    impl->error =
+        "Metal Z-parity expectation pipelines do not support 256-thread "
+        "reduction groups.";
+    return false;
+  }
+
+  const auto groupCount =
+      (impl->residentStateSize + reductionThreadsPerThreadgroup - 1) /
+      reductionThreadsPerThreadgroup;
+  const ZParityExpectationParams params{
+      qubitMask, static_cast<std::uint32_t>(impl->residentStateSize), 0};
+
+  @autoreleasepool {
+    NSMutableArray *ownedBuffers = [[NSMutableArray alloc] init];
+    if (!ownedBuffers) {
+      impl->error =
+          "failed to allocate Metal Z-parity expectation buffer tracking.";
+      return false;
+    }
+
+    id<MTLBuffer> partialSumsBuffer =
+        [impl->device newBufferWithLength:groupCount * sizeof(float)
+                                  options:MTLResourceStorageModeShared];
+    if (!partialSumsBuffer) {
+      [ownedBuffers release];
+      impl->error =
+          "failed to allocate Metal Z-parity expectation partial sums.";
+      return false;
+    }
+    [ownedBuffers addObject:partialSumsBuffer];
+    [partialSumsBuffer release];
+
+    id<MTLBuffer> paramsBuffer =
+        [impl->device newBufferWithBytes:&params
+                                  length:sizeof(ZParityExpectationParams)
+                                 options:MTLResourceStorageModeShared];
+    if (!paramsBuffer) {
+      [ownedBuffers release];
+      impl->error =
+          "failed to allocate Metal Z-parity expectation parameters.";
+      return false;
+    }
+    [ownedBuffers addObject:paramsBuffer];
+    [paramsBuffer release];
+
+    id<MTLCommandBuffer> commandBuffer = [impl->commandQueue commandBuffer];
+    id<MTLComputeCommandEncoder> encoder =
+        [commandBuffer computeCommandEncoder];
+    if (!commandBuffer || !encoder) {
+      [ownedBuffers release];
+      impl->error =
+          "failed to create Metal Z-parity expectation command encoder.";
+      return false;
+    }
+
+    [encoder setComputePipelineState:impl->zParityExpectationPipeline];
+    [encoder setBuffer:impl->residentStateBuffer offset:0 atIndex:0];
+    [encoder setBuffer:partialSumsBuffer offset:0 atIndex:1];
+    [encoder setBuffer:paramsBuffer offset:0 atIndex:2];
+    [encoder setThreadgroupMemoryLength:reductionThreadsPerThreadgroup *
+                                        sizeof(float)
+                                atIndex:0];
+    [encoder dispatchThreadgroups:MTLSizeMake(groupCount, 1, 1)
+            threadsPerThreadgroup:MTLSizeMake(reductionThreadsPerThreadgroup,
+                                              1, 1)];
+    [encoder endEncoding];
+
+    id<MTLBuffer> reductionInputBuffer = partialSumsBuffer;
+    std::size_t reductionInputCount = groupCount;
+    while (reductionInputCount > 1) {
+      const auto reductionOutputCount =
+          (reductionInputCount + reductionThreadsPerThreadgroup - 1) /
+          reductionThreadsPerThreadgroup;
+      id<MTLBuffer> reductionOutputBuffer =
+          [impl->device newBufferWithLength:reductionOutputCount * sizeof(float)
+                                    options:MTLResourceStorageModeShared];
+      if (!reductionOutputBuffer) {
+        [ownedBuffers release];
+        impl->error =
+            "failed to allocate Metal Z-parity expectation reduction buffer.";
+        return false;
+      }
+      [ownedBuffers addObject:reductionOutputBuffer];
+      [reductionOutputBuffer release];
+
+      const FloatReductionParams reductionParams{
+          static_cast<std::uint32_t>(reductionInputCount), 0, 0, 0};
+      id<MTLBuffer> reductionParamsBuffer =
+          [impl->device newBufferWithBytes:&reductionParams
+                                    length:sizeof(FloatReductionParams)
+                                   options:MTLResourceStorageModeShared];
+      if (!reductionParamsBuffer) {
+        [ownedBuffers release];
+        impl->error =
+            "failed to allocate Metal Z-parity reduction parameters.";
+        return false;
+      }
+      [ownedBuffers addObject:reductionParamsBuffer];
+      [reductionParamsBuffer release];
+
+      encoder = [commandBuffer computeCommandEncoder];
+      if (!encoder) {
+        [ownedBuffers release];
+        impl->error =
+            "failed to create Metal Z-parity reduction command encoder.";
+        return false;
+      }
+      [encoder setComputePipelineState:impl->floatReductionPipeline];
+      [encoder setBuffer:reductionInputBuffer offset:0 atIndex:0];
+      [encoder setBuffer:reductionOutputBuffer offset:0 atIndex:1];
+      [encoder setBuffer:reductionParamsBuffer offset:0 atIndex:2];
+      [encoder setThreadgroupMemoryLength:reductionThreadsPerThreadgroup *
+                                          sizeof(float)
+                                  atIndex:0];
+      [encoder dispatchThreadgroups:MTLSizeMake(reductionOutputCount, 1, 1)
+              threadsPerThreadgroup:MTLSizeMake(
+                                        reductionThreadsPerThreadgroup, 1, 1)];
+      [encoder endEncoding];
+
+      reductionInputBuffer = reductionOutputBuffer;
+      reductionInputCount = reductionOutputCount;
+    }
+
+    [commandBuffer commit];
+    [commandBuffer waitUntilCompleted];
+    if ([commandBuffer status] != MTLCommandBufferStatusCompleted) {
+      impl->error = describeError(
+          [commandBuffer error],
+          "Metal Z-parity expectation command buffer failed.");
+      [ownedBuffers release];
+      return false;
+    }
+
+    *expectation = static_cast<double>(
+        *reinterpret_cast<const float *>([reductionInputBuffer contents]));
+    [ownedBuffers release];
+  }
+
+  impl->error.clear();
   return true;
 }
 

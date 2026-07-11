@@ -17,9 +17,10 @@ ON only for Apple Silicon (`Darwin arm64/aarch64`) builds.
   and three-target updates, including controlled one-/two-target forms, can
   stay in a resident fp32 Metal state buffer across supported gate sequences.
   Dense full-register probability
-  fills, cost-gated resident marginal probability fills, and measure/reset
-  probability-and-collapse paths can read and update that resident buffer
-  directly. Measurement
+  fills, cost-gated resident marginal probability fills, and selected zero-shot
+  Z-parity expectation reductions can read that resident buffer directly.
+  Measure/reset probability-and-collapse paths can read and update it.
+  Measurement
   probability uses a dedicated measured-qubit Metal
   reduction kernel with a small host partial-sum finish, followed by a Metal
   collapse kernel. Unsupported paths fall back to the MKL-Q fp64 CPU oracle

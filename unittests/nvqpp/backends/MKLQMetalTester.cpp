@@ -35,7 +35,9 @@ enum class ResidentFailureMode {
   ThreeGate,
   Probability,
   Collapse,
-  Reset
+  Reset,
+  ExpectationFlush,
+  ExpectationRead
 };
 
 class MklqMetalCircuitSimulatorTester
@@ -313,6 +315,21 @@ protected:
     return nvqir::MklqMetalCircuitSimulator::applyMetalResidentResetGate(
         qubit, matrix);
   }
+
+  bool flushMetalResidentGateCommands() override {
+    if (residentFailureMode == ResidentFailureMode::ExpectationFlush)
+      return false;
+    return nvqir::MklqMetalCircuitSimulator::flushMetalResidentGateCommands();
+  }
+
+  bool computeMetalResidentZParityExpectation(
+      const std::size_t *qubits, std::size_t qubitCount,
+      double &expectation) override {
+    if (residentFailureMode == ResidentFailureMode::ExpectationRead)
+      return false;
+    return nvqir::MklqMetalCircuitSimulator::
+        computeMetalResidentZParityExpectation(qubits, qubitCount, expectation);
+  }
 #endif
 
 private:
@@ -331,6 +348,21 @@ std::vector<std::complex<double>> identityGateForTargets(
   for (std::size_t index = 0; index < dimension; ++index)
     matrix[index * dimension + index] = {1.0, 0.0};
   return matrix;
+}
+
+double zParityExpectationCpuOracle(
+    const std::vector<std::complex<double>> &state,
+    const std::vector<std::size_t> &qubits) {
+  std::size_t qubitMask = 0;
+  for (const auto qubit : qubits)
+    qubitMask |= std::size_t{1} << qubit;
+
+  double expectation = 0.0;
+  for (std::size_t basis = 0; basis < state.size(); ++basis) {
+    const auto sign = std::popcount(basis & qubitMask) % 2 == 0 ? 1.0 : -1.0;
+    expectation += sign * std::norm(state[basis]);
+  }
+  return expectation;
 }
 
 bool controlsSatisfiedForBasis(std::size_t basis,
@@ -2190,7 +2222,7 @@ CUDAQ_TEST(MKLQMetalTester, SimulatorThrowsWhenResidentResetGateFails) {
 }
 
 CUDAQ_TEST(MKLQMetalTester,
-           SimulatorComputesZeroShotExpectationFromResidentProbabilities) {
+           SimulatorComputesZeroShotZParityExpectationFromResidentState) {
   const std::vector<std::complex<double>> xGate{{0.0, 0.0},
                                                 {1.0, 0.0},
                                                 {1.0, 0.0},
@@ -2201,6 +2233,9 @@ CUDAQ_TEST(MKLQMetalTester,
                        {0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}});
   sim.applySingleQubitGateForTest(xGate, {}, 0);
   sim.applySingleQubitGateForTest(xGate, {}, 2);
+
+  if (!sim.metalRuntimeAvailableForTest())
+    return;
 
   const auto fullRegister = sim.sampleQubitsForTest({0, 1, 2}, 0);
   const auto partialRegister = sim.sampleQubitsForTest({2, 0}, 0);
@@ -2213,6 +2248,113 @@ CUDAQ_TEST(MKLQMetalTester,
   EXPECT_NEAR(*partialRegister.expectationValue, 1.0, 1.0e-12);
   EXPECT_NEAR(*singleQubit.expectationValue, -1.0, 1.0e-12);
   EXPECT_EQ(sim.residentStateDownloadsForTest(), 0);
+  EXPECT_EQ(sim.probabilityFillApplicationsForTest(), 0);
+  EXPECT_EQ(sim.marginalProbabilityApplicationsForTest(), 0);
+}
+
+CUDAQ_TEST(MKLQMetalTester,
+           SimulatorPoisonsResidentStateWhenExpectationFlushFails) {
+  const std::vector<std::complex<double>> xGate{{0.0, 0.0},
+                                                {1.0, 0.0},
+                                                {1.0, 0.0},
+                                                {0.0, 0.0}};
+
+  MklqMetalCircuitSimulatorTester sim;
+  if (!sim.metalRuntimeAvailableForTest())
+    return;
+
+  sim.setStateForTest({{1.0, 0.0}, {0.0, 0.0}});
+  sim.applySingleQubitGateForTest(xGate, {}, 0);
+  ASSERT_EQ(sim.residentStateUploadsForTest(), 1);
+  ASSERT_EQ(sim.residentStateDownloadsForTest(), 0);
+  sim.setResidentFailureModeForTest(ResidentFailureMode::ExpectationFlush);
+
+  try {
+    (void)sim.sampleQubitsForTest({0}, 0);
+  } catch (const std::runtime_error &error) {
+    EXPECT_NE(std::string(error.what()).find(
+                  "failed to flush Metal resident gates before computing "
+                  "expectation"),
+              std::string::npos)
+        << error.what();
+    EXPECT_EQ(sim.residentStateDownloadsForTest(), 0);
+  } catch (...) {
+    FAIL() << "expected runtime_error from resident expectation flush failure";
+  }
+
+  try {
+    (void)sim.stateVectorForTest();
+  } catch (const std::runtime_error &error) {
+    EXPECT_NE(std::string(error.what()).find(
+                  "unrecoverable Metal resident state"),
+              std::string::npos)
+        << error.what();
+    EXPECT_EQ(sim.residentStateDownloadsForTest(), 0);
+    return;
+  }
+
+  FAIL() << "expected resident expectation flush failure to poison readback";
+}
+
+CUDAQ_TEST(MKLQMetalTester,
+           SimulatorFallsBackToCpuWhenResidentExpectationReadFails) {
+  const std::vector<std::complex<double>> xGate{{0.0, 0.0},
+                                                {1.0, 0.0},
+                                                {1.0, 0.0},
+                                                {0.0, 0.0}};
+
+  MklqMetalCircuitSimulatorTester sim;
+  if (!sim.metalRuntimeAvailableForTest())
+    return;
+
+  sim.setStateForTest({{1.0, 0.0}, {0.0, 0.0}});
+  sim.applySingleQubitGateForTest(xGate, {}, 0);
+  sim.setResidentFailureModeForTest(ResidentFailureMode::ExpectationRead);
+
+  const auto counts = sim.sampleQubitsForTest({0}, 0);
+  ASSERT_TRUE(counts.expectationValue.has_value());
+  EXPECT_NEAR(*counts.expectationValue, -1.0, 1.0e-12);
+  EXPECT_EQ(sim.residentStateDownloadsForTest(), 1);
+  EXPECT_EQ(sim.probabilityFillApplicationsForTest(), 0);
+  EXPECT_EQ(sim.marginalProbabilityApplicationsForTest(), 0);
+}
+
+CUDAQ_TEST(MKLQMetalTester,
+           SimulatorReducesLargeNonuniformZeroShotExpectationOnMetalWithoutProbabilityFill) {
+  constexpr std::size_t qubitCount = 17;
+  constexpr std::size_t dimension = 1ULL << qubitCount;
+  constexpr std::size_t measuredQubit = qubitCount - 1;
+
+  std::vector<std::complex<double>> state(dimension, {0.0, 0.0});
+  state[0] = {std::sqrt(0.30), 0.0};
+  state[2] = {std::sqrt(0.20), 0.0};
+  state[4] = {std::sqrt(0.125), 0.0};
+  state[dimension / 2] = {std::sqrt(0.10), 0.0};
+  state[dimension / 2 + 2] = {std::sqrt(0.15), 0.0};
+  state[dimension / 2 + 4] = {std::sqrt(0.125), 0.0};
+  const auto expected = zParityExpectationCpuOracle(state, {measuredQubit});
+  EXPECT_NEAR(expected, 0.25, 1.0e-12);
+
+  const std::vector<std::complex<double>> xGate{{0.0, 0.0},
+                                                {1.0, 0.0},
+                                                {1.0, 0.0},
+                                                {0.0, 0.0}};
+  MklqMetalCircuitSimulatorTester sim;
+  sim.setStateForTest(std::move(state));
+  sim.applySingleQubitGateForTest(xGate, {}, 0);
+  sim.applySingleQubitGateForTest(xGate, {}, 0);
+
+  if (!sim.metalRuntimeAvailableForTest())
+    return;
+
+  const auto counts = sim.sampleQubitsForTest({measuredQubit}, 0);
+
+  ASSERT_TRUE(counts.expectationValue.has_value());
+  EXPECT_NEAR(*counts.expectationValue, expected, 1.0e-5);
+  EXPECT_EQ(sim.residentStateUploadsForTest(), 1);
+  EXPECT_EQ(sim.residentStateDownloadsForTest(), 0);
+  EXPECT_EQ(sim.probabilityFillApplicationsForTest(), 0);
+  EXPECT_EQ(sim.marginalProbabilityApplicationsForTest(), 0);
 }
 
 CUDAQ_TEST(MKLQMetalTester,
