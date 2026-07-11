@@ -59,6 +59,9 @@ METAL_CONTROLLED_SWAP_SCOPE = (
 METAL_THREE_QUBIT_SCOPE = (
     "resident fp32 Metal three-target gate update followed by host readback for "
     "cudaq.get_state")
+METAL_FOUR_QUBIT_SCOPE = (
+    "resident fp32 Metal four-target gate update followed by host readback for "
+    "cudaq.get_state")
 METAL_COMPOSITE_SCOPE = (
     "experimental mklq-metal mixed-path composite state-vector update followed "
     "by host readback for cudaq.get_state")
@@ -135,6 +138,8 @@ METAL_PATH_CASES = {
          METAL_CONTROLLED_SWAP_SCOPE),
     "three-qubit-state": ("mklq_metal_resident_three_gate_state_host_readback",
                           METAL_THREE_QUBIT_SCOPE),
+    "four-qubit-state": ("mklq_metal_resident_four_gate_state_host_readback",
+                          METAL_FOUR_QUBIT_SCOPE),
     "qft-like-state": ("mklq_metal_mixed_composite_state_host_readback",
                        METAL_COMPOSITE_SCOPE),
     "hardware-efficient-ansatz-state":
@@ -240,10 +245,12 @@ DEFAULT_CASES = (
     "crz-distance-sweep-state",
     "seeded-clifford-state",
 )
+OPTIONAL_CASES = ("four-qubit-state",)
 DEFAULT_QUBITS = (4, 8, 12)
 UNIFORM_PARTIAL_REGISTER_MEASURED_QUBIT_LIMIT = 12
 SEEDED_CLIFFORD_SEED = 17
 THREE_QUBIT_OPERATION_NAME = "mklq_bench_flip_all_3"
+FOUR_QUBIT_OPERATION_NAME = "mklq_bench_flip_all_4"
 CUSTOM_TWO_QUBIT_OPERATION_NAME = "mklq_bench_phased_iswap_2"
 DENSE_TWO_QUBIT_OPERATION_NAME = "mklq_bench_dense_hh_2"
 CONTROLLED_DENSE_TWO_QUBIT_OPERATION_NAME = "mklq_bench_controlled_dense_hh_2"
@@ -286,7 +293,7 @@ def parse_shot_counts(value: str) -> list[int]:
 
 
 def validate_cases(cases: list[str]) -> list[str]:
-  allowed = set(DEFAULT_CASES)
+  allowed = set(DEFAULT_CASES) | set(OPTIONAL_CASES)
   unknown = sorted(set(cases) - allowed)
   if unknown:
     raise argparse.ArgumentTypeError(
@@ -807,6 +814,45 @@ def build_three_qubit_state_kernel(
 
   gate_count = state_prep_gate_count + three_qubit_gate_count
   return (kernel, gate_count, state_prep_gate_count, three_qubit_gate_count)
+
+
+def four_qubit_flip_all_matrix() -> list[list[int]]:
+  return [[1 if column == 15 - row else 0 for column in range(16)]
+          for row in range(16)]
+
+
+def build_four_qubit_state_kernel(
+    cudaq: Any, qubits: int,
+    layers: int) -> tuple[Any, int, int, int]:
+  if qubits < 4:
+    raise ValueError("four-qubit benchmarks require at least 4 qubits")
+  if not hasattr(cudaq, "register_operation"):
+    raise RuntimeError("cudaq.register_operation is required")
+
+  cudaq.register_operation(FOUR_QUBIT_OPERATION_NAME,
+                           four_qubit_flip_all_matrix())
+
+  kernel = cudaq.make_kernel()
+  q = kernel.qalloc(qubits)
+  state_prep_gate_count = 0
+  four_qubit_gate_count = 0
+
+  for index in range(qubits):
+    theta = 0.043 + 0.0017 * index
+    kernel.ry(theta, q[index])
+    kernel.rz(-0.5 * theta, q[index])
+    state_prep_gate_count += 2
+
+  for layer in range(layers):
+    windows = (range(qubits - 4, -1, -1)
+               if layer % 2 else range(0, qubits - 3))
+    for index in windows:
+      kernel.__getattr__(FOUR_QUBIT_OPERATION_NAME)(q[index], q[index + 1],
+                                                    q[index + 2], q[index + 3])
+      four_qubit_gate_count += 1
+
+  gate_count = state_prep_gate_count + four_qubit_gate_count
+  return (kernel, gate_count, state_prep_gate_count, four_qubit_gate_count)
 
 
 def build_qft_like_state_kernel(
@@ -1440,6 +1486,23 @@ def run_case(cudaq: Any, target: str, case: str, qubits: int, shots: int,
           "three_qubit_gate_state_throughput_per_second":
               three_qubit_gate_count / median if median > 0 else None,
       })
+    elif case == "four-qubit-state":
+      kernel, gate_count, state_prep_gate_count, four_qubit_gate_count = (
+          build_four_qubit_state_kernel(cudaq, qubits, layers))
+      action = lambda: cudaq.get_state(kernel)
+      for _ in range(warmups):
+        action()
+      timings = timed_repeats(action, repeats)
+      metrics = summarize_timings(timings)
+      median = metrics["elapsed_seconds_median"]
+      metrics.update({
+          "gate_count": gate_count,
+          "state_prep_gate_count": state_prep_gate_count,
+          "four_qubit_gate_count": four_qubit_gate_count,
+          "layers": layers,
+          "four_qubit_gate_state_throughput_per_second":
+              four_qubit_gate_count / median if median > 0 else None,
+      })
     elif case == "qft-like-state":
       (kernel, gate_count, state_prep_gate_count, h_gate_count, crz_gate_count,
        swap_gate_count) = build_qft_like_state_kernel(cudaq, qubits, layers)
@@ -1872,7 +1935,7 @@ def make_parser() -> argparse.ArgumentParser:
                             "dense-two-qubit-state,"
                             "controlled-dense-two-qubit-state,"
                             "controlled-swap-state,"
-                            "three-qubit-state,"
+                            "three-qubit-state,four-qubit-state,"
                             "qft-like-state,hardware-efficient-ansatz-state,"
                             "crz-distance-state,crz-distance-sweep-state,"
                             "seeded-clifford-state."))
@@ -1910,7 +1973,7 @@ def make_parser() -> argparse.ArgumentParser:
                             "dense-two-qubit-state/"
                             "controlled-dense-two-qubit-state/"
                             "controlled-swap-state/"
-                            "three-qubit-state/"
+                            "three-qubit-state/four-qubit-state/"
                             "qft-like-state/crz-distance-state/"
                             "crz-distance-sweep-state/"
                             "seeded-clifford-state "

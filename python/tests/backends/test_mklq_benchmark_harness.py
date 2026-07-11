@@ -7624,6 +7624,43 @@ def test_mklq_benchmark_dry_run_accepts_three_qubit_case(tmp_path):
     assert metrics["metal_runtime_counter"] is False
 
 
+def test_mklq_benchmark_dry_run_accepts_four_qubit_case(tmp_path):
+    repo_root = Path(__file__).resolve().parents[3]
+    script = repo_root / "benchmarks" / "mklq" / "bench_mklq_targets.py"
+    output = tmp_path / "dry-run-four-qubit.json"
+    env = os.environ.copy()
+    env.pop("PYTHONPATH", None)
+
+    subprocess.run([
+        sys.executable,
+        str(script),
+        "--dry-run",
+        "--targets",
+        "mklq-metal",
+        "--cases",
+        "four-qubit-state",
+        "--qubits",
+        "4",
+        "--output",
+        str(output),
+    ],
+                   check=True,
+                   capture_output=True,
+                   text=True,
+                   env=env)
+
+    report = json.loads(output.read_text(encoding="utf-8"))
+    assert report["config"]["cases"] == ["four-qubit-state"]
+    row = report["results"][0]
+    assert row["status"] == "planned"
+    assert row["estimated_state_bytes"] == 16 * (1 << 4)
+    metrics = row["metrics"]
+    assert metrics["metal_path_label"] == (
+        "mklq_metal_resident_four_gate_state_host_readback")
+    assert "four-target" in metrics["metal_path_scope"]
+    assert metrics["metal_runtime_counter"] is False
+
+
 def test_mklq_benchmark_dry_run_records_metal_path_metadata(tmp_path):
     repo_root = Path(__file__).resolve().parents[3]
     script = repo_root / "benchmarks" / "mklq" / "bench_mklq_targets.py"
@@ -8159,6 +8196,84 @@ def test_mklq_benchmark_three_qubit_case_records_gate_metrics(monkeypatch):
     operations = fake_cudaq.kernels[0].operations
     assert sum(1 for operation in operations
                if operation[0] == module.THREE_QUBIT_OPERATION_NAME) == 4
+
+
+def test_mklq_benchmark_four_qubit_case_records_gate_metrics(monkeypatch):
+    module = _load_benchmark_module()
+
+    class FakeKernel:
+
+        def __init__(self):
+            self.operations = []
+
+        def qalloc(self, qubits):
+            return list(range(qubits))
+
+        def ry(self, theta, target):
+            self.operations.append(("ry", theta, target))
+
+        def rz(self, theta, target):
+            self.operations.append(("rz", theta, target))
+
+        def __getattr__(self, name):
+
+            def apply_custom(*targets):
+                self.operations.append((name, *targets))
+
+            return apply_custom
+
+    class FakeCudaq:
+
+        def __init__(self):
+            self.kernels = []
+            self.registered_operations = {}
+
+        def reset_target(self):
+            pass
+
+        def set_target(self, target):
+            assert target == "mklq-metal"
+
+        def set_random_seed(self, seed):
+            assert seed == 13
+
+        def make_kernel(self):
+            kernel = FakeKernel()
+            self.kernels.append(kernel)
+            return kernel
+
+        def register_operation(self, name, matrix):
+            self.registered_operations[name] = matrix
+
+        def get_state(self, kernel):
+            return object()
+
+    monkeypatch.setattr(module, "timed_repeats", lambda action, repeats: [0.5])
+    monkeypatch.setattr(module, "process_max_rss_bytes", lambda: 8192)
+
+    fake_cudaq = FakeCudaq()
+    row = module.run_case(fake_cudaq,
+                          "mklq-metal",
+                          "four-qubit-state",
+                          qubits=5,
+                          shots=16,
+                          repeats=1,
+                          warmups=0,
+                          layers=2)
+
+    assert row["status"] == "ok"
+    metrics = row["metrics"]
+    assert metrics["state_prep_gate_count"] == 10
+    assert metrics["four_qubit_gate_count"] == 4
+    assert metrics["gate_count"] == 14
+    assert metrics["four_qubit_gate_state_throughput_per_second"] == 8
+    assert metrics["metal_path_label"] == (
+        "mklq_metal_resident_four_gate_state_host_readback")
+    assert fake_cudaq.registered_operations[
+        module.FOUR_QUBIT_OPERATION_NAME] == module.four_qubit_flip_all_matrix()
+    operations = fake_cudaq.kernels[0].operations
+    assert sum(1 for operation in operations
+               if operation[0] == module.FOUR_QUBIT_OPERATION_NAME) == 4
 
 
 def test_mklq_benchmark_custom_two_qubit_case_records_gate_metrics(
