@@ -11,11 +11,11 @@ Aggregate counts are summed across tracked reports; repeated daily probes intent
 | Field | Value |
 | --- | --- |
 | `status` | passed |
-| `report_count` | 17 |
-| `expected` | 742 |
-| `selected` | 742 |
+| `report_count` | 18 |
+| `expected` | 798 |
+| `selected` | 798 |
 | `missing` | 0 |
-| `passed` | 742 |
+| `passed` | 798 |
 | `failed` | 0 |
 
 ## Evidence Boundary
@@ -31,12 +31,12 @@ Aggregate counts are summed across tracked reports; repeated daily probes intent
 
 | Category | Passed | Failed | Other | Description |
 | --- | ---: | ---: | ---: | --- |
-| error_boundary | 92 | 0 | 0 | Resident Metal error and poisoned-state boundary tests |
-| fallback_boundary | 17 | 0 | 0 | Unsupported-gate fallback and reupload boundary tests |
-| measurement_reset | 51 | 0 | 0 | Measurement, collapse, and reset counter tests |
-| probability_sampling | 273 | 0 | 0 | Resident probability fill and sampling counter tests |
-| resident_gate | 266 | 0 | 0 | Resident Metal gate/update counter tests |
-| runtime_device | 15 | 0 | 0 | Runtime/device boundary counter tests |
+| error_boundary | 101 | 0 | 0 | Resident Metal error and poisoned-state boundary tests |
+| fallback_boundary | 18 | 0 | 0 | Unsupported-gate fallback and reupload boundary tests |
+| measurement_reset | 54 | 0 | 0 | Measurement, collapse, and reset counter tests |
+| probability_sampling | 296 | 0 | 0 | Resident probability fill and sampling counter tests |
+| resident_gate | 285 | 0 | 0 | Resident Metal gate/update counter tests |
+| runtime_device | 16 | 0 | 0 | Runtime/device boundary counter tests |
 | synchronization_boundary | 28 | 0 | 0 | Resident state synchronization boundary tests |
 
 ## Counter Tests
@@ -45,12 +45,14 @@ Aggregate counts are summed across tracked reports; repeated daily probes intent
 | --- | --- |
 | error_boundary | `mklq_metal_MKLQMetalTester.SimulatorFallsBackToCpuWhenResidentExpectationReadFails` |
 | error_boundary | `mklq_metal_MKLQMetalTester.SimulatorPoisonsResidentStateWhenExpectationFlushFails` |
+| error_boundary | `mklq_metal_MKLQMetalTester.SimulatorPoisonsResidentStateWhenFourGateFails` |
 | error_boundary | `mklq_metal_MKLQMetalTester.SimulatorPoisonsResidentStateWhenSingleGateFails` |
 | error_boundary | `mklq_metal_MKLQMetalTester.SimulatorPoisonsResidentStateWhenThreeGateFails` |
 | error_boundary | `mklq_metal_MKLQMetalTester.SimulatorPoisonsResidentStateWhenTwoGateFails` |
 | error_boundary | `mklq_metal_MKLQMetalTester.SimulatorThrowsWhenResidentMeasurementCollapseFails` |
 | error_boundary | `mklq_metal_MKLQMetalTester.SimulatorThrowsWhenResidentMeasurementProbabilityFails` |
 | error_boundary | `mklq_metal_MKLQMetalTester.SimulatorThrowsWhenResidentResetGateFails` |
+| fallback_boundary | `mklq_metal_MKLQMetalTester.SimulatorReuploadsResidentStateAfterFiveQubitGateFallback` |
 | fallback_boundary | `mklq_metal_MKLQMetalTester.SimulatorReuploadsResidentStateAfterUnsupportedGateFallback` |
 | measurement_reset | `mklq_metal_MKLQMetalTester.MetalRuntimeComputesAndCollapsesResidentQubitProbability` |
 | measurement_reset | `mklq_metal_MKLQMetalTester.SimulatorMeasuresAndResetsResidentStateWithoutReadback` |
@@ -94,6 +96,8 @@ Aggregate counts are summed across tracked reports; repeated daily probes intent
 | resident_gate | `mklq_metal_MKLQMetalTester.SimulatorKeepsBuiltInRyAndControlledRyResidentUntilReadback` |
 | resident_gate | `mklq_metal_MKLQMetalTester.SimulatorKeepsBuiltInRzAndControlledRzResidentUntilReadback` |
 | resident_gate | `mklq_metal_MKLQMetalTester.SimulatorKeepsBuiltInYAndControlledYResidentUntilReadback` |
+| resident_gate | `mklq_metal_MKLQMetalTester.SimulatorKeepsControlledFourQubitGateResident` |
+| resident_gate | `mklq_metal_MKLQMetalTester.SimulatorKeepsFourQubitGateResidentUntilReadback` |
 | resident_gate | `mklq_metal_MKLQMetalTester.SimulatorKeepsMultiControlSingleQubitResidentUntilReadback` |
 | resident_gate | `mklq_metal_MKLQMetalTester.SimulatorKeepsSupportedGateSequenceResidentUntilReadback` |
 | resident_gate | `mklq_metal_MKLQMetalTester.SimulatorKeepsThreeQubitGateResidentUntilReadback` |
@@ -123,6 +127,7 @@ Aggregate counts are summed across tracked reports; repeated daily probes intent
 | benchmarks/mklq/reports/local-metal-runtime-counter-probe-2026-07-10-gate-batching.counter.json | 2026-07-10T15:07:39.107079+00:00 | passed | 51 | 51 | 0 | 51 | 0 |
 | benchmarks/mklq/reports/local-metal-runtime-counter-probe-2026-07-10-resident-expectation.counter.json | 2026-07-10T16:37:22.000075+00:00 | passed | 51 | 51 | 0 | 51 | 0 |
 | benchmarks/mklq/reports/local-metal-runtime-counter-probe-2026-07-11-device-z-parity-expectation.counter.json | 2026-07-11T02:24:45.173955+00:00 | passed | 54 | 54 | 0 | 54 | 0 |
+| benchmarks/mklq/reports/local-metal-runtime-counter-probe-2026-07-11-four-qubit.counter.json | 2026-07-11T14:58:19.711049+00:00 | passed | 56 | 56 | 0 | 56 | 0 |
 
 Regenerate with:
 

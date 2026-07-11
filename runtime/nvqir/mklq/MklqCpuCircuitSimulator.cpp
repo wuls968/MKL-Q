@@ -450,6 +450,15 @@ protected:
   }
 
   virtual bool
+  applyMetalResidentFourQubitGate(const complexd *matrix,
+                                  const std::size_t *controlQubits,
+                                  std::size_t controlCount,
+                                  const std::size_t *targets) {
+    return metalExecutor.applyResidentFourQubitGate(matrix, controlQubits,
+                                                    controlCount, targets);
+  }
+
+  virtual bool
   computeMetalResidentMeasurementProbability(std::size_t index,
                                              double &probabilityOne) {
     return metalExecutor.computeResidentQubitProbability(index,
@@ -1538,6 +1547,26 @@ protected:
           const auto error =
               fmt::format(MKLQ_SIMULATOR_DIAGNOSTIC_PREFIX
                           " failed to apply resident Metal three-qubit gate: {}",
+                          metalExecutor.lastError());
+          markMetalResidentStatePoisoned(error);
+          throw std::runtime_error(error);
+        }
+      }
+    }
+    if (targetCount == 4) {
+      const bool hadDirtyMetalState = metalStateHostDirty;
+      if (ensureMetalResidentState()) {
+        if (applyMetalResidentFourQubitGate(task.matrix.data(),
+                                            task.controls.data(),
+                                            task.controls.size(),
+                                            task.targets.data())) {
+          metalStateHostDirty = true;
+          return;
+        }
+        if (hadDirtyMetalState) {
+          const auto error =
+              fmt::format(MKLQ_SIMULATOR_DIAGNOSTIC_PREFIX
+                          " failed to apply resident Metal four-qubit gate: {}",
                           metalExecutor.lastError());
           markMetalResidentStatePoisoned(error);
           throw std::runtime_error(error);

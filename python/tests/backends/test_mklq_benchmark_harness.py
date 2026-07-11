@@ -3366,15 +3366,17 @@ def test_mklq_metal_runtime_counter_probe_tracks_runtime_counter_surface():
         "SimulatorSamplesResidentDeterministicPartialRegisterSequentialWithoutDrawLoop",
         "SimulatorSamplesResidentPartialRegisterReportsNativePhaseTiming",
         "SimulatorSamplesDeterministicSparseStateWithOneBitStringConversion",
-        "SimulatorSynchronizesResidentStateBeforeUnsupportedGate",
+        "SimulatorKeepsFourQubitGateResidentUntilReadback",
+        "SimulatorKeepsControlledFourQubitGateResident",
         "SimulatorKeepsThreeQubitGateResidentUntilReadback",
         "SimulatorKeepsBuiltInControlledSwapResidentUntilReadback",
-        "SimulatorReuploadsResidentStateAfterUnsupportedGateFallback",
+        "SimulatorReuploadsResidentStateAfterFiveQubitGateFallback",
         "SimulatorMeasuresAndResetsResidentStateWithoutReadback",
         "SimulatorResetsResidentNonzeroTargetWithoutReadback",
         "SimulatorPoisonsResidentStateWhenSingleGateFails",
         "SimulatorPoisonsResidentStateWhenTwoGateFails",
         "SimulatorPoisonsResidentStateWhenThreeGateFails",
+        "SimulatorPoisonsResidentStateWhenFourGateFails",
         "SimulatorThrowsWhenResidentMeasurementProbabilityFails",
         "SimulatorThrowsWhenResidentMeasurementCollapseFails",
         "SimulatorThrowsWhenResidentResetGateFails",
@@ -3394,7 +3396,7 @@ def test_mklq_metal_runtime_counter_probe_tracks_runtime_counter_surface():
 
     assert suffixes == expected_suffixes
     assert suffixes.isdisjoint(metadata_only_suffixes)
-    assert len(module.COUNTER_TEST_SUFFIXES) == 54
+    assert len(module.COUNTER_TEST_SUFFIXES) == 56
 
 
 def test_mklq_metal_runtime_counter_probe_builds_bounded_report(monkeypatch,
@@ -3545,8 +3547,9 @@ def _runtime_counter_summary_fixture():
         "mklq_metal_MKLQMetalTester.SimulatorKeepsSupportedGateSequenceResidentUntilReadback",
         "mklq_metal_MKLQMetalTester.SimulatorSamplesResidentDenseStateWithoutReadback",
         "mklq_metal_MKLQMetalTester.SimulatorMeasuresAndResetsResidentStateWithoutReadback",
-        "mklq_metal_MKLQMetalTester.SimulatorReuploadsResidentStateAfterUnsupportedGateFallback",
+        "mklq_metal_MKLQMetalTester.SimulatorReuploadsResidentStateAfterFiveQubitGateFallback",
         "mklq_metal_MKLQMetalTester.SimulatorSynchronizesResidentStateBeforeUnsupportedGate",
+        "mklq_metal_MKLQMetalTester.SimulatorKeepsFourQubitGateResidentUntilReadback",
         "mklq_metal_MKLQMetalTester.SimulatorPoisonsResidentStateWhenSingleGateFails",
     ]
     return {
@@ -3589,10 +3592,10 @@ def test_mklq_metal_runtime_counter_summary_groups_counter_coverage(tmp_path):
     assert summary["summary"] == {
         "status": "passed",
         "report_count": 1,
-        "expected": 6,
-        "selected": 6,
-        "missing": 0,
-        "passed": 6,
+            "expected": 7,
+            "selected": 7,
+            "missing": 0,
+            "passed": 7,
         "failed": 0,
     }
     assert summary["boundary"]["runtime_counter_evidence"] is True
@@ -3602,7 +3605,7 @@ def test_mklq_metal_runtime_counter_summary_groups_counter_coverage(tmp_path):
         category["category"]: category
         for category in summary["categories"]
     }
-    assert categories["resident_gate"]["passed"] == 1
+    assert categories["resident_gate"]["passed"] == 2
     assert categories["probability_sampling"]["passed"] == 1
     assert categories["measurement_reset"]["passed"] == 1
     assert categories["fallback_boundary"]["passed"] == 1

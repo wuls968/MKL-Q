@@ -10,10 +10,11 @@ explicitly only after building them intentionally.
 
 `mklq-metal` is included as an experimental target name while the Metal backend
 is being built. It currently loads the MKL-Q `mklq_metal` mixed-path simulator:
-supported single-target and two-target updates, including controlled forms, can
-stay in a resident fp32 Metal state buffer across supported gate sequences.
-Generic three-target custom operations also have a resident fp32 Metal path for
-state-vector updates followed by host readback. Dense full-register probability
+supported single-target through four-target updates, including selected
+controlled forms, can stay in a resident fp32 Metal state buffer across
+supported gate sequences. Generic three-target and four-target custom
+operations have resident fp32 Metal paths for state-vector updates followed by
+host readback. Dense full-register probability
 fills, cost-gated resident marginal probability fills, and measure/reset
 collapse paths can read or update that resident buffer directly.
 Measurement probability uses a

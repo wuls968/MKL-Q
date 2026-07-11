@@ -53,6 +53,18 @@ struct ThreeQubitParams {
   std::uint32_t controlCount;
 };
 
+struct FourQubitParams {
+  std::uint64_t targetMask0;
+  std::uint64_t targetMask1;
+  std::uint64_t targetMask2;
+  std::uint64_t targetMask3;
+  std::uint32_t firstTarget;
+  std::uint32_t secondTarget;
+  std::uint32_t thirdTarget;
+  std::uint32_t fourthTarget;
+  std::uint32_t controlCount;
+};
+
 struct CollapseParams {
   std::uint64_t targetMask;
   float inverseNorm;
@@ -128,6 +140,18 @@ struct ThreeQubitParams {
   uint firstTarget;
   uint secondTarget;
   uint thirdTarget;
+  uint controlCount;
+};
+
+struct FourQubitParams {
+  ulong targetMask0;
+  ulong targetMask1;
+  ulong targetMask2;
+  ulong targetMask3;
+  uint firstTarget;
+  uint secondTarget;
+  uint thirdTarget;
+  uint fourthTarget;
   uint controlCount;
 };
 
@@ -298,6 +322,51 @@ kernel void mklq_apply_three_qubit(
   state[index5] = updated[5];
   state[index6] = updated[6];
   state[index7] = updated[7];
+}
+
+kernel void mklq_apply_four_qubit(
+    device ComplexFloat *state [[buffer(0)]],
+    constant ComplexFloat *matrix [[buffer(1)]],
+    constant ulong *controlMasks [[buffer(2)]],
+    constant FourQubitParams &params [[buffer(3)]],
+    uint block [[thread_position_in_grid]]) {
+  const ulong blockIndex = block;
+  const ulong base = insertZeroBit(
+      insertZeroBit(
+          insertZeroBit(insertZeroBit(blockIndex, params.firstTarget),
+                        params.secondTarget),
+          params.thirdTarget),
+      params.fourthTarget);
+
+  for (uint control = 0; control < params.controlCount; ++control)
+    if ((base & controlMasks[control]) == 0)
+      return;
+
+  const ulong targetMasks[4] = {params.targetMask0, params.targetMask1,
+                                params.targetMask2, params.targetMask3};
+  ulong indices[16];
+  ComplexFloat amplitudes[16];
+  ComplexFloat updated[16];
+
+  for (uint outcome = 0; outcome < 16; ++outcome) {
+    ulong index = base;
+    for (uint target = 0; target < 4; ++target)
+      if ((outcome & (1u << target)) != 0)
+        index |= targetMasks[target];
+    indices[outcome] = index;
+    amplitudes[outcome] = state[index];
+  }
+
+  for (uint row = 0; row < 16; ++row) {
+    ComplexFloat value = ComplexFloat{0.0f, 0.0f};
+    for (uint column = 0; column < 16; ++column)
+      value = cadd(value, cmul(matrix[row * 16 + column],
+                               amplitudes[column]));
+    updated[row] = value;
+  }
+
+  for (uint outcome = 0; outcome < 16; ++outcome)
+    state[indices[outcome]] = updated[outcome];
 }
 
 kernel void mklq_fill_probabilities(
@@ -607,6 +676,7 @@ struct MetalStateVectorExecutor::Impl {
   id<MTLComputePipelineState> singleQubitPipeline = nil;
   id<MTLComputePipelineState> twoQubitPipeline = nil;
   id<MTLComputePipelineState> threeQubitPipeline = nil;
+  id<MTLComputePipelineState> fourQubitPipeline = nil;
   id<MTLComputePipelineState> probabilityPipeline = nil;
   id<MTLComputePipelineState> marginalProbabilityPipeline = nil;
   id<MTLComputePipelineState> measurementProbabilityPipeline = nil;
@@ -626,6 +696,7 @@ struct MetalStateVectorExecutor::Impl {
   std::size_t singleQubitApplications = 0;
   std::size_t twoQubitApplications = 0;
   std::size_t threeQubitApplications = 0;
+  std::size_t fourQubitApplications = 0;
   std::size_t probabilityFillApplications = 0;
   std::size_t marginalProbabilityApplications = 0;
   std::size_t measurementProbabilityApplications = 0;
@@ -727,6 +798,27 @@ struct MetalStateVectorExecutor::Impl {
         error = describeError(
             pipelineError,
             "failed to create Metal three-qubit compute pipeline.");
+        return;
+      }
+
+      function = [library newFunctionWithName:@"mklq_apply_four_qubit"];
+      if (!function) {
+        [library release];
+        error = "failed to load mklq_apply_four_qubit Metal kernel.";
+        return;
+      }
+
+      pipelineError = nil;
+      fourQubitPipeline =
+          [device newComputePipelineStateWithFunction:function
+                                                error:&pipelineError];
+      [function release];
+
+      if (!fourQubitPipeline) {
+        [library release];
+        error = describeError(
+            pipelineError,
+            "failed to create Metal four-qubit compute pipeline.");
         return;
       }
 
@@ -934,6 +1026,7 @@ struct MetalStateVectorExecutor::Impl {
     [measurementProbabilityPipeline release];
     [marginalProbabilityPipeline release];
     [probabilityPipeline release];
+    [fourQubitPipeline release];
     [threeQubitPipeline release];
     [twoQubitPipeline release];
     [singleQubitPipeline release];
@@ -943,7 +1036,7 @@ struct MetalStateVectorExecutor::Impl {
 
   bool available() const {
     return device && commandQueue && singleQubitPipeline && twoQubitPipeline &&
-           threeQubitPipeline && probabilityPipeline &&
+           threeQubitPipeline && fourQubitPipeline && probabilityPipeline &&
            marginalProbabilityPipeline && measurementProbabilityPipeline &&
            sampleCountPipeline && generatedSampleCountPipeline &&
            uniformGeneratedSampleCountPipeline && collapsePipeline;
@@ -1755,6 +1848,131 @@ bool MetalStateVectorExecutor::applyResidentThreeQubitGate(
 
   impl->error.clear();
   ++impl->threeQubitApplications;
+  return true;
+}
+
+bool MetalStateVectorExecutor::applyResidentFourQubitGate(
+    const std::complex<double> *matrix, const std::size_t *controlQubits,
+    std::size_t controlCount, const std::size_t *targetQubits) {
+  if (!impl || !impl->available())
+    return false;
+  if (!impl->residentStateBuffer || impl->residentStateSize < 16 ||
+      !isPowerOfTwo(impl->residentStateSize) || !matrix || !targetQubits) {
+    impl->error = "invalid Metal resident four-qubit gate input.";
+    return false;
+  }
+  for (std::size_t target = 0; target < 4; ++target) {
+    if (!qubitWithinState(targetQubits[target], impl->residentStateSize)) {
+      impl->error = "target qubit exceeds Metal state range.";
+      return false;
+    }
+    for (std::size_t previous = 0; previous < target; ++previous) {
+      if (targetQubits[target] == targetQubits[previous]) {
+        impl->error = "duplicate Metal four-qubit gate target.";
+        return false;
+      }
+    }
+  }
+  if (!fitsKernelThreadIndex(impl->residentStateSize >> 4)) {
+    impl->error = "state size exceeds Metal four-qubit thread index range.";
+    return false;
+  }
+  if (controlCount > 0 && !controlQubits) {
+    impl->error = "missing Metal control qubit input.";
+    return false;
+  }
+  if (hasDuplicateControlOrTargetOverlap(controlQubits, controlCount,
+                                         targetQubits, 4)) {
+    impl->error = "duplicate or overlapping Metal control qubit.";
+    return false;
+  }
+
+  std::vector<std::uint64_t> controlMasks;
+  controlMasks.reserve(std::max<std::size_t>(controlCount, 1));
+  for (std::size_t control = 0; control < controlCount; ++control) {
+    if (!qubitWithinState(controlQubits[control], impl->residentStateSize)) {
+      impl->error = "control qubit exceeds Metal state range.";
+      return false;
+    }
+    controlMasks.push_back(std::uint64_t{1} << controlQubits[control]);
+  }
+  if (controlMasks.empty())
+    controlMasks.push_back(0);
+
+  std::array<MetalComplexFloat, 256> gpuMatrix;
+  for (std::size_t index = 0; index < gpuMatrix.size(); ++index)
+    gpuMatrix[index] =
+        MetalComplexFloat{static_cast<float>(matrix[index].real()),
+                          static_cast<float>(matrix[index].imag())};
+
+  std::array<std::size_t, 4> sortedTargets{
+      targetQubits[0], targetQubits[1], targetQubits[2], targetQubits[3]};
+  std::sort(sortedTargets.begin(), sortedTargets.end());
+  FourQubitParams params{
+      std::uint64_t{1} << targetQubits[0],
+      std::uint64_t{1} << targetQubits[1],
+      std::uint64_t{1} << targetQubits[2],
+      std::uint64_t{1} << targetQubits[3],
+      static_cast<std::uint32_t>(sortedTargets[0]),
+      static_cast<std::uint32_t>(sortedTargets[1]),
+      static_cast<std::uint32_t>(sortedTargets[2]),
+      static_cast<std::uint32_t>(sortedTargets[3]),
+      static_cast<std::uint32_t>(controlCount)};
+
+  @autoreleasepool {
+    id<MTLBuffer> matrixBuffer =
+        [impl->device newBufferWithBytes:gpuMatrix.data()
+                                  length:gpuMatrix.size() *
+                                         sizeof(MetalComplexFloat)
+                                 options:MTLResourceStorageModeShared];
+    id<MTLBuffer> controlsBuffer =
+        [impl->device newBufferWithBytes:controlMasks.data()
+                                  length:controlMasks.size() *
+                                         sizeof(std::uint64_t)
+                                 options:MTLResourceStorageModeShared];
+    id<MTLBuffer> paramsBuffer =
+        [impl->device newBufferWithBytes:&params
+                                  length:sizeof(FourQubitParams)
+                                 options:MTLResourceStorageModeShared];
+
+    if (!matrixBuffer || !controlsBuffer || !paramsBuffer) {
+      [matrixBuffer release];
+      [controlsBuffer release];
+      [paramsBuffer release];
+      impl->error = "failed to allocate Metal resident four-qubit buffers.";
+      return false;
+    }
+
+    id<MTLComputeCommandEncoder> encoder = impl->beginResidentGateEncoder();
+    if (!encoder) {
+      [matrixBuffer release];
+      [controlsBuffer release];
+      [paramsBuffer release];
+      return false;
+    }
+
+    [encoder setComputePipelineState:impl->fourQubitPipeline];
+    [encoder setBuffer:impl->residentStateBuffer offset:0 atIndex:0];
+    [encoder setBuffer:matrixBuffer offset:0 atIndex:1];
+    [encoder setBuffer:controlsBuffer offset:0 atIndex:2];
+    [encoder setBuffer:paramsBuffer offset:0 atIndex:3];
+
+    const auto blockCount = impl->residentStateSize >> 4;
+    const auto pipelineWidth =
+        [impl->fourQubitPipeline maxTotalThreadsPerThreadgroup];
+    const auto threadsPerThreadgroup =
+        std::max<NSUInteger>(1, std::min<NSUInteger>(pipelineWidth, blockCount));
+    [encoder dispatchThreads:MTLSizeMake(blockCount, 1, 1)
+       threadsPerThreadgroup:MTLSizeMake(threadsPerThreadgroup, 1, 1)];
+    [encoder endEncoding];
+    impl->retainResidentGateBuffers(matrixBuffer, controlsBuffer, paramsBuffer);
+    [matrixBuffer release];
+    [controlsBuffer release];
+    [paramsBuffer release];
+  }
+
+  impl->error.clear();
+  ++impl->fourQubitApplications;
   return true;
 }
 
@@ -2789,6 +3007,10 @@ std::size_t MetalStateVectorExecutor::twoQubitGateApplications() const {
 
 std::size_t MetalStateVectorExecutor::threeQubitGateApplications() const {
   return impl ? impl->threeQubitApplications : 0;
+}
+
+std::size_t MetalStateVectorExecutor::fourQubitGateApplications() const {
+  return impl ? impl->fourQubitApplications : 0;
 }
 
 std::size_t MetalStateVectorExecutor::probabilityFillApplications() const {

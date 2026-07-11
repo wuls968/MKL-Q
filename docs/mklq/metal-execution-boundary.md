@@ -23,7 +23,7 @@ Current counter evidence tracks these resident Metal state routes:
 | --- | --- | --- |
 | Single-target gates | `mklq_metal_MKLQMetalTester.*` counter tests and `run_metal_runtime_counter_probe.py` | No user-visible host readback is required for the covered gate update itself. |
 | Controlled and multi-control single-target gates | Counter tests grouped under `resident_gate` in `docs/mklq/metal-runtime-counters.md` | Coverage is finite and test-selected. |
-| Two-target and three-target updates | Counter tests grouped under `resident_gate` | Covered two-target updates include the builtin controlled-SWAP dispatcher route; this is not a broad arbitrary-unitary guarantee. |
+| Two-target through four-target updates | Counter tests grouped under `resident_gate` | Covered two-target updates include the builtin controlled-SWAP dispatcher route. Generic four-target updates use the selected 16x16 fp32 matrix route, including a selected controlled fixture; this is not a broad arbitrary-unitary performance guarantee. |
 | Full-register probability fill | Counter tests grouped under `probability_sampling` | The probability vector is host-visible output by design. |
 | Marginal probability fill | Counter tests grouped under `probability_sampling` | Marginal output is host-visible by design. |
 | Zero-shot Z-parity expectation | Counter tests grouped under `probability_sampling` | Selected resident paths perform a hierarchical Metal parity reduction and copy one scalar expectation to the host; they do not materialize a full or marginal probability vector. A failed flush of pending mutating gates poisons the resident state; after a successful flush, a read-only reduction failure synchronizes the unchanged state before CPU fallback. |
@@ -65,7 +65,7 @@ Tracked fallback and synchronization boundaries include:
 
 | Boundary | Meaning | Evidence category |
 | --- | --- | --- |
-| Unsupported custom operations with four or more target qubits | The target synchronizes the resident state before running the CPU oracle path. | `fallback_boundary` |
+| Unsupported custom operations with five or more target qubits | The target synchronizes the resident state before running the CPU oracle path. | `fallback_boundary` |
 | Reupload after unsupported fallback | A later supported operation can return to resident execution after the CPU oracle updates state. | `fallback_boundary` |
 | Explicit state readback | Materializing amplitudes on the host synchronizes the resident state. | `synchronization_boundary` |
 | Device selection and runtime availability | The target records whether a Metal runtime was detected before resident routes are exercised. | `runtime_device` |
