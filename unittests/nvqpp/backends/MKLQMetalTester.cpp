@@ -1812,12 +1812,27 @@ CUDAQ_TEST(MKLQMetalTester, SimulatorAppliesDenseFourQubitGateResident) {
   std::vector<std::complex<double>> hadamardTensor(256, {0.0, 0.0});
   for (std::size_t row = 0; row < 16; ++row)
     for (std::size_t column = 0; column < 16; ++column)
-      hadamardTensor[row * 16 + column] = {
-          ((std::popcount(row & column) % 2) == 0 ? 0.25 : -0.25), 0.0};
+      hadamardTensor[row * 16 + column] = std::polar(
+          0.25, 0.17 * static_cast<double>(std::popcount(row)) +
+                    ((std::popcount(row & column) % 2) == 0
+                         ? 0.0
+                         : 3.14159265358979323846));
 
   MklqMetalCircuitSimulatorTester sim;
   std::vector<std::complex<double>> state(16, {0.0, 0.0});
-  state[0] = {1.0, 0.0};
+  for (std::size_t column = 0; column < state.size(); ++column)
+    state[column] = std::polar(1.0 + 0.1 * static_cast<double>(column),
+                               0.11 * static_cast<double>(column));
+  double norm = 0.0;
+  for (const auto amplitude : state)
+    norm += std::norm(amplitude);
+  for (auto &amplitude : state)
+    amplitude /= std::sqrt(norm);
+
+  std::vector<std::complex<double>> expected(16, {0.0, 0.0});
+  for (std::size_t row = 0; row < 16; ++row)
+    for (std::size_t column = 0; column < 16; ++column)
+      expected[row] += hadamardTensor[row * 16 + column] * state[column];
   sim.setStateForTest(std::move(state));
 
   sim.applyGateTaskForTest("dense-h4", hadamardTensor, {}, {0, 1, 2, 3});
@@ -1828,8 +1843,8 @@ CUDAQ_TEST(MKLQMetalTester, SimulatorAppliesDenseFourQubitGateResident) {
 
   const auto output = sim.stateVectorForTest();
   ASSERT_EQ(output.size(), 16);
-  for (const auto amplitude : output)
-    expectNear(amplitude, {0.25, 0.0});
+  for (std::size_t row = 0; row < output.size(); ++row)
+    expectNear(output[row], expected[row]);
   EXPECT_EQ(sim.residentStateDownloadsForTest(),
             sim.metalRuntimeAvailableForTest() ? 1 : 0);
 }
