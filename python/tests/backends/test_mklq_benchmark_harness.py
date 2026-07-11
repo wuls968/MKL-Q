@@ -6388,6 +6388,9 @@ git sparse-checkout set, docs/sphinx/examples/mklq, docs/sphinx/targets,
 explicit main refspec, +refs/heads/main:refs/remotes/origin/main,
 +refs/heads/main:refs/remotes/upstream/main, and filter=blob:none. It restores
 history later with http.version=HTTP/1.1, --unshallow, and filter=blob:none.
+An optional Git object cache in RUNNER_TOOL_CACHE uses
+objects/info/alternates. Its refs/mklq-cache/main ref exists only in the
+ephemeral job repository and cannot create a public branch.
 Before dispatching the full gate, run --check-runners to query actions/runners.
 
 ## Validation Command
@@ -6458,6 +6461,18 @@ jobs:
           find "${workspace}" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
           git init "${workspace}"
           cd "${workspace}"
+          cache_root="${RUNNER_TOOL_CACHE}/mklq-git-cache"
+          origin_object_cache="${cache_root}/mklq-origin.git"
+          if test -d "${origin_object_cache}/objects" && \
+            cache_main="$(git -C "${origin_object_cache}" rev-parse --verify refs/heads/main 2>/dev/null)" && \
+            git -C "${origin_object_cache}" cat-file -e "${cache_main}^{commit}" 2>/dev/null && \
+            printf '%s\\n' "${origin_object_cache}/objects" > .git/objects/info/alternates && \
+            git update-ref refs/mklq-cache/main "${cache_main}"; then
+            echo "Using the runner Git object cache for full-history negotiation."
+          else
+            rm -f .git/objects/info/alternates
+            git update-ref -d refs/mklq-cache/main 2>/dev/null || true
+          fi
           git sparse-checkout init --cone
           git sparse-checkout set .github benchmarks cmake cudaq docs/mklq docs/sphinx/examples/mklq docs/sphinx/targets python runtime scripts targettests tpls unittests utils
           retry_git "origin main sparse fetch" git -c http.version=HTTP/1.1 fetch --depth=1 --filter=blob:none origin +refs/heads/main:refs/remotes/origin/main
@@ -6619,6 +6634,62 @@ def test_mklq_self_hosted_ci_audit_rejects_missing_security_boundary(
     assert checks["doc_tokens"]["status"] == "failed"
     assert "permissions: contents: read" in checks["doc_tokens"]["details"][
         "missing"]
+
+
+def test_mklq_self_hosted_ci_audit_requires_local_cache_ref_boundary(
+        monkeypatch, tmp_path):
+    module = _load_self_hosted_ci_audit_module()
+    doc_text = _self_hosted_ci_doc_text().replace(
+        "objects/info/alternates. Its refs/mklq-cache/main ref exists only in the\n"
+        "ephemeral job repository and cannot create a public branch.",
+        "objects/info/alternates.")
+    _write_self_hosted_ci_audit_fixture(tmp_path, doc_text)
+    monkeypatch.setattr(
+        module, "command_output",
+        lambda root, args: _self_hosted_workflow_list())
+    config = module.AuditConfig(repo_root=tmp_path,
+                                output=tmp_path / "results" /
+                                "self-hosted-ci-audit.json")
+
+    report = module.build_report(config)
+
+    assert report["summary"]["status"] == "failed"
+    checks = {check["name"]: check for check in report["checks"]}
+    assert checks["doc_tokens"]["status"] == "failed"
+    assert "refs/mklq-cache/main" in checks["doc_tokens"]["details"][
+        "missing"]
+    assert "ephemeral job repository" in checks["doc_tokens"]["details"][
+        "missing"]
+    assert "create a public branch" in checks["doc_tokens"]["details"][
+        "missing"]
+
+
+def test_mklq_self_hosted_ci_audit_rejects_public_cache_ref_regression(
+        monkeypatch, tmp_path):
+    module = _load_self_hosted_ci_audit_module()
+    _write_self_hosted_ci_audit_fixture(tmp_path, _self_hosted_ci_doc_text())
+    workflow_path = (tmp_path / ".github" / "workflows" /
+                     "mklq-apple-silicon-ci.yml")
+    workflow_path.write_text(
+        _self_hosted_ci_workflow_text().replace(
+            "git update-ref refs/mklq-cache/main \"${cache_main}\"",
+            "git update-ref refs/heads/main \"${cache_main}\""),
+        encoding="utf-8")
+    monkeypatch.setattr(
+        module, "command_output",
+        lambda root, args: _self_hosted_workflow_list())
+    config = module.AuditConfig(repo_root=tmp_path,
+                                output=tmp_path / "results" /
+                                "self-hosted-ci-audit.json")
+
+    report = module.build_report(config)
+
+    assert report["summary"]["status"] == "failed"
+    checks = {check["name"]: check for check in report["checks"]}
+    assert checks["workflow_boundary"]["status"] == "failed"
+    assert "git update-ref refs/mklq-cache/main \"${cache_main}\"" in (
+        checks["workflow_boundary"]["details"].get(
+            "manual_missing_cache_guards", []))
 
 
 def test_mklq_self_hosted_ci_audit_rejects_enabled_heavy_workflow(

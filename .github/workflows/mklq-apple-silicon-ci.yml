@@ -84,6 +84,21 @@ jobs:
           cd "${workspace}"
           git config --local gc.auto 0
           git config --local advice.detachedHead false
+          cache_root="${RUNNER_TOOL_CACHE:-${RUNNER_TEMP:?}}/mklq-git-cache"
+          origin_object_cache="${cache_root}/mklq-origin.git"
+          if [ -d "${origin_object_cache}/objects" ] && \
+            cache_main="$(git -C "${origin_object_cache}" rev-parse \
+              --verify refs/heads/main 2>/dev/null)" && \
+            git -C "${origin_object_cache}" cat-file -e "${cache_main}^{commit}" 2>/dev/null && \
+            printf '%s\n' "${origin_object_cache}/objects" \
+              > .git/objects/info/alternates && \
+            git update-ref refs/mklq-cache/main "${cache_main}"; then
+            echo "Using the runner Git object cache for full-history negotiation."
+          else
+            rm -f .git/objects/info/alternates
+            git update-ref -d refs/mklq-cache/main 2>/dev/null || true
+            echo "Runner Git object cache is unavailable; fetching history normally."
+          fi
           git remote add origin https://github.com/wuls968/MKL-Q.git
           git remote add upstream https://github.com/NVIDIA/cuda-quantum.git
           git sparse-checkout init --cone
