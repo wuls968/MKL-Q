@@ -198,7 +198,7 @@ target-marker output.
   branch with a Metal kernel without first downloading the state. The host only
   sums per-threadgroup partial probabilities for those reductions. The host
   state remains fp64 and is synchronized at CPU fallback/readback boundaries.
-  Four-or-more-target gates and other unsupported paths still fall back to the
+  Five-or-more-target gates and other unsupported paths still fall back to the
   MKL-Q CPU oracle, and the target is not yet a full Metal GPU backend.
   `mklq-cpu` and `mklq-metal` are noiseless simulator targets: matching
   non-empty `noise_model` usage fails fast, and noisy simulation remains future
