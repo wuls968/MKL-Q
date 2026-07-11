@@ -1808,6 +1808,32 @@ CUDAQ_TEST(MKLQMetalTester, SimulatorKeepsControlledFourQubitGateResident) {
             sim.metalRuntimeAvailableForTest() ? 1 : 0);
 }
 
+CUDAQ_TEST(MKLQMetalTester, SimulatorAppliesDenseFourQubitGateResident) {
+  std::vector<std::complex<double>> hadamardTensor(256, {0.0, 0.0});
+  for (std::size_t row = 0; row < 16; ++row)
+    for (std::size_t column = 0; column < 16; ++column)
+      hadamardTensor[row * 16 + column] = {
+          ((std::popcount(row & column) % 2) == 0 ? 0.25 : -0.25), 0.0};
+
+  MklqMetalCircuitSimulatorTester sim;
+  std::vector<std::complex<double>> state(16, {0.0, 0.0});
+  state[0] = {1.0, 0.0};
+  sim.setStateForTest(std::move(state));
+
+  sim.applyGateTaskForTest("dense-h4", hadamardTensor, {}, {0, 1, 2, 3});
+  EXPECT_EQ(sim.residentStateDownloadsForTest(), 0);
+  EXPECT_EQ(sim.metalCpuFallbackApplicationsForTest(), 0);
+  EXPECT_EQ(sim.fourQubitApplicationsForTest(),
+            sim.metalRuntimeAvailableForTest() ? 1 : 0);
+
+  const auto output = sim.stateVectorForTest();
+  ASSERT_EQ(output.size(), 16);
+  for (const auto amplitude : output)
+    expectNear(amplitude, {0.25, 0.0});
+  EXPECT_EQ(sim.residentStateDownloadsForTest(),
+            sim.metalRuntimeAvailableForTest() ? 1 : 0);
+}
+
 CUDAQ_TEST(MKLQMetalTester,
            SimulatorKeepsThreeQubitGateResidentUntilReadback) {
   constexpr double invSqrt2 = 0.70710678118654752440;

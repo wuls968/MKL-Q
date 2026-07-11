@@ -66,6 +66,7 @@ COUNTER_TEST_SUFFIXES = (
     "SimulatorSamplesDeterministicSparseStateWithOneBitStringConversion",
     "SimulatorKeepsFourQubitGateResidentUntilReadback",
     "SimulatorKeepsControlledFourQubitGateResident",
+    "SimulatorAppliesDenseFourQubitGateResident",
     "SimulatorKeepsThreeQubitGateResidentUntilReadback",
     "SimulatorKeepsBuiltInControlledSwapResidentUntilReadback",
     "SimulatorReuploadsResidentStateAfterFiveQubitGateFallback",
