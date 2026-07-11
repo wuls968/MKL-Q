@@ -91,8 +91,9 @@ public healthcheck guard.
 
 The current refresh includes the earlier Metal counter-evidence work:
 resident built-in Rx/Ry/Rz, controlled-Rx/Ry/Rz, phase-family S/T/Sdg/Tdg,
-multi-control single-qubit resident, resident three-target gates, and
-four-or-more-target unsupported gate fallback/reupload fixtures. The
+multi-control single-qubit resident, resident three-target gates, selected
+dense and controlled four-target gates, and five-or-more-target unsupported
+gate fallback/reupload fixtures. The
 2026-07-10 Metal counter refresh adds a builtin controlled-SWAP fixture that
 asserts the resident two-qubit Metal dispatch, one resident upload, no host
 download before explicit state readback, and no CPU fallback for the covered
