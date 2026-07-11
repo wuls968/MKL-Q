@@ -60,6 +60,7 @@ public:
   bool downloadState(std::complex<double> *state, std::size_t stateSize);
   void releaseResidentState();
   bool hasResidentState(std::size_t stateSize) const;
+  bool flushResidentGateCommands();
   bool applyResidentSingleQubitGate(const std::complex<double> *matrix,
                                     const std::size_t *controlQubits,
                                     std::size_t controlCount,
@@ -78,6 +79,9 @@ public:
                                          std::size_t qubitCount,
                                          double *probabilities,
                                          std::size_t probabilityCount);
+  bool computeResidentZParityExpectation(const std::size_t *qubits,
+                                         std::size_t qubitCount,
+                                         double *expectation);
   bool accumulateSampleCounts(const double *probabilities,
                               std::size_t probabilityCount,
                               const double *draws, std::size_t drawCount,

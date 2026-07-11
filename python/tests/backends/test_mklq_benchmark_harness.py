@@ -3378,7 +3378,10 @@ def test_mklq_metal_runtime_counter_probe_tracks_runtime_counter_surface():
         "SimulatorThrowsWhenResidentMeasurementProbabilityFails",
         "SimulatorThrowsWhenResidentMeasurementCollapseFails",
         "SimulatorThrowsWhenResidentResetGateFails",
-        "SimulatorComputesZeroShotExpectationFromResidentProbabilities",
+        "SimulatorComputesZeroShotZParityExpectationFromResidentState",
+        "SimulatorPoisonsResidentStateWhenExpectationFlushFails",
+        "SimulatorFallsBackToCpuWhenResidentExpectationReadFails",
+        "SimulatorReducesLargeNonuniformZeroShotExpectationOnMetalWithoutProbabilityFill",
         "SimulatorSamplesDenseFullRegisterThroughMetalProbabilityFill",
     }
     metadata_only_suffixes = {
@@ -3391,7 +3394,7 @@ def test_mklq_metal_runtime_counter_probe_tracks_runtime_counter_surface():
 
     assert suffixes == expected_suffixes
     assert suffixes.isdisjoint(metadata_only_suffixes)
-    assert len(module.COUNTER_TEST_SUFFIXES) == 51
+    assert len(module.COUNTER_TEST_SUFFIXES) == 54
 
 
 def test_mklq_metal_runtime_counter_probe_builds_bounded_report(monkeypatch,

@@ -468,6 +468,16 @@ protected:
                                                       index);
   }
 
+  virtual bool flushMetalResidentGateCommands() {
+    return metalExecutor.flushResidentGateCommands();
+  }
+
+  virtual bool computeMetalResidentZParityExpectation(
+      const std::size_t *qubits, std::size_t qubitCount, double &expectation) {
+    return metalExecutor.computeResidentZParityExpectation(
+        qubits, qubitCount, &expectation);
+  }
+
   virtual bool fillMetalResidentMarginalProbabilities(
       const std::size_t *qubits, std::size_t qubitCount, double *probabilities,
       std::size_t probabilityCount) {
@@ -1672,15 +1682,23 @@ protected:
 #if defined(MKLQ_ENABLE_METAL_RUNTIME)
     if (metalExecutor.hasResidentState(state.size())) {
       throwIfMetalResidentStatePoisoned("cannot compute expectation from");
-      std::vector<double> probabilities(1ULL << qubits.size(), 0.0);
-      fillMarginalProbabilities(probabilities, qubits);
+      if (!flushMetalResidentGateCommands()) {
+        const auto error = fmt::format(
+            MKLQ_SIMULATOR_DIAGNOSTIC_PREFIX
+            " failed to flush Metal resident gates before computing "
+            "expectation: {}",
+            metalExecutor.lastError());
+        markMetalResidentStatePoisoned(error);
+        throw std::runtime_error(error);
+      }
 
       double expectation = 0.0;
-      for (std::size_t outcome = 0; outcome < probabilities.size(); ++outcome) {
-        const auto evenParity = std::popcount(outcome) % 2 == 0;
-        expectation += (evenParity ? 1.0 : -1.0) * probabilities[outcome];
-      }
-      return expectation;
+      if (computeMetalResidentZParityExpectation(qubits.data(), qubits.size(),
+                                                 expectation))
+        return expectation;
+
+      synchronizeHostStateFromMetal();
+      invalidateMetalResidentState();
     }
 
     if (metalStateHostDirty) {

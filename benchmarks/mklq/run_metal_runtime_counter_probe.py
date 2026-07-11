@@ -76,7 +76,10 @@ COUNTER_TEST_SUFFIXES = (
     "SimulatorThrowsWhenResidentMeasurementProbabilityFails",
     "SimulatorThrowsWhenResidentMeasurementCollapseFails",
     "SimulatorThrowsWhenResidentResetGateFails",
-    "SimulatorComputesZeroShotExpectationFromResidentProbabilities",
+    "SimulatorComputesZeroShotZParityExpectationFromResidentState",
+    "SimulatorPoisonsResidentStateWhenExpectationFlushFails",
+    "SimulatorFallsBackToCpuWhenResidentExpectationReadFails",
+    "SimulatorReducesLargeNonuniformZeroShotExpectationOnMetalWithoutProbabilityFill",
     "SimulatorSamplesDenseFullRegisterThroughMetalProbabilityFill",
 )
 
