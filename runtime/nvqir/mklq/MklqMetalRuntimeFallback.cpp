@@ -102,6 +102,11 @@ bool MetalStateVectorExecutor::fillResidentMarginalProbabilities(
   return false;
 }
 
+bool MetalStateVectorExecutor::fillResidentAtomicMarginalProbabilities(
+    const std::size_t *, std::size_t, double *, std::size_t) {
+  return false;
+}
+
 bool MetalStateVectorExecutor::computeResidentZParityExpectation(
     const std::size_t *, std::size_t, double *) {
   return false;
@@ -157,6 +162,19 @@ MetalStateVectorExecutor::residentProbabilityFillBufferAllocations() const {
 std::size_t MetalStateVectorExecutor::marginalProbabilityApplications() const {
   return 0;
 }
+
+bool MetalStateVectorExecutor::atomicMarginalProbabilityAvailable() const {
+  return false;
+}
+
+std::size_t
+MetalStateVectorExecutor::atomicMarginalProbabilityApplications() const {
+  return 0;
+}
+
+#if defined(MKLQ_ENABLE_TEST_ACCESSORS)
+void MetalStateVectorExecutor::makeAtomicMarginalProbabilityUnavailableForTest() {}
+#endif
 
 std::size_t MetalStateVectorExecutor::measurementProbabilityApplications()
     const {

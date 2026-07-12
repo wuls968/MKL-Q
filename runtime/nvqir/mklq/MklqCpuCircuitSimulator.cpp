@@ -496,6 +496,13 @@ protected:
         qubits, qubitCount, probabilities, probabilityCount);
   }
 
+  virtual bool fillMetalResidentAtomicMarginalProbabilities(
+      const std::size_t *qubits, std::size_t qubitCount, double *probabilities,
+      std::size_t probabilityCount) {
+    return metalExecutor.fillResidentAtomicMarginalProbabilities(
+        qubits, qubitCount, probabilities, probabilityCount);
+  }
+
   bool tryMeasureResidentQubit(std::size_t index, bool &result) {
     if (!metalStateHostDirty || !metalExecutor.hasResidentState(state.size()))
       return false;
@@ -2023,6 +2030,15 @@ protected:
     // on the host is the faster measured path on Apple Silicon.
     return probabilityCount < state.size() / groupCount;
   }
+
+  bool shouldUseMetalResidentAtomicMarginalProbabilities(
+      std::size_t probabilityCount) const {
+    // On the current Apple M5 evidence host, atomic accumulation improves the
+    // q20-q23, 1024+-outcome partial-register route. Larger states or fewer
+    // bins create enough atomic contention to favor the existing full fill.
+    return state.size() >= (1ULL << 20) && state.size() < (1ULL << 24) &&
+           probabilityCount >= (1ULL << 10) && probabilityCount < state.size();
+  }
 #endif
 
   void fillMarginalProbabilities(std::vector<double> &probabilities,
@@ -2061,6 +2077,14 @@ protected:
     if (metalExecutor.hasResidentState(state.size())) {
       throwIfMetalResidentStatePoisoned(
           "cannot fill marginal probabilities from");
+      // The legacy marginal kernel is already the selected small-state route.
+      // Atomic accumulation is limited to the measured q20-q23 sweet spot.
+      if (shouldUseMetalResidentAtomicMarginalProbabilities(
+              probabilities.size()) &&
+          fillMetalResidentAtomicMarginalProbabilities(
+              qubits.data(), qubits.size(), probabilities.data(),
+              probabilities.size()))
+        return;
       if (shouldUseMetalResidentMarginalProbabilities(probabilities.size()) &&
           fillMetalResidentMarginalProbabilities(
               qubits.data(), qubits.size(), probabilities.data(),

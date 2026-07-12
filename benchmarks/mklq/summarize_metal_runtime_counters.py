@@ -31,6 +31,13 @@ CATEGORY_DESCRIPTIONS = {
     "other": "Unclassified runtime counter tests",
 }
 
+EXPLICIT_TEST_CATEGORIES = {
+    "SimulatorUsesAtomicMarginalForLargeUnorderedPartialRegister":
+        "probability_sampling",
+    "SimulatorFallsBackWhenAtomicMarginalPipelineIsDisabled":
+        "fallback_boundary",
+}
+
 CATEGORY_RULES = (
     ("error_boundary", ("Poisons", "Throws", "Fails", "Failure")),
     ("synchronization_boundary", ("Synchronizes", "Synchronization")),
@@ -83,6 +90,8 @@ def test_suffix(test_name: str) -> str:
 
 def categorize_test(test_name: str) -> str:
     suffix = test_suffix(test_name)
+    if suffix in EXPLICIT_TEST_CATEGORIES:
+        return EXPLICIT_TEST_CATEGORIES[suffix]
     for category, tokens in CATEGORY_RULES:
         if any(token in suffix for token in tokens):
             return category
