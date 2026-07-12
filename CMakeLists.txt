@@ -470,6 +470,41 @@ else()
   add_link_options("-Wl,-flat_namespace")
   add_link_options("-Wl,-undefined,dynamic_lookup")
 
+  # A custom LLVM install can report a compiler-rt archive that was not
+  # installed alongside the compiler. Dynamic lookup then defers missing
+  # compiler builtins (for example, __divsc3) until a CUDA-Q plugin is loaded.
+  # Fall back to the active Xcode toolchain's matching macOS runtime so the
+  # resulting dylibs remain loadable on Apple Silicon.
+  execute_process(
+    COMMAND "${CMAKE_CXX_COMPILER}" -print-libgcc-file-name
+    OUTPUT_VARIABLE CUDAQ_APPLE_COMPILER_RT
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET)
+  if(NOT EXISTS "${CUDAQ_APPLE_COMPILER_RT}")
+    execute_process(
+      COMMAND xcrun --toolchain XcodeDefault --find clang
+      OUTPUT_VARIABLE CUDAQ_XCODE_CLANG
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+      ERROR_QUIET)
+    if(CUDAQ_XCODE_CLANG)
+      execute_process(
+        COMMAND "${CUDAQ_XCODE_CLANG}" -print-libgcc-file-name
+        OUTPUT_VARIABLE CUDAQ_APPLE_COMPILER_RT
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET)
+    endif()
+  endif()
+  if(NOT EXISTS "${CUDAQ_APPLE_COMPILER_RT}")
+    message(FATAL_ERROR
+      "Unable to locate a usable macOS compiler runtime for ${CMAKE_CXX_COMPILER}. "
+      "Install compiler-rt with the selected LLVM toolchain or Xcode Command Line Tools.")
+  endif()
+  if(CUDAQ_XCODE_CLANG)
+    message(STATUS "Using Xcode compiler runtime fallback: ${CUDAQ_APPLE_COMPILER_RT}")
+  endif()
+  set(CMAKE_CXX_STANDARD_LIBRARIES
+      "${CMAKE_CXX_STANDARD_LIBRARIES} ${CUDAQ_APPLE_COMPILER_RT}")
+
   if(CMAKE_LINKER MATCHES "/(anaconda|miniconda|conda|mambaforge|micromamba)[^/]*/bin/ld$"
      AND EXISTS "/usr/bin/ld"
      AND NOT LLVM_USE_LINKER)
