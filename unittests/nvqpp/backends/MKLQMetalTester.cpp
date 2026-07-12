@@ -125,6 +125,14 @@ public:
 #endif
   }
 
+  double residentProbabilityFillBufferPreparationSecondsForTest() const {
+#if defined(MKLQ_ENABLE_METAL_RUNTIME)
+    return metalExecutor.residentProbabilityFillBufferPreparationSeconds();
+#else
+    return 0.0;
+#endif
+  }
+
   double residentProbabilityFillHostConversionSecondsForTest() const {
 #if defined(MKLQ_ENABLE_METAL_RUNTIME)
     return metalExecutor.residentProbabilityFillHostConversionSeconds();
@@ -404,6 +412,10 @@ static void recordSamplingPhaseProfile(
   ::testing::Test::RecordProperty(
       "mklq_sampling_phase_profile_host_fold_seconds",
       mklq_test::formatPhaseSeconds(sim.sampleProbabilityHostFoldSecondsForTest()));
+  ::testing::Test::RecordProperty(
+      "mklq_sampling_phase_profile_metal_probability_buffer_preparation_seconds",
+      mklq_test::formatPhaseSeconds(
+          sim.residentProbabilityFillBufferPreparationSecondsForTest()));
   ::testing::Test::RecordProperty(
       "mklq_sampling_phase_profile_metal_probability_dispatch_seconds",
       mklq_test::formatPhaseSeconds(

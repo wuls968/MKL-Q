@@ -698,6 +698,7 @@ struct MetalStateVectorExecutor::Impl {
   std::size_t threeQubitApplications = 0;
   std::size_t fourQubitApplications = 0;
   std::size_t probabilityFillApplications = 0;
+  double residentProbabilityFillBufferPreparationSeconds = 0.0;
   double residentProbabilityFillDispatchSeconds = 0.0;
   double residentProbabilityFillHostConversionSeconds = 0.0;
   std::size_t marginalProbabilityApplications = 0;
@@ -2082,6 +2083,7 @@ bool MetalStateVectorExecutor::fillResidentFullRegisterProbabilities(
   if (!impl->flushResidentGateCommands())
     return false;
 
+  const auto bufferPreparationStart = std::chrono::steady_clock::now();
   std::vector<float> gpuProbabilities(impl->residentStateSize, 0.0f);
 
   @autoreleasepool {
@@ -2096,6 +2098,10 @@ bool MetalStateVectorExecutor::fillResidentFullRegisterProbabilities(
           "failed to allocate Metal resident probability-fill buffer.";
       return false;
     }
+    impl->residentProbabilityFillBufferPreparationSeconds +=
+        std::chrono::duration<double>(std::chrono::steady_clock::now() -
+                                      bufferPreparationStart)
+            .count();
 
     const auto dispatchStart = std::chrono::steady_clock::now();
     id<MTLCommandBuffer> commandBuffer = [impl->commandQueue commandBuffer];
@@ -3027,6 +3033,12 @@ std::size_t MetalStateVectorExecutor::fourQubitGateApplications() const {
 
 std::size_t MetalStateVectorExecutor::probabilityFillApplications() const {
   return impl ? impl->probabilityFillApplications : 0;
+}
+
+double
+MetalStateVectorExecutor::residentProbabilityFillBufferPreparationSeconds()
+    const {
+  return impl ? impl->residentProbabilityFillBufferPreparationSeconds : 0.0;
 }
 
 double MetalStateVectorExecutor::residentProbabilityFillDispatchSeconds() const {
