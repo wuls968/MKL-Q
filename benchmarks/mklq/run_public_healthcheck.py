@@ -127,6 +127,7 @@ BENCHMARK_HELPERS = (
     "benchmarks/mklq/run_cpu_gate_counter_probe.py",
     "benchmarks/mklq/run_cpu_sampling_counter_probe.py",
     "benchmarks/mklq/run_metal_runtime_counter_probe.py",
+    "benchmarks/mklq/run_sampling_phase_profile_probe.py",
     "benchmarks/mklq/run_preflight_audit.py",
     "benchmarks/mklq/run_public_release_checklist_audit.py",
     "benchmarks/mklq/run_source_release_tag_audit.py",
