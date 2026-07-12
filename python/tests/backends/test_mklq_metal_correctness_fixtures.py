@@ -155,7 +155,7 @@ def _controlled_swap_resident_kernel():
     return kernel
 
 
-def _custom_three_target_fallback_reupload_kernel():
+def _custom_three_target_resident_kernel():
     flip_all = np.fliplr(np.eye(8, dtype=np.complex128))
     cudaq.register_operation("mklq_custom_flip_all_3", flip_all)
 
@@ -387,8 +387,8 @@ def test_mklq_metal_controlled_swap_resident_fixture_matches_qpp():
     _assert_metal_matches_qpp(_controlled_swap_resident_kernel())
 
 
-def test_mklq_metal_custom_three_target_fallback_reupload_matches_qpp():
-    _assert_metal_matches_qpp(_custom_three_target_fallback_reupload_kernel())
+def test_mklq_metal_custom_three_target_resident_fixture_matches_qpp():
+    _assert_metal_matches_qpp(_custom_three_target_resident_kernel())
 
 
 def test_mklq_metal_custom_four_target_resident_fixture_matches_qpp():
