@@ -242,6 +242,7 @@ protected:
   mutable std::size_t sequentialSampleDrawBatches = 0;
   mutable std::size_t sampleExpectationReductions = 0;
   mutable double sampleProbabilityFillSeconds = 0.0;
+  mutable double sampleProbabilityHostFoldSeconds = 0.0;
   mutable double sampleDrawAndCountSeconds = 0.0;
   mutable double sampleExpectationReductionSeconds = 0.0;
   mutable std::size_t metalCpuFallbackApplications = 0;
@@ -2031,6 +2032,20 @@ protected:
     auto foldFullRegisterProbabilities =
         [&](const std::vector<double> &fullRegisterProbabilities) {
           std::fill(probabilities.begin(), probabilities.end(), 0.0);
+          const auto measuresLowBits = [&] {
+            for (std::size_t bit = 0; bit < qubits.size(); ++bit)
+              if (qubits[bit] != bit)
+                return false;
+            return true;
+          }();
+          if (measuresLowBits) {
+            const auto outcomeMask = probabilities.size() - 1;
+            for (std::size_t basis = 0;
+                 basis < fullRegisterProbabilities.size(); ++basis)
+              probabilities[basis & outcomeMask] +=
+                  fullRegisterProbabilities[basis];
+            return;
+          }
           for (std::size_t basis = 0; basis < fullRegisterProbabilities.size();
                ++basis) {
             std::size_t outcome = 0;
@@ -2053,6 +2068,9 @@ protected:
 
       std::vector<double> fullRegisterProbabilities(state.size(), 0.0);
       fillFullRegisterProbabilities(fullRegisterProbabilities);
+#if defined(MKLQ_ENABLE_TEST_ACCESSORS)
+      ScopedTestTimer hostFoldTimer(sampleProbabilityHostFoldSeconds);
+#endif
       foldFullRegisterProbabilities(fullRegisterProbabilities);
       return;
     }

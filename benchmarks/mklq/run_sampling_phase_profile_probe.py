@@ -61,6 +61,13 @@ OPTIONAL_PROPERTY_NAMES = {
     "metal_generated_count_accumulations":
         "mklq_sampling_phase_profile_metal_generated_count_accumulations",
 }
+OPTIONAL_PHASE_PROPERTY_NAMES = {
+    "host_fold_seconds": "mklq_sampling_phase_profile_host_fold_seconds",
+    "metal_probability_dispatch_seconds":
+        "mklq_sampling_phase_profile_metal_probability_dispatch_seconds",
+    "metal_probability_host_conversion_seconds":
+        "mklq_sampling_phase_profile_metal_probability_host_conversion_seconds",
+}
 
 
 def repo_root() -> Path:
@@ -142,6 +149,19 @@ def parse_nonnegative_int(properties: dict[str, str], name: str) -> int:
     return parsed
 
 
+def parse_nonnegative_float(properties: dict[str, str], name: str) -> float:
+    value = properties.get(name)
+    if value is None:
+        raise ValueError(f"missing gtest property {name}")
+    try:
+        parsed = float(value)
+    except ValueError as error:
+        raise ValueError(f"invalid gtest property {name}={value!r}") from error
+    if not math.isfinite(parsed) or parsed < 0.0:
+        raise ValueError(f"gtest property {name} is not a duration")
+    return parsed
+
+
 def parse_profile_xml(path: Path, target: str) -> dict[str, Any]:
     try:
         root = element_tree.parse(path).getroot()
@@ -180,6 +200,13 @@ def parse_profile_xml(path: Path, target: str) -> dict[str, Any]:
     for key, name in OPTIONAL_PROPERTY_NAMES.items():
         if name in properties:
             result[key] = parse_nonnegative_int(properties, name)
+    subphase_seconds = {
+        key: parse_nonnegative_float(properties, name)
+        for key, name in OPTIONAL_PHASE_PROPERTY_NAMES.items()
+        if name in properties
+    }
+    if subphase_seconds:
+        result["subphase_seconds"] = subphase_seconds
     return result
 
 
