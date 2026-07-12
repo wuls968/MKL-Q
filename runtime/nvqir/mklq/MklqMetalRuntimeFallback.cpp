@@ -149,6 +149,11 @@ std::size_t MetalStateVectorExecutor::probabilityFillApplications() const {
   return 0;
 }
 
+std::size_t
+MetalStateVectorExecutor::residentProbabilityFillBufferAllocations() const {
+  return 0;
+}
+
 std::size_t MetalStateVectorExecutor::marginalProbabilityApplications() const {
   return 0;
 }
