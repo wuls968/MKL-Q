@@ -63,8 +63,12 @@ OPTIONAL_PROPERTY_NAMES = {
 }
 OPTIONAL_PHASE_PROPERTY_NAMES = {
     "host_fold_seconds": "mklq_sampling_phase_profile_host_fold_seconds",
+    "full_register_probability_buffer_preparation_seconds":
+        "mklq_sampling_phase_profile_full_register_probability_buffer_preparation_seconds",
     "metal_probability_buffer_preparation_seconds":
         "mklq_sampling_phase_profile_metal_probability_buffer_preparation_seconds",
+    "metal_probability_gate_flush_seconds":
+        "mklq_sampling_phase_profile_metal_probability_gate_flush_seconds",
     "metal_probability_dispatch_seconds":
         "mklq_sampling_phase_profile_metal_probability_dispatch_seconds",
     "metal_probability_host_conversion_seconds":

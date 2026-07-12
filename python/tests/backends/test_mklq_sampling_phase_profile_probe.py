@@ -34,7 +34,9 @@ def _profile_xml(module, target="mklq-metal", skipped=False):
         "mklq_sampling_phase_profile_draw_and_count_seconds": "0.0008",
         "mklq_sampling_phase_profile_expectation_reduction_seconds": "0.0001",
         "mklq_sampling_phase_profile_host_fold_seconds": "0.0005",
+        "mklq_sampling_phase_profile_full_register_probability_buffer_preparation_seconds": "0.0011",
         "mklq_sampling_phase_profile_metal_probability_buffer_preparation_seconds": "0.0007",
+        "mklq_sampling_phase_profile_metal_probability_gate_flush_seconds": "0.0003",
         "mklq_sampling_phase_profile_metal_probability_dispatch_seconds": "0.002",
         "mklq_sampling_phase_profile_metal_probability_host_conversion_seconds": "0.001",
         "mklq_sampling_phase_profile_metal_probability_fill_applications": "1",
@@ -63,7 +65,10 @@ def test_parse_profile_xml_reads_native_phase_properties(tmp_path):
     assert profile["phase_seconds"]["probability_fill_seconds"] == 0.0042
     assert profile["subphase_seconds"]["host_fold_seconds"] == 0.0005
     assert profile["subphase_seconds"][
+        "full_register_probability_buffer_preparation_seconds"] == 0.0011
+    assert profile["subphase_seconds"][
         "metal_probability_buffer_preparation_seconds"] == 0.0007
+    assert profile["subphase_seconds"]["metal_probability_gate_flush_seconds"] == 0.0003
     assert profile["subphase_seconds"][
         "metal_probability_dispatch_seconds"] == 0.002
     assert profile["metal_probability_fill_applications"] == 1
