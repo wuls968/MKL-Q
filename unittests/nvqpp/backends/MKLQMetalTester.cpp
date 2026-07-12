@@ -133,6 +133,14 @@ public:
 #endif
   }
 
+  double residentProbabilityFillGateFlushSecondsForTest() const {
+#if defined(MKLQ_ENABLE_METAL_RUNTIME)
+    return metalExecutor.residentProbabilityFillGateFlushSeconds();
+#else
+    return 0.0;
+#endif
+  }
+
   double residentProbabilityFillHostConversionSecondsForTest() const {
 #if defined(MKLQ_ENABLE_METAL_RUNTIME)
     return metalExecutor.residentProbabilityFillHostConversionSeconds();
@@ -302,6 +310,10 @@ public:
     return sampleProbabilityHostFoldSeconds;
   }
 
+  double sampleFullRegisterProbabilityBufferPreparationSecondsForTest() const {
+    return sampleFullRegisterProbabilityBufferPreparationSeconds;
+  }
+
   double sampleDrawAndCountSecondsForTest() const {
     return sampleDrawAndCountSeconds;
   }
@@ -413,9 +425,17 @@ static void recordSamplingPhaseProfile(
       "mklq_sampling_phase_profile_host_fold_seconds",
       mklq_test::formatPhaseSeconds(sim.sampleProbabilityHostFoldSecondsForTest()));
   ::testing::Test::RecordProperty(
+      "mklq_sampling_phase_profile_full_register_probability_buffer_preparation_seconds",
+      mklq_test::formatPhaseSeconds(
+          sim.sampleFullRegisterProbabilityBufferPreparationSecondsForTest()));
+  ::testing::Test::RecordProperty(
       "mklq_sampling_phase_profile_metal_probability_buffer_preparation_seconds",
       mklq_test::formatPhaseSeconds(
           sim.residentProbabilityFillBufferPreparationSecondsForTest()));
+  ::testing::Test::RecordProperty(
+      "mklq_sampling_phase_profile_metal_probability_gate_flush_seconds",
+      mklq_test::formatPhaseSeconds(
+          sim.residentProbabilityFillGateFlushSecondsForTest()));
   ::testing::Test::RecordProperty(
       "mklq_sampling_phase_profile_metal_probability_dispatch_seconds",
       mklq_test::formatPhaseSeconds(
@@ -1844,6 +1864,8 @@ CUDAQ_TEST(MKLQMetalTester,
     totalShots += count;
   EXPECT_EQ(totalShots, static_cast<std::size_t>(config->shots));
   EXPECT_GT(sim.sampleProbabilityFillSecondsForTest(), 0.0);
+  EXPECT_GT(sim.sampleFullRegisterProbabilityBufferPreparationSecondsForTest(),
+            0.0);
   EXPECT_GT(sim.sampleDrawAndCountSecondsForTest(), 0.0);
   EXPECT_GT(sim.sampleExpectationReductionSecondsForTest(), 0.0);
   EXPECT_EQ(sim.probabilityFillApplicationsForTest() +

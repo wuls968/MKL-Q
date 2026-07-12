@@ -243,6 +243,7 @@ protected:
   mutable std::size_t sampleExpectationReductions = 0;
   mutable double sampleProbabilityFillSeconds = 0.0;
   mutable double sampleProbabilityHostFoldSeconds = 0.0;
+  mutable double sampleFullRegisterProbabilityBufferPreparationSeconds = 0.0;
   mutable double sampleDrawAndCountSeconds = 0.0;
   mutable double sampleExpectationReductionSeconds = 0.0;
   mutable std::size_t metalCpuFallbackApplications = 0;
@@ -2066,7 +2067,17 @@ protected:
               probabilities.size()))
         return;
 
+#if defined(MKLQ_ENABLE_TEST_ACCESSORS)
+      const auto fullRegisterProbabilityBufferPreparationStart =
+          std::chrono::steady_clock::now();
+#endif
       std::vector<double> fullRegisterProbabilities(state.size(), 0.0);
+#if defined(MKLQ_ENABLE_TEST_ACCESSORS)
+      sampleFullRegisterProbabilityBufferPreparationSeconds +=
+          std::chrono::duration<double>(std::chrono::steady_clock::now() -
+                                        fullRegisterProbabilityBufferPreparationStart)
+              .count();
+#endif
       fillFullRegisterProbabilities(fullRegisterProbabilities);
 #if defined(MKLQ_ENABLE_TEST_ACCESSORS)
       ScopedTestTimer hostFoldTimer(sampleProbabilityHostFoldSeconds);

@@ -108,6 +108,7 @@ public:
   std::size_t fourQubitGateApplications() const;
   std::size_t probabilityFillApplications() const;
   double residentProbabilityFillBufferPreparationSeconds() const;
+  double residentProbabilityFillGateFlushSeconds() const;
   double residentProbabilityFillDispatchSeconds() const;
   double residentProbabilityFillHostConversionSeconds() const;
   std::size_t marginalProbabilityApplications() const;

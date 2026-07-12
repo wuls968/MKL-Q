@@ -699,6 +699,7 @@ struct MetalStateVectorExecutor::Impl {
   std::size_t fourQubitApplications = 0;
   std::size_t probabilityFillApplications = 0;
   double residentProbabilityFillBufferPreparationSeconds = 0.0;
+  double residentProbabilityFillGateFlushSeconds = 0.0;
   double residentProbabilityFillDispatchSeconds = 0.0;
   double residentProbabilityFillHostConversionSeconds = 0.0;
   std::size_t marginalProbabilityApplications = 0;
@@ -1134,8 +1135,13 @@ bool MetalStateVectorExecutor::uploadState(const std::complex<double> *state,
     impl->error = "invalid Metal resident state upload input.";
     return false;
   }
+  const auto gateFlushStart = std::chrono::steady_clock::now();
   if (!impl->flushResidentGateCommands())
     return false;
+  impl->residentProbabilityFillGateFlushSeconds +=
+      std::chrono::duration<double>(std::chrono::steady_clock::now() -
+                                    gateFlushStart)
+          .count();
 
   std::vector<MetalComplexFloat> gpuState(stateSize);
   for (std::size_t index = 0; index < stateSize; ++index)
@@ -3039,6 +3045,11 @@ double
 MetalStateVectorExecutor::residentProbabilityFillBufferPreparationSeconds()
     const {
   return impl ? impl->residentProbabilityFillBufferPreparationSeconds : 0.0;
+}
+
+double MetalStateVectorExecutor::residentProbabilityFillGateFlushSeconds()
+    const {
+  return impl ? impl->residentProbabilityFillGateFlushSeconds : 0.0;
 }
 
 double MetalStateVectorExecutor::residentProbabilityFillDispatchSeconds() const {
