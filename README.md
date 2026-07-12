@@ -27,6 +27,10 @@ MKL-Q is intended to be built from source on Apple Silicon macOS. The default
 development install prefix is `${HOME}/.cudaq-mklq`; override it through CMake
 if you need a different prefix.
 
+Install Xcode Command Line Tools before configuring (`xcode-select --install`).
+MKL-Q uses the selected compiler runtime when it is complete and falls back to
+the active Xcode runtime when a custom LLVM install omits compiler-rt.
+
 ```bash
 git clone --recursive https://github.com/wuls968/MKL-Q.git
 cd MKL-Q

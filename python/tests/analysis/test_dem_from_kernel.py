@@ -189,7 +189,14 @@ def test_emulate_target_independent():
     Sets a hardware emulate target, then verifies a simple kernel still
     produces a DEM with the expected detector and observable references.
     """
-    cudaq.set_target("ionq", emulate=True)
+    available_targets = {target.name for target in cudaq.get_targets()}
+    emulate_target = next(
+        (target for target in ("ionq", "quantinuum")
+         if target in available_targets), None)
+    if emulate_target is None:
+        pytest.skip("requires an installed hardware emulation target")
+
+    cudaq.set_target(emulate_target, emulate=True)
     try:
 
         @cudaq.kernel
@@ -205,6 +212,9 @@ def test_emulate_target_independent():
             "detectors": 1,
             "observables": 1
         }
+
+        counts = cudaq.sample(kernel, shots_count=10)
+        assert counts["0"] == 10
 
         @cudaq.kernel
         def hyperedge_kernel():
