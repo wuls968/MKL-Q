@@ -925,6 +925,124 @@ CUDAQ_TEST(MKLQMetalTester,
   EXPECT_EQ(executor.probabilityFillApplications(), 1);
 }
 
+CUDAQ_TEST(MKLQMetalTester,
+           MetalRuntimeReusesResidentProbabilityScratchBuffer) {
+  nvqir::mklq::MetalStateVectorExecutor executor;
+
+  if (!expectMetalRuntimeReadyOrUnavailable(executor))
+    return;
+
+  constexpr double invSqrt2 = 0.70710678118654752440;
+  std::vector<std::complex<double>> state{{invSqrt2, 0.0},
+                                          {0.0, 0.0},
+                                          {0.0, 0.0},
+                                          {invSqrt2, 0.0}};
+  std::vector<double> probabilities(state.size(), 0.0);
+
+  ASSERT_TRUE(executor.uploadState(state.data(), state.size()))
+      << executor.lastError();
+  ASSERT_TRUE(executor.fillResidentFullRegisterProbabilities(
+      probabilities.data(), probabilities.size()))
+      << executor.lastError();
+  ASSERT_TRUE(executor.fillResidentFullRegisterProbabilities(
+      probabilities.data(), probabilities.size()))
+      << executor.lastError();
+
+  EXPECT_NEAR(probabilities[0], 0.5, 1.0e-6);
+  EXPECT_NEAR(probabilities[3], 0.5, 1.0e-6);
+  EXPECT_EQ(executor.probabilityFillApplications(), 2);
+  EXPECT_EQ(executor.residentProbabilityFillBufferAllocations(), 1);
+}
+
+CUDAQ_TEST(MKLQMetalTester,
+           MetalRuntimeReleasesProbabilityScratchWithResidentState) {
+  nvqir::mklq::MetalStateVectorExecutor executor;
+
+  if (!expectMetalRuntimeReadyOrUnavailable(executor))
+    return;
+
+  constexpr double invSqrt2 = 0.70710678118654752440;
+  std::vector<std::complex<double>> state{{invSqrt2, 0.0},
+                                          {0.0, 0.0},
+                                          {0.0, 0.0},
+                                          {invSqrt2, 0.0}};
+  std::vector<double> probabilities(state.size(), 0.0);
+
+  ASSERT_TRUE(executor.uploadState(state.data(), state.size()))
+      << executor.lastError();
+  ASSERT_TRUE(executor.fillResidentFullRegisterProbabilities(
+      probabilities.data(), probabilities.size()))
+      << executor.lastError();
+  executor.releaseResidentState();
+
+  ASSERT_TRUE(executor.uploadState(state.data(), state.size()))
+      << executor.lastError();
+  ASSERT_TRUE(executor.fillResidentFullRegisterProbabilities(
+      probabilities.data(), probabilities.size()))
+      << executor.lastError();
+
+  EXPECT_EQ(executor.residentProbabilityFillBufferAllocations(), 2);
+}
+
+CUDAQ_TEST(MKLQMetalTester,
+           MetalRuntimeReleasesOversizedProbabilityScratchOnStateReplacement) {
+  nvqir::mklq::MetalStateVectorExecutor executor;
+
+  if (!expectMetalRuntimeReadyOrUnavailable(executor))
+    return;
+
+  std::vector<std::complex<double>> largeState(8, {0.0, 0.0});
+  largeState[0] = {1.0, 0.0};
+  std::vector<double> largeProbabilities(largeState.size(), 0.0);
+  ASSERT_TRUE(executor.uploadState(largeState.data(), largeState.size()))
+      << executor.lastError();
+  ASSERT_TRUE(executor.fillResidentFullRegisterProbabilities(
+      largeProbabilities.data(), largeProbabilities.size()))
+      << executor.lastError();
+
+  std::vector<std::complex<double>> smallState(4, {0.0, 0.0});
+  smallState[3] = {1.0, 0.0};
+  std::vector<double> smallProbabilities(smallState.size(), 0.0);
+  ASSERT_TRUE(executor.uploadState(smallState.data(), smallState.size()))
+      << executor.lastError();
+  ASSERT_TRUE(executor.fillResidentFullRegisterProbabilities(
+      smallProbabilities.data(), smallProbabilities.size()))
+      << executor.lastError();
+
+  EXPECT_NEAR(smallProbabilities[3], 1.0, 1.0e-6);
+  EXPECT_EQ(executor.residentProbabilityFillBufferAllocations(), 2);
+}
+
+CUDAQ_TEST(MKLQMetalTester,
+           MetalRuntimeReusesProbabilityScratchAfterResidentGate) {
+  nvqir::mklq::MetalStateVectorExecutor executor;
+
+  if (!expectMetalRuntimeReadyOrUnavailable(executor))
+    return;
+
+  const std::array<std::complex<double>, 4> xGate{
+      std::complex<double>{0.0, 0.0}, std::complex<double>{1.0, 0.0},
+      std::complex<double>{1.0, 0.0}, std::complex<double>{0.0, 0.0}};
+  std::vector<std::complex<double>> state{{1.0, 0.0}, {0.0, 0.0}};
+  std::vector<double> probabilities(state.size(), 0.0);
+
+  ASSERT_TRUE(executor.uploadState(state.data(), state.size()))
+      << executor.lastError();
+  ASSERT_TRUE(executor.fillResidentFullRegisterProbabilities(
+      probabilities.data(), probabilities.size()))
+      << executor.lastError();
+  ASSERT_TRUE(executor.applyResidentSingleQubitGate(xGate.data(), nullptr, 0,
+                                                    0))
+      << executor.lastError();
+  ASSERT_TRUE(executor.fillResidentFullRegisterProbabilities(
+      probabilities.data(), probabilities.size()))
+      << executor.lastError();
+
+  EXPECT_NEAR(probabilities[0], 0.0, 1.0e-6);
+  EXPECT_NEAR(probabilities[1], 1.0, 1.0e-6);
+  EXPECT_EQ(executor.residentProbabilityFillBufferAllocations(), 1);
+}
+
 CUDAQ_TEST(MKLQMetalTester, MetalRuntimeAccumulatesSampleCounts) {
   nvqir::mklq::MetalStateVectorExecutor executor;
 
