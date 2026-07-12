@@ -84,6 +84,12 @@ jobs:
           cd "${workspace}"
           git config --local gc.auto 0
           git config --local advice.detachedHead false
+          checkout_ref="${GITHUB_REF_NAME:?}"
+          if ! git check-ref-format --branch "${checkout_ref}" >/dev/null; then
+            echo "::error::GitHub dispatch ref is not a valid branch name." >&2
+            exit 1
+          fi
+          echo "MKLQ_CHECKOUT_REF=${checkout_ref}" >> "${GITHUB_ENV}"
           cache_root="${RUNNER_TOOL_CACHE:-${RUNNER_TEMP:?}}/mklq-git-cache"
           origin_object_cache="${cache_root}/mklq-origin.git"
           if [ -d "${origin_object_cache}/objects" ] && \
@@ -117,13 +123,13 @@ jobs:
             tpls \
             unittests \
             utils
-          retry_git "origin main sparse fetch" \
+          retry_git "origin ${checkout_ref} sparse fetch" \
             git -c http.version=HTTP/1.1 -c protocol.version=2 fetch \
             --no-tags --filter=blob:none --depth=1 \
-            origin +refs/heads/main:refs/remotes/origin/main
-          retry_git "origin main sparse checkout" \
+            origin "+refs/heads/${checkout_ref}:refs/remotes/origin/${checkout_ref}"
+          retry_git "origin ${checkout_ref} sparse checkout" \
             git -c http.version=HTTP/1.1 -c protocol.version=2 checkout \
-            --force -B main origin/main
+            --force -B "${checkout_ref}" "origin/${checkout_ref}"
 
       - name: Select Python and install prefix
         shell: bash
@@ -170,16 +176,25 @@ jobs:
           git remote set-url origin https://github.com/wuls968/MKL-Q.git
           git remote remove upstream 2>/dev/null || true
           git remote add upstream https://github.com/NVIDIA/cuda-quantum.git
+          checkout_ref="${MKLQ_CHECKOUT_REF:?}"
+          git check-ref-format --branch "${checkout_ref}" >/dev/null
+          main_refspec="+refs/heads/main:refs/remotes/origin/main"
+          checkout_refspec="+refs/heads/${checkout_ref}:refs/remotes/origin/${checkout_ref}"
+          if [ "${checkout_ref}" = "main" ]; then
+            origin_refspecs=("${main_refspec}")
+          else
+            origin_refspecs=("${main_refspec}" "${checkout_refspec}")
+          fi
           if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then
-            retry_git "origin main unshallow" \
+            retry_git "origin main and ${checkout_ref} unshallow" \
               git -c http.version=HTTP/1.1 -c protocol.version=2 fetch \
               --no-tags --filter=blob:none --unshallow \
-              origin +refs/heads/main:refs/remotes/origin/main
+              origin "${origin_refspecs[@]}"
           else
-            retry_git "origin main fetch" \
+            retry_git "origin main and ${checkout_ref} fetch" \
               git -c http.version=HTTP/1.1 -c protocol.version=2 fetch \
               --no-tags --filter=blob:none \
-              origin +refs/heads/main:refs/remotes/origin/main
+              origin "${origin_refspecs[@]}"
           fi
           retry_git "upstream main fetch" \
             git -c http.version=HTTP/1.1 -c protocol.version=2 fetch \
@@ -213,6 +228,9 @@ jobs:
           set -euo pipefail
           git status --short --branch
           test "$(git rev-parse --is-shallow-repository)" = "false"
+          test "$(git rev-parse HEAD)" = \
+            "$(git rev-parse "origin/${MKLQ_CHECKOUT_REF}")"
+          echo "Validated manual workflow source ref ${MKLQ_CHECKOUT_REF}."
           git ls-files .github/workflows | sort
 
       - name: Bootstrap source submodules

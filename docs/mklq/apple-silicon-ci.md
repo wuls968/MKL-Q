@@ -67,12 +67,14 @@ permissions: contents: read
 It also sets explicit `timeout-minutes` and `concurrency` values so a stuck
 build cannot consume the runner indefinitely and superseded runs cancel cleanly.
 The source checkout uses a checkout timeout and a manual sparse checkout instead
-of `actions/checkout`: workspace cleanup is limited to `${GITHUB_WORKSPACE}`,
-then the job runs `git init`, configures `git sparse-checkout set` for the
-build, MKL-Q docs, benchmark harness, `docs/sphinx/examples/mklq`, and
-`docs/sphinx/targets`, then fetches `origin/main` with
-`http.version=HTTP/1.1`, `--depth=1`, and `--filter=blob:none` using the explicit
-`+refs/heads/main:refs/remotes/origin/main` refspec.
+of `actions/checkout`: workspace cleanup is limited to `${GITHUB_WORKSPACE}`.
+For a manual run, it validates the current workflow_dispatch ref from
+`GITHUB_REF_NAME` with `git check-ref-format --branch`, stores it as
+`MKLQ_CHECKOUT_REF`, and checks out that branch with a read-only explicit
+origin refspec. This lets a maintainer manually validate a PR branch without
+adding an automatic `pull_request` trigger. The job then configures
+`git sparse-checkout set` for the build, MKL-Q docs, benchmark harness,
+`docs/sphinx/examples/mklq`, and `docs/sphinx/targets`.
 When available, a runner-owned Git object cache at
 `${RUNNER_TOOL_CACHE}/mklq-git-cache/mklq-origin.git` is attached through
 `.git/objects/info/alternates` before the first fetch. When its local `main`
@@ -85,8 +87,10 @@ If cache ref/object verification or local attachment fails, the job removes the
 attempted local cache state and fetches normally from the remote.
 The later remote-normalization step restores full-history evidence with retried
 fetch commands using `http.version=HTTP/1.1`, `--unshallow`, and
-`--filter=blob:none` with explicit `origin/main` and `upstream/main` refspecs
-before the public healthcheck verifies that the checkout is no longer shallow.
+`--filter=blob:none` for both `origin/main` and the checked-out dispatch ref,
+plus the explicit `upstream/main` refspec. Before the public healthcheck, it
+verifies that `HEAD` still equals `origin/${MKLQ_CHECKOUT_REF}` and that the
+checkout is no longer shallow.
 Submodules are bootstrapped later by the reviewed retrying step.
 For non-dispatch runs on `main`, only a small unconditional `Dispatch guard`
 job runs on `ubuntu-latest`; the self-hosted Apple Silicon job still requires
@@ -153,6 +157,9 @@ else
 fi
 git remote add origin https://github.com/wuls968/MKL-Q.git
 git remote add upstream https://github.com/NVIDIA/cuda-quantum.git
+checkout_ref="${GITHUB_REF_NAME:?}"
+git check-ref-format --branch "${checkout_ref}"
+export MKLQ_CHECKOUT_REF="${checkout_ref}"
 git sparse-checkout init --cone
 git sparse-checkout set \
   .github \
@@ -169,27 +176,34 @@ git sparse-checkout set \
   tpls \
   unittests \
   utils
-retry_git "origin main sparse fetch" \
+retry_git "origin ${checkout_ref} sparse fetch" \
   git -c http.version=HTTP/1.1 -c protocol.version=2 fetch \
   --no-tags --filter=blob:none --depth=1 \
-  origin +refs/heads/main:refs/remotes/origin/main
-retry_git "origin main sparse checkout" \
+  origin "+refs/heads/${checkout_ref}:refs/remotes/origin/${checkout_ref}"
+retry_git "origin ${checkout_ref} sparse checkout" \
   git -c http.version=HTTP/1.1 -c protocol.version=2 checkout \
-  --force -B main origin/main
+  --force -B "${checkout_ref}" "origin/${checkout_ref}"
 
 git remote set-url origin https://github.com/wuls968/MKL-Q.git
 git remote remove upstream 2>/dev/null || true
 git remote add upstream https://github.com/NVIDIA/cuda-quantum.git
+main_refspec="+refs/heads/main:refs/remotes/origin/main"
+checkout_refspec="+refs/heads/${checkout_ref}:refs/remotes/origin/${checkout_ref}"
+if [ "${checkout_ref}" = "main" ]; then
+  origin_refspecs=("${main_refspec}")
+else
+  origin_refspecs=("${main_refspec}" "${checkout_refspec}")
+fi
 if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then
-  retry_git "origin main unshallow" \
+  retry_git "origin main and ${checkout_ref} unshallow" \
     git -c http.version=HTTP/1.1 -c protocol.version=2 fetch \
     --no-tags --filter=blob:none --unshallow \
-    origin +refs/heads/main:refs/remotes/origin/main
+    origin "${origin_refspecs[@]}"
 else
-  retry_git "origin main fetch" \
+  retry_git "origin main and ${checkout_ref} fetch" \
     git -c http.version=HTTP/1.1 -c protocol.version=2 fetch \
     --no-tags --filter=blob:none \
-    origin +refs/heads/main:refs/remotes/origin/main
+    origin "${origin_refspecs[@]}"
 fi
 retry_git "upstream main fetch" \
   git -c http.version=HTTP/1.1 -c protocol.version=2 fetch \
@@ -239,11 +253,13 @@ cmake -S . -B build-python -G Ninja \
 ```
 
 The tracked workflow invokes the same gate after preparing a manual sparse
-checkout with an explicit checkout timeout, selecting the effective Python,
-optionally attaching a runner-owned Git object cache from `RUNNER_TOOL_CACHE`,
-normalizing `origin` and `upstream`, unshallowing `origin/main` with
-`filter=blob:none`, `http.version=HTTP/1.1`, and an explicit main refspec,
-fetching `upstream/main` with an explicit main refspec,
+checkout with an explicit checkout timeout, validating the current
+`workflow_dispatch` branch from `GITHUB_REF_NAME`, selecting the effective
+Python, optionally attaching a runner-owned Git object cache from
+`RUNNER_TOOL_CACHE`, normalizing `origin` and `upstream`, unshallowing both
+`origin/main` and `MKLQ_CHECKOUT_REF` with `filter=blob:none`,
+`http.version=HTTP/1.1`, and explicit origin refspecs, fetching `upstream/main`
+with an explicit main refspec,
 bootstrapping the non-LLVM source submodules with shallow fetches, retrying
 transient submodule network failures up to three times, clearing the persistent
 runner build/install directories, and configuring a fresh `build-python` tree
@@ -342,4 +358,6 @@ tracked audit script `benchmarks/mklq/run_self_hosted_ci_audit.py` checks this
 document and confirms the Apple Silicon workflow remains read-only,
 source-only, free of pull-request triggers, and limited to the reviewed
 main-branch broad push `Dispatch guard` path while the full self-hosted job
-stays manual until a future activation PR changes the policy.
+stays manual until a future activation PR changes the policy. Manual runs may
+select a reviewed repository branch, including a PR branch, but retain no
+secrets, read-only permissions, and no automatic pull-request trigger.
