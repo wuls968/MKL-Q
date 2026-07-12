@@ -66,6 +66,13 @@ public:
     return probabilities;
   }
 
+  std::vector<double> marginalProbabilitiesForTest(
+      const std::vector<std::size_t> &qubits) {
+    std::vector<double> probabilities(1ULL << qubits.size(), 0.0);
+    fillMarginalProbabilities(probabilities, qubits);
+    return probabilities;
+  }
+
   cudaq::ExecutionResult sampleQubitsForTest(
       const std::vector<std::size_t> &qubits, int shots) {
     return sample(qubits, shots);
@@ -202,6 +209,28 @@ public:
     return metalExecutor.marginalProbabilityApplications();
 #else
     return 0;
+#endif
+  }
+
+  bool atomicMarginalProbabilityAvailableForTest() const {
+#if defined(MKLQ_ENABLE_METAL_RUNTIME)
+    return metalExecutor.atomicMarginalProbabilityAvailable();
+#else
+    return false;
+#endif
+  }
+
+  std::size_t atomicMarginalProbabilityApplicationsForTest() const {
+#if defined(MKLQ_ENABLE_METAL_RUNTIME)
+    return metalExecutor.atomicMarginalProbabilityApplications();
+#else
+    return 0;
+#endif
+  }
+
+  void makeAtomicMarginalProbabilityUnavailableForTest() {
+#if defined(MKLQ_ENABLE_METAL_RUNTIME)
+    metalExecutor.makeAtomicMarginalProbabilityUnavailableForTest();
 #endif
   }
 
@@ -458,6 +487,9 @@ static void recordSamplingPhaseProfile(
       "mklq_sampling_phase_profile_metal_marginal_probability_applications",
       std::to_string(sim.marginalProbabilityApplicationsForTest()));
   ::testing::Test::RecordProperty(
+      "mklq_sampling_phase_profile_metal_atomic_marginal_probability_applications",
+      std::to_string(sim.atomicMarginalProbabilityApplicationsForTest()));
+  ::testing::Test::RecordProperty(
       "mklq_sampling_phase_profile_metal_generated_count_accumulations",
       std::to_string(sim.generatedSampleCountAccumulationsForTest()));
 }
@@ -489,6 +521,20 @@ double zParityExpectationCpuOracle(
     expectation += sign * std::norm(state[basis]);
   }
   return expectation;
+}
+
+std::vector<double> marginalProbabilityCpuOracle(
+    const std::vector<std::complex<double>> &state,
+    const std::vector<std::size_t> &qubits) {
+  std::vector<double> probabilities(1ULL << qubits.size(), 0.0);
+  for (std::size_t basis = 0; basis < state.size(); ++basis) {
+    std::size_t outcome = 0;
+    for (std::size_t bit = 0; bit < qubits.size(); ++bit)
+      if ((basis & (1ULL << qubits[bit])) != 0)
+        outcome |= 1ULL << bit;
+    probabilities[outcome] += std::norm(state[basis]);
+  }
+  return probabilities;
 }
 
 bool controlsSatisfiedForBasis(std::size_t basis,
@@ -1669,6 +1715,124 @@ CUDAQ_TEST(MKLQMetalTester,
 }
 
 CUDAQ_TEST(MKLQMetalTester,
+           SimulatorUsesAtomicMarginalForLargeUnorderedPartialRegister) {
+  constexpr std::size_t qubitCount = 20;
+  constexpr std::size_t dimension = 1ULL << qubitCount;
+  const std::vector<std::size_t> measuredQubits{17, 3, 11, 1, 0, 2,
+                                                4,  5, 6,  7, 8, 9};
+  const std::vector<std::complex<double>> zGate{{1.0, 0.0}, {0.0, 0.0},
+                                                {0.0, 0.0}, {-1.0, 0.0}};
+
+  std::vector<double> outcomeWeights(1ULL << measuredQubits.size(), 0.0);
+  double totalWeight = 0.0;
+  for (std::size_t outcome = 0; outcome < outcomeWeights.size(); ++outcome) {
+    outcomeWeights[outcome] = 1.0 + static_cast<double>(outcome % 17);
+    totalWeight += outcomeWeights[outcome];
+  }
+
+  const std::size_t amplitudesPerOutcome =
+      dimension / (1ULL << measuredQubits.size());
+  std::vector<std::complex<double>> state(dimension, {0.0, 0.0});
+  for (std::size_t basis = 0; basis < dimension; ++basis) {
+    std::size_t outcome = 0;
+    for (std::size_t bit = 0; bit < measuredQubits.size(); ++bit)
+      if (basis & (1ULL << measuredQubits[bit]))
+        outcome |= (1ULL << bit);
+    state[basis] = {
+        std::sqrt(outcomeWeights[outcome] /
+                  (static_cast<double>(amplitudesPerOutcome) * totalWeight)),
+        0.0};
+  }
+  const auto expected = marginalProbabilityCpuOracle(state, measuredQubits);
+
+  MklqMetalCircuitSimulatorTester sim;
+  sim.setStateForTest(std::move(state));
+  sim.applySingleQubitGateForTest(zGate, {}, 0);
+  const auto actual = sim.marginalProbabilitiesForTest(measuredQubits);
+
+  ASSERT_EQ(actual.size(), expected.size());
+  EXPECT_NEAR(std::accumulate(actual.begin(), actual.end(), 0.0), 1.0,
+              1.0e-5);
+  for (std::size_t outcome = 0; outcome < actual.size(); ++outcome)
+    EXPECT_NEAR(actual[outcome], expected[outcome], 1.0e-5)
+        << "outcome " << outcome;
+
+  if (!sim.metalRuntimeAvailableForTest()) {
+    EXPECT_EQ(sim.atomicMarginalProbabilityApplicationsForTest(), 0);
+    return;
+  }
+
+  if (sim.atomicMarginalProbabilityAvailableForTest()) {
+    EXPECT_EQ(sim.atomicMarginalProbabilityApplicationsForTest(), 1);
+    EXPECT_EQ(sim.marginalProbabilityApplicationsForTest(), 0);
+    EXPECT_EQ(sim.probabilityFillApplicationsForTest(), 0);
+  } else {
+    EXPECT_EQ(sim.atomicMarginalProbabilityApplicationsForTest(), 0);
+    EXPECT_EQ(sim.probabilityFillApplicationsForTest(), 1);
+  }
+}
+
+CUDAQ_TEST(MKLQMetalTester,
+           SimulatorFallsBackWhenAtomicMarginalPipelineIsDisabled) {
+  constexpr std::size_t qubitCount = 20;
+  constexpr std::size_t dimension = 1ULL << qubitCount;
+  const std::vector<std::complex<double>> zGate{{1.0, 0.0}, {0.0, 0.0},
+                                                {0.0, 0.0}, {-1.0, 0.0}};
+
+  MklqMetalCircuitSimulatorTester sim;
+  if (!sim.metalRuntimeAvailableForTest())
+    GTEST_SKIP() << "Metal runtime is unavailable on this machine";
+
+  std::vector<std::complex<double>> state(dimension, {0.0, 0.0});
+  state[0] = {1.0, 0.0};
+  sim.setStateForTest(std::move(state));
+  sim.makeAtomicMarginalProbabilityUnavailableForTest();
+  EXPECT_TRUE(sim.metalRuntimeAvailableForTest());
+  EXPECT_FALSE(sim.atomicMarginalProbabilityAvailableForTest());
+  sim.applySingleQubitGateForTest(zGate, {}, 0);
+
+  const auto probabilities = sim.marginalProbabilitiesForTest(
+      {17, 3, 11, 1, 0, 2, 4, 5, 6, 7, 8, 9});
+  ASSERT_EQ(probabilities.size(), 1ULL << 12);
+  EXPECT_NEAR(probabilities[0], 1.0, 1.0e-6);
+  for (std::size_t outcome = 1; outcome < probabilities.size(); ++outcome)
+    EXPECT_NEAR(probabilities[outcome], 0.0, 1.0e-6);
+  EXPECT_EQ(sim.atomicMarginalProbabilityApplicationsForTest(), 0);
+  EXPECT_EQ(sim.marginalProbabilityApplicationsForTest(), 0);
+  EXPECT_EQ(sim.probabilityFillApplicationsForTest(), 1);
+}
+
+CUDAQ_TEST(MKLQMetalTester,
+           SimulatorKeepsReorderedFullRegisterOnFullProbabilityRoute) {
+  constexpr std::size_t qubitCount = 20;
+  constexpr std::size_t dimension = 1ULL << qubitCount;
+  const std::vector<std::complex<double>> zGate{{1.0, 0.0}, {0.0, 0.0},
+                                                {0.0, 0.0}, {-1.0, 0.0}};
+  std::vector<std::size_t> measuredQubits(qubitCount, 0);
+  std::iota(measuredQubits.rbegin(), measuredQubits.rend(), 0);
+
+  std::vector<std::complex<double>> state(dimension, {0.0, 0.0});
+  state[0] = {0.5, 0.0};
+  state[1ULL << 19] = {std::sqrt(0.75), 0.0};
+  const auto expected = marginalProbabilityCpuOracle(state, measuredQubits);
+
+  MklqMetalCircuitSimulatorTester sim;
+  sim.setStateForTest(std::move(state));
+  sim.applySingleQubitGateForTest(zGate, {}, 0);
+  const auto actual = sim.marginalProbabilitiesForTest(measuredQubits);
+
+  ASSERT_EQ(actual.size(), expected.size());
+  EXPECT_NEAR(actual[0], expected[0], 1.0e-6);
+  EXPECT_NEAR(actual[1], expected[1], 1.0e-6);
+  EXPECT_NEAR(std::accumulate(actual.begin(), actual.end(), 0.0), 1.0,
+              1.0e-6);
+  EXPECT_EQ(sim.atomicMarginalProbabilityApplicationsForTest(), 0);
+  EXPECT_EQ(sim.marginalProbabilityApplicationsForTest(), 0);
+  EXPECT_EQ(sim.probabilityFillApplicationsForTest(),
+            sim.metalRuntimeAvailableForTest() ? 1 : 0);
+}
+
+CUDAQ_TEST(MKLQMetalTester,
            SimulatorSamplesSmallResidentPartialRegisterThroughMarginalProbability) {
   constexpr std::size_t qubitCount = 7;
   constexpr std::size_t dimension = 1ULL << qubitCount;
@@ -1982,13 +2146,22 @@ CUDAQ_TEST(MKLQMetalTester,
     totalShots += count;
   EXPECT_EQ(totalShots, static_cast<std::size_t>(config->shots));
   EXPECT_GT(sim.sampleProbabilityFillSecondsForTest(), 0.0);
-  EXPECT_GT(sim.sampleFullRegisterProbabilityBufferPreparationSecondsForTest(),
-            0.0);
   EXPECT_GT(sim.sampleDrawAndCountSecondsForTest(), 0.0);
   EXPECT_GT(sim.sampleExpectationReductionSecondsForTest(), 0.0);
-  EXPECT_EQ(sim.probabilityFillApplicationsForTest() +
-                sim.marginalProbabilityApplicationsForTest(),
-            1);
+  const auto probabilityRouteApplications =
+      sim.probabilityFillApplicationsForTest() +
+      sim.marginalProbabilityApplicationsForTest() +
+      sim.atomicMarginalProbabilityApplicationsForTest();
+  EXPECT_EQ(probabilityRouteApplications, 1);
+  if (sim.probabilityFillApplicationsForTest() == 1) {
+    EXPECT_GT(
+        sim.sampleFullRegisterProbabilityBufferPreparationSecondsForTest(),
+        0.0);
+  } else {
+    EXPECT_EQ(
+        sim.sampleFullRegisterProbabilityBufferPreparationSecondsForTest(),
+        0.0);
+  }
   recordSamplingPhaseProfile(*config, sim);
 }
 

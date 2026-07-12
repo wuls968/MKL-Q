@@ -58,6 +58,8 @@ OPTIONAL_PROPERTY_NAMES = {
         "mklq_sampling_phase_profile_metal_probability_fill_applications",
     "metal_marginal_probability_applications":
         "mklq_sampling_phase_profile_metal_marginal_probability_applications",
+    "metal_atomic_marginal_probability_applications":
+        "mklq_sampling_phase_profile_metal_atomic_marginal_probability_applications",
     "metal_generated_count_accumulations":
         "mklq_sampling_phase_profile_metal_generated_count_accumulations",
 }

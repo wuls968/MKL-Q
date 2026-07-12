@@ -83,6 +83,9 @@ public:
                                          std::size_t qubitCount,
                                          double *probabilities,
                                          std::size_t probabilityCount);
+  bool fillResidentAtomicMarginalProbabilities(
+      const std::size_t *qubits, std::size_t qubitCount,
+      double *probabilities, std::size_t probabilityCount);
   bool computeResidentZParityExpectation(const std::size_t *qubits,
                                          std::size_t qubitCount,
                                          double *expectation);
@@ -113,6 +116,11 @@ public:
   double residentProbabilityFillDispatchSeconds() const;
   double residentProbabilityFillHostConversionSeconds() const;
   std::size_t marginalProbabilityApplications() const;
+  bool atomicMarginalProbabilityAvailable() const;
+  std::size_t atomicMarginalProbabilityApplications() const;
+#if defined(MKLQ_ENABLE_TEST_ACCESSORS)
+  void makeAtomicMarginalProbabilityUnavailableForTest();
+#endif
   std::size_t measurementProbabilityApplications() const;
   std::size_t measurementProbabilityReductionApplications() const;
   std::size_t measurementCollapseApplications() const;

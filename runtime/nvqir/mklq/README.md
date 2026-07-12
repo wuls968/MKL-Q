@@ -178,12 +178,14 @@ target-marker output.
   probability-fill kernels. Consecutive resident gates share one Metal command
   buffer while retaining separate encoders, then submit before host-visible,
   CPU-oracle, probability, measurement, or state-replacement boundaries.
-  Partial-register sampling uses a cost-gated
-  resident marginal probability kernel for small marginal buffers; when the
-  marginal partial-sum work is no smaller than a full probability fill, it
-  computes resident full-register probabilities once and folds them to
-  marginal outcome probabilities on the host without first downloading the
-  state vector. Full-register and partial-register counts-only sampling can
+  Partial-register sampling uses a cost-gated resident marginal probability
+  kernel for small marginal buffers. The current Apple M5-tuned q20-q23 route
+  with at least 1024 marginal outcomes first attempts an optional fp32 atomic
+  marginal kernel that is compiled independently from the required Metal
+  kernels; unsupported devices, other route sizes, or an optional-pipeline
+  failure retain the resident full-register probability fill plus host-fold
+  fallback without first downloading the state vector.
+  Full-register and partial-register counts-only sampling can
   now use Metal-generated random draws plus a Metal sample-count accumulation
   kernel after resident probability work; uniform-probability distributions can
   bypass the cumulative-weight upload and binary-search sampler through a

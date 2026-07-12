@@ -25,7 +25,7 @@ Current counter evidence tracks these resident Metal state routes:
 | Controlled and multi-control single-target gates | Counter tests grouped under `resident_gate` in `docs/mklq/metal-runtime-counters.md` | Coverage is finite and test-selected. |
 | Two-target through four-target updates | Counter tests grouped under `resident_gate` | Covered two-target updates include the builtin controlled-SWAP dispatcher route. Generic four-target updates use the selected 16x16 fp32 matrix route, including a selected controlled fixture; this is not a broad arbitrary-unitary performance guarantee. |
 | Full-register probability fill | Counter tests grouped under `probability_sampling` | The probability vector is host-visible output by design. |
-| Marginal probability fill | Counter tests grouped under `probability_sampling` | Marginal output is host-visible by design. |
+| Marginal probability fill | Counter tests grouped under `probability_sampling` | Small marginal buffers use the legacy reduction kernel. The current Apple M5-tuned q20-q23 route with at least 1024 outcomes can use an optional fp32 atomic marginal kernel compiled independently from the required backend pipelines; unavailable or failed optional pipelines, q19/q24+ states, and smaller outcome spaces retain the full-register probability fill plus host-fold fallback. Marginal output is host-visible by design. |
 | Zero-shot Z-parity expectation | Counter tests grouped under `probability_sampling` | Selected resident paths perform a hierarchical Metal parity reduction and copy one scalar expectation to the host; they do not materialize a full or marginal probability vector. A failed flush of pending mutating gates poisons the resident state; after a successful flush, a read-only reduction failure synchronizes the unchanged state before CPU fallback. |
 | Requested-order partial-register sampling | Counter tests grouped under `probability_sampling` | The selected route proves resident marginal-probability work before counts-only Metal sample-count accumulation or sequential host draw/count accumulation. |
 | Deterministic sampling bypass | Counter tests grouped under `probability_sampling` | One-outcome sequential and counts-only distributions can materialize results directly after resident probability work; this is not a general on-device sampler. |
@@ -77,7 +77,11 @@ was Metal-native.
 ## Sampling Boundary
 
 Probability fills can be resident Metal work, but public sampling evidence does
-not claim an end-to-end on-device sampler. Current counter evidence tracks
+not claim an end-to-end on-device sampler. Selected large resident
+partial-register paths in the current Apple M5 q20-q23, 1024+-outcome window
+can use an optional fp32 atomic marginal accumulation kernel; this is a
+probability-fill optimization, not a general GPU sampler or a required Metal
+runtime capability. Current counter evidence tracks
 deterministic sequential and counts-only shortcuts that materialize a single
 non-zero outcome directly after resident probability work. It also tracks
 selected full-register and partial-register counts-only paths where

@@ -97,6 +97,13 @@ struct MarginalProbabilityParams {
   std::uint32_t padding = 0;
 };
 
+struct AtomicMarginalProbabilityParams {
+  std::uint32_t stateSize;
+  std::uint32_t qubitCount;
+  std::uint32_t padding0 = 0;
+  std::uint32_t padding1 = 0;
+};
+
 struct SampleCountParams {
   std::uint32_t outcomeCount;
   std::uint32_t drawCount;
@@ -587,6 +594,44 @@ kernel void mklq_collapse_qubit(
 }
 )metal";
 
+constexpr const char *metalAtomicMarginalKernelSource = R"metal(
+#include <metal_stdlib>
+using namespace metal;
+
+struct ComplexFloat {
+  float real;
+  float imag;
+};
+
+struct AtomicMarginalProbabilityParams {
+  uint stateSize;
+  uint qubitCount;
+  uint padding0;
+  uint padding1;
+};
+
+kernel void mklq_fill_atomic_marginal_probabilities(
+    device const ComplexFloat *state [[buffer(0)]],
+    constant ulong *qubitMasks [[buffer(1)]],
+    device atomic_float *probabilities [[buffer(2)]],
+    constant AtomicMarginalProbabilityParams &params [[buffer(3)]],
+    uint index [[thread_position_in_grid]]) {
+  if (index >= params.stateSize)
+    return;
+
+  uint outcome = 0u;
+  for (uint bit = 0u; bit < params.qubitCount; ++bit)
+    if ((ulong(index) & qubitMasks[bit]) != 0)
+      outcome |= 1u << bit;
+
+  const ComplexFloat amplitude = state[index];
+  const float probability = amplitude.real * amplitude.real +
+                            amplitude.imag * amplitude.imag;
+  atomic_fetch_add_explicit(&probabilities[outcome], probability,
+                            memory_order_relaxed);
+}
+)metal";
+
 MetalDeviceInfo describeDevice(id<MTLDevice> device) {
   if (!device)
     return {};
@@ -679,6 +724,7 @@ struct MetalStateVectorExecutor::Impl {
   id<MTLComputePipelineState> fourQubitPipeline = nil;
   id<MTLComputePipelineState> probabilityPipeline = nil;
   id<MTLComputePipelineState> marginalProbabilityPipeline = nil;
+  id<MTLComputePipelineState> atomicMarginalProbabilityPipeline = nil;
   id<MTLComputePipelineState> measurementProbabilityPipeline = nil;
   id<MTLComputePipelineState> zParityExpectationPipeline = nil;
   id<MTLComputePipelineState> floatReductionPipeline = nil;
@@ -695,6 +741,7 @@ struct MetalStateVectorExecutor::Impl {
   MetalDeviceInfo info;
   std::string error;
   std::string zParityExpectationPipelineError;
+  std::string atomicMarginalProbabilityPipelineError;
   std::size_t singleQubitApplications = 0;
   std::size_t twoQubitApplications = 0;
   std::size_t threeQubitApplications = 0;
@@ -706,6 +753,7 @@ struct MetalStateVectorExecutor::Impl {
   double residentProbabilityFillDispatchSeconds = 0.0;
   double residentProbabilityFillHostConversionSeconds = 0.0;
   std::size_t marginalProbabilityApplications = 0;
+  std::size_t atomicMarginalProbabilityApplications = 0;
   std::size_t measurementProbabilityApplications = 0;
   std::size_t measurementProbabilityReductionApplications = 0;
   std::size_t measurementCollapseApplications = 0;
@@ -1017,6 +1065,37 @@ struct MetalStateVectorExecutor::Impl {
             "failed to create Metal collapse compute pipeline.");
         return;
       }
+
+      NSString *atomicMarginalSource =
+          [NSString stringWithUTF8String:metalAtomicMarginalKernelSource];
+      NSError *atomicMarginalLibraryError = nil;
+      id<MTLLibrary> atomicMarginalLibrary = [device
+          newLibraryWithSource:atomicMarginalSource
+                        options:nil
+                          error:&atomicMarginalLibraryError];
+      if (!atomicMarginalLibrary) {
+        atomicMarginalProbabilityPipelineError = describeError(
+            atomicMarginalLibraryError,
+            "failed to compile optional Metal atomic marginal kernel.");
+      } else {
+        function = [atomicMarginalLibrary
+            newFunctionWithName:@"mklq_fill_atomic_marginal_probabilities"];
+        if (!function) {
+          atomicMarginalProbabilityPipelineError =
+              "failed to load optional Metal atomic marginal kernel.";
+        } else {
+          pipelineError = nil;
+          atomicMarginalProbabilityPipeline =
+              [device newComputePipelineStateWithFunction:function
+                                                    error:&pipelineError];
+          [function release];
+          if (!atomicMarginalProbabilityPipeline)
+            atomicMarginalProbabilityPipelineError = describeError(
+                pipelineError,
+                "failed to create optional Metal atomic marginal pipeline.");
+        }
+        [atomicMarginalLibrary release];
+      }
     }
   }
 
@@ -1032,6 +1111,7 @@ struct MetalStateVectorExecutor::Impl {
     [floatReductionPipeline release];
     [zParityExpectationPipeline release];
     [measurementProbabilityPipeline release];
+    [atomicMarginalProbabilityPipeline release];
     [marginalProbabilityPipeline release];
     [probabilityPipeline release];
     [fourQubitPipeline release];
@@ -2348,6 +2428,162 @@ bool MetalStateVectorExecutor::fillResidentMarginalProbabilities(
   return true;
 }
 
+bool MetalStateVectorExecutor::fillResidentAtomicMarginalProbabilities(
+    const std::size_t *qubits, std::size_t qubitCount, double *probabilities,
+    std::size_t probabilityCount) {
+  if (!impl || !impl->available())
+    return false;
+  if (!impl->atomicMarginalProbabilityPipeline) {
+    impl->error = impl->atomicMarginalProbabilityPipelineError.empty()
+                      ? "optional Metal atomic marginal pipeline is unavailable."
+                      : impl->atomicMarginalProbabilityPipelineError;
+    return false;
+  }
+  if ((!qubits && qubitCount != 0) || !probabilities ||
+      !impl->residentStateBuffer || !isPowerOfTwo(impl->residentStateSize)) {
+    impl->error = "invalid Metal resident atomic marginal probability input.";
+    return false;
+  }
+  if (qubitCount >= std::numeric_limits<std::uint32_t>::digits) {
+    impl->error =
+        "Metal resident atomic marginal probability qubit count exceeds "
+        "output range.";
+    return false;
+  }
+  const auto expectedProbabilityCount = std::size_t{1} << qubitCount;
+  if (probabilityCount != expectedProbabilityCount) {
+    impl->error =
+        "Metal resident atomic marginal probability buffer has incorrect "
+        "size.";
+    return false;
+  }
+  if (!fitsKernelThreadIndex(impl->residentStateSize)) {
+    impl->error =
+        "state size exceeds Metal atomic marginal probability thread index "
+        "range.";
+    return false;
+  }
+  if (!impl->flushResidentGateCommands())
+    return false;
+
+  std::vector<std::uint64_t> qubitMasks(std::max<std::size_t>(qubitCount, 1),
+                                        0);
+  for (std::size_t i = 0; i < qubitCount; ++i) {
+    if (!qubitWithinState(qubits[i], impl->residentStateSize)) {
+      impl->error =
+          "atomic marginal probability qubit exceeds Metal state range.";
+      return false;
+    }
+    for (std::size_t previous = 0; previous < i; ++previous) {
+      if (qubits[i] == qubits[previous]) {
+        impl->error = "duplicate atomic marginal probability qubit.";
+        return false;
+      }
+    }
+    qubitMasks[i] = std::uint64_t{1} << qubits[i];
+  }
+  if (probabilityCount >
+      std::numeric_limits<std::size_t>::max() / sizeof(float)) {
+    impl->error =
+        "Metal atomic marginal probability byte size exceeds range.";
+    return false;
+  }
+
+  const AtomicMarginalProbabilityParams params{
+      static_cast<std::uint32_t>(impl->residentStateSize),
+      static_cast<std::uint32_t>(qubitCount), 0, 0};
+
+  @autoreleasepool {
+    id<MTLBuffer> masksBuffer =
+        [impl->device newBufferWithBytes:qubitMasks.data()
+                                  length:qubitMasks.size() *
+                                         sizeof(std::uint64_t)
+                                 options:MTLResourceStorageModeShared];
+    if (!masksBuffer) {
+      impl->error =
+          "failed to allocate Metal atomic marginal qubit-mask buffer.";
+      return false;
+    }
+
+    id<MTLBuffer> probabilitiesBuffer = [impl->device
+        newBufferWithLength:probabilityCount * sizeof(float)
+                     options:MTLResourceStorageModeShared];
+    if (!probabilitiesBuffer) {
+      [masksBuffer release];
+      impl->error =
+          "failed to allocate Metal atomic marginal probability buffer.";
+      return false;
+    }
+    std::fill_n(reinterpret_cast<float *>([probabilitiesBuffer contents]),
+                probabilityCount, 0.0f);
+
+    id<MTLBuffer> paramsBuffer = [impl->device
+        newBufferWithBytes:&params
+                      length:sizeof(AtomicMarginalProbabilityParams)
+                     options:MTLResourceStorageModeShared];
+    if (!paramsBuffer) {
+      [probabilitiesBuffer release];
+      [masksBuffer release];
+      impl->error =
+          "failed to allocate Metal atomic marginal probability parameters "
+          "buffer.";
+      return false;
+    }
+
+    id<MTLCommandBuffer> commandBuffer = [impl->commandQueue commandBuffer];
+    id<MTLComputeCommandEncoder> encoder =
+        [commandBuffer computeCommandEncoder];
+    if (!commandBuffer || !encoder) {
+      [paramsBuffer release];
+      [probabilitiesBuffer release];
+      [masksBuffer release];
+      impl->error =
+          "failed to create Metal atomic marginal probability command "
+          "encoder.";
+      return false;
+    }
+
+    [encoder setComputePipelineState:impl->atomicMarginalProbabilityPipeline];
+    [encoder setBuffer:impl->residentStateBuffer offset:0 atIndex:0];
+    [encoder setBuffer:masksBuffer offset:0 atIndex:1];
+    [encoder setBuffer:probabilitiesBuffer offset:0 atIndex:2];
+    [encoder setBuffer:paramsBuffer offset:0 atIndex:3];
+    const auto pipelineWidth =
+        [impl->atomicMarginalProbabilityPipeline maxTotalThreadsPerThreadgroup];
+    const auto threadsPerThreadgroup = std::max<NSUInteger>(
+        1, std::min<NSUInteger>(pipelineWidth, impl->residentStateSize));
+    [encoder dispatchThreads:MTLSizeMake(impl->residentStateSize, 1, 1)
+       threadsPerThreadgroup:MTLSizeMake(threadsPerThreadgroup, 1, 1)];
+    [encoder endEncoding];
+    [commandBuffer commit];
+    [commandBuffer waitUntilCompleted];
+
+    const auto status = [commandBuffer status];
+    if (status != MTLCommandBufferStatusCompleted) {
+      impl->error = describeError(
+          [commandBuffer error],
+          "Metal atomic marginal probability command buffer failed.");
+      [paramsBuffer release];
+      [probabilitiesBuffer release];
+      [masksBuffer release];
+      return false;
+    }
+
+    const auto *updatedProbabilities =
+        reinterpret_cast<const float *>([probabilitiesBuffer contents]);
+    for (std::size_t outcome = 0; outcome < probabilityCount; ++outcome)
+      probabilities[outcome] = static_cast<double>(updatedProbabilities[outcome]);
+
+    [paramsBuffer release];
+    [probabilitiesBuffer release];
+    [masksBuffer release];
+  }
+
+  impl->error.clear();
+  ++impl->atomicMarginalProbabilityApplications;
+  return true;
+}
+
 bool MetalStateVectorExecutor::computeResidentZParityExpectation(
     const std::size_t *qubits, std::size_t qubitCount, double *expectation) {
   if (!impl || !impl->available())
@@ -3081,6 +3317,28 @@ MetalStateVectorExecutor::residentProbabilityFillHostConversionSeconds() const {
 std::size_t MetalStateVectorExecutor::marginalProbabilityApplications() const {
   return impl ? impl->marginalProbabilityApplications : 0;
 }
+
+bool MetalStateVectorExecutor::atomicMarginalProbabilityAvailable() const {
+  if (!impl || !impl->atomicMarginalProbabilityPipeline)
+    return false;
+  return true;
+}
+
+std::size_t
+MetalStateVectorExecutor::atomicMarginalProbabilityApplications() const {
+  return impl ? impl->atomicMarginalProbabilityApplications : 0;
+}
+
+#if defined(MKLQ_ENABLE_TEST_ACCESSORS)
+void MetalStateVectorExecutor::makeAtomicMarginalProbabilityUnavailableForTest() {
+  if (!impl || !impl->atomicMarginalProbabilityPipeline)
+    return;
+  [impl->atomicMarginalProbabilityPipeline release];
+  impl->atomicMarginalProbabilityPipeline = nil;
+  impl->atomicMarginalProbabilityPipelineError =
+      "optional Metal atomic marginal pipeline disabled for test.";
+}
+#endif
 
 std::size_t MetalStateVectorExecutor::measurementProbabilityApplications()
     const {

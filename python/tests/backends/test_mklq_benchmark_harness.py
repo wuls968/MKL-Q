@@ -3356,6 +3356,9 @@ def test_mklq_metal_runtime_counter_probe_tracks_runtime_counter_surface():
         "SimulatorKeepsMultiControlSingleQubitResidentUntilReadback",
         "SimulatorSamplesResidentDenseStateWithoutReadback",
         "SimulatorSamplesLargeResidentPartialRegisterThroughFullProbability",
+        "SimulatorUsesAtomicMarginalForLargeUnorderedPartialRegister",
+        "SimulatorFallsBackWhenAtomicMarginalPipelineIsDisabled",
+        "SimulatorKeepsReorderedFullRegisterOnFullProbabilityRoute",
         "SimulatorSamplesSmallResidentPartialRegisterThroughMarginalProbability",
         "SimulatorSamplesRequestedOrderPartialRegisterThroughMarginalProbability",
         "SimulatorSamplesResidentPartialRegisterWithHostSequentialDrawTelemetry",
@@ -3397,7 +3400,7 @@ def test_mklq_metal_runtime_counter_probe_tracks_runtime_counter_surface():
 
     assert suffixes == expected_suffixes
     assert suffixes.isdisjoint(metadata_only_suffixes)
-    assert len(module.COUNTER_TEST_SUFFIXES) == 57
+    assert len(module.COUNTER_TEST_SUFFIXES) == 60
 
 
 def test_mklq_metal_runtime_counter_probe_builds_bounded_report(monkeypatch,
@@ -6389,6 +6392,8 @@ read-only access, permissions: contents: read, timeout-minutes, concurrency,
 broad push Dispatch guard validation, and no pull request triggers.
 The checkout uses a checkout timeout, manual sparse checkout, workspace cleanup,
 git sparse-checkout set, docs/sphinx/examples/mklq, docs/sphinx/targets,
+the current workflow_dispatch ref from GITHUB_REF_NAME, MKLQ_CHECKOUT_REF, and
+git check-ref-format --branch before it fetches an explicit main refspec,
 explicit main refspec, +refs/heads/main:refs/remotes/origin/main,
 +refs/heads/main:refs/remotes/upstream/main, and filter=blob:none. It restores
 history later with http.version=HTTP/1.1, --unshallow, and filter=blob:none.
@@ -6478,6 +6483,9 @@ jobs:
             git update-ref -d refs/mklq-cache/main 2>/dev/null || true
           fi
           git sparse-checkout init --cone
+          checkout_ref="${GITHUB_REF_NAME:?}"
+          git check-ref-format --branch "${checkout_ref}"
+          echo "MKLQ_CHECKOUT_REF=${checkout_ref}" >> "${GITHUB_ENV}"
           git sparse-checkout set .github benchmarks cmake cudaq docs/mklq docs/sphinx/examples/mklq docs/sphinx/targets python runtime scripts targettests tpls unittests utils
           retry_git "origin main sparse fetch" git -c http.version=HTTP/1.1 fetch --depth=1 --filter=blob:none origin +refs/heads/main:refs/remotes/origin/main
       - name: Normalize Git remotes
@@ -6750,6 +6758,19 @@ def test_mklq_self_hosted_ci_audit_rejects_actions_checkout_regression(
     }
     assert "actions/checkout" in forbidden_tokens
     assert "filter: blob:none checkout input" in forbidden_tokens
+
+
+def test_mklq_apple_silicon_workflow_checkouts_current_dispatch_ref():
+    workflow = Path(".github/workflows/mklq-apple-silicon-ci.yml").read_text(
+        encoding="utf-8")
+    ci_doc = Path("docs/mklq/apple-silicon-ci.md").read_text(encoding="utf-8")
+
+    assert 'checkout_ref="${GITHUB_REF_NAME:?}"' in workflow
+    assert 'git check-ref-format --branch "${checkout_ref}"' in workflow
+    assert 'MKLQ_CHECKOUT_REF=${checkout_ref}' in workflow
+    assert 'origin "+refs/heads/${checkout_ref}:refs/remotes/origin/${checkout_ref}"' in workflow
+    assert '$(git rev-parse "origin/${MKLQ_CHECKOUT_REF}")' in workflow
+    assert "current workflow_dispatch ref" in ci_doc
 
 
 def test_mklq_self_hosted_ci_audit_rejects_lightweight_heavy_command(
