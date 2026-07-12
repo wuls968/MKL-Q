@@ -13,6 +13,7 @@
 #define MKLQ_SIMULATOR_STATE_DIAGNOSTIC_PREFIX "[mklq-metal-state]"
 #include "MklqCpuCircuitSimulator.cpp"
 #include "MklqMetalRuntime.h"
+#include "MKLQSamplingPhaseProfile.h"
 
 #include "CUDAQTestUtils.h"
 
@@ -21,6 +22,7 @@
 #include <cmath>
 #include <complex>
 #include <cstdint>
+#include <numeric>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -168,6 +170,15 @@ public:
     return metalExecutor.marginalProbabilityApplications();
 #else
     return 0;
+#endif
+  }
+
+  bool shouldUseResidentMarginalProbabilitiesForTest(
+      std::size_t probabilityCount) const {
+#if defined(MKLQ_ENABLE_METAL_RUNTIME)
+    return shouldUseMetalResidentMarginalProbabilities(probabilityCount);
+#else
+    return false;
 #endif
   }
 
@@ -353,6 +364,40 @@ protected:
 private:
   ResidentFailureMode residentFailureMode = ResidentFailureMode::None;
 };
+
+static void recordSamplingPhaseProfile(
+    const mklq_test::SamplingPhaseProfileConfig &config,
+    const MklqMetalCircuitSimulatorTester &sim) {
+  ::testing::Test::RecordProperty("mklq_sampling_phase_profile", "true");
+  ::testing::Test::RecordProperty("mklq_sampling_phase_profile_target",
+                                  "mklq-metal");
+  ::testing::Test::RecordProperty("mklq_sampling_phase_profile_qubits",
+                                  std::to_string(config.qubitCount));
+  ::testing::Test::RecordProperty(
+      "mklq_sampling_phase_profile_measured_qubits",
+      std::to_string(config.measuredQubitCount));
+  ::testing::Test::RecordProperty("mklq_sampling_phase_profile_shots",
+                                  std::to_string(config.shots));
+  ::testing::Test::RecordProperty(
+      "mklq_sampling_phase_profile_probability_fill_seconds",
+      mklq_test::formatPhaseSeconds(sim.sampleProbabilityFillSecondsForTest()));
+  ::testing::Test::RecordProperty(
+      "mklq_sampling_phase_profile_draw_and_count_seconds",
+      mklq_test::formatPhaseSeconds(sim.sampleDrawAndCountSecondsForTest()));
+  ::testing::Test::RecordProperty(
+      "mklq_sampling_phase_profile_expectation_reduction_seconds",
+      mklq_test::formatPhaseSeconds(
+          sim.sampleExpectationReductionSecondsForTest()));
+  ::testing::Test::RecordProperty(
+      "mklq_sampling_phase_profile_metal_probability_fill_applications",
+      std::to_string(sim.probabilityFillApplicationsForTest()));
+  ::testing::Test::RecordProperty(
+      "mklq_sampling_phase_profile_metal_marginal_probability_applications",
+      std::to_string(sim.marginalProbabilityApplicationsForTest()));
+  ::testing::Test::RecordProperty(
+      "mklq_sampling_phase_profile_metal_generated_count_accumulations",
+      std::to_string(sim.generatedSampleCountAccumulationsForTest()));
+}
 
 void expectNear(std::complex<double> actual, std::complex<double> expected) {
   EXPECT_NEAR(actual.real(), expected.real(), 1.0e-6);
@@ -1725,6 +1770,53 @@ CUDAQ_TEST(MKLQMetalTester,
   EXPECT_GT(sim.sampleProbabilityFillSecondsForTest(), 0.0);
   EXPECT_GT(sim.sampleDrawAndCountSecondsForTest(), 0.0);
   EXPECT_GT(sim.sampleExpectationReductionSecondsForTest(), 0.0);
+}
+
+CUDAQ_TEST(MKLQMetalTester,
+           SamplingPhaseProfileEmitsNativeTimingForExternalProbe) {
+  const auto config = mklq_test::samplingPhaseProfileConfigFromEnvironment();
+  if (!config)
+    GTEST_SKIP() << "set MKLQ_ENABLE_SAMPLING_PHASE_PROFILE=1 to profile";
+
+  const auto dimension = 1ULL << config->qubitCount;
+  const auto amplitude = 1.0 / std::sqrt(static_cast<double>(dimension));
+  std::vector<std::complex<double>> state(
+      dimension, std::complex<double>{amplitude, 0.0});
+  std::vector<std::size_t> measuredQubits(config->measuredQubitCount);
+  std::iota(measuredQubits.begin(), measuredQubits.end(), 0);
+  const std::vector<std::complex<double>> zGate{
+      {1.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {-1.0, 0.0}};
+
+  MklqMetalCircuitSimulatorTester sim;
+  sim.setStateForTest(std::move(state));
+  sim.applySingleQubitGateForTest(zGate, {}, 0);
+  if (!sim.metalRuntimeAvailableForTest())
+    GTEST_SKIP() << "Metal runtime is unavailable on this machine";
+
+  const auto counts = sim.sampleQubitsWithoutSequentialDataForTest(
+      measuredQubits, config->shots);
+
+  std::size_t totalShots = 0;
+  for (const auto &[bits, count] : counts.counts)
+    totalShots += count;
+  EXPECT_EQ(totalShots, static_cast<std::size_t>(config->shots));
+  EXPECT_GT(sim.sampleProbabilityFillSecondsForTest(), 0.0);
+  EXPECT_GT(sim.sampleDrawAndCountSecondsForTest(), 0.0);
+  EXPECT_GT(sim.sampleExpectationReductionSecondsForTest(), 0.0);
+  EXPECT_EQ(sim.probabilityFillApplicationsForTest() +
+                sim.marginalProbabilityApplicationsForTest(),
+            1);
+  recordSamplingPhaseProfile(*config, sim);
+}
+
+CUDAQ_TEST(MKLQMetalTester,
+           LargeStateCostGateAvoidsResidentMarginalProbabilityScratch) {
+  MklqMetalCircuitSimulatorTester sim;
+  sim.setStateForTest(std::vector<std::complex<double>>(1ULL << 19));
+  EXPECT_FALSE(sim.shouldUseResidentMarginalProbabilitiesForTest(16));
+
+  sim.setStateForTest(std::vector<std::complex<double>>(1ULL << 18));
+  EXPECT_TRUE(sim.shouldUseResidentMarginalProbabilitiesForTest(16));
 }
 
 CUDAQ_TEST(MKLQMetalTester,

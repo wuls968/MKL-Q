@@ -222,6 +222,33 @@ work and explicitly labels rows with
 `sampling_profile_boundary`; do not interpret those fields as internal
 probability-fill, draw, or count-aggregation counters.
 
+## Native Sampling Phase Profile
+
+Use the native phase probe when deciding which `mklq-cpu` or experimental
+`mklq-metal` sampling phase to optimize. It runs a dedicated opt-in build-tree
+gtest on a uniform state-vector and writes the simulator's test-accessor timers
+for probability fill, draw/count, and expectation reduction:
+
+```bash
+python3 benchmarks/mklq/run_sampling_phase_profile_probe.py \
+  --build-dir build-python \
+  --target mklq-metal \
+  --qubits 20 \
+  --measured-qubits 12 \
+  --shots 65536 \
+  --repeats 3 \
+  --output benchmarks/mklq/results/local-mklq-metal-sampling-phase-YYYY-MM-DD.json
+```
+
+Run the same command with `--target mklq-cpu` before attributing a Metal
+difference to the device path. The output JSON is intentionally ignored: it
+contains local machine timing evidence, not a tracked benchmark result or a
+release/performance claim. The profile gtests skip unless the probe sets their
+environment variables, so ordinary CTest runs do not allocate q20 state vectors
+or collect timing data. For `mklq-metal`, the probe also records the resident
+probability-fill and device-generated-count runtime counters when they apply;
+those counters prove only the selected path for that probe invocation.
+
 ## CPU Gate Counter Probe
 
 Use the CPU gate counter probe when changing `mklq-cpu` gate fast paths,

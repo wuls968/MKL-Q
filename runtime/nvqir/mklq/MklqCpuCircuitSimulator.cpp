@@ -2003,6 +2003,12 @@ protected:
 #if defined(MKLQ_ENABLE_METAL_RUNTIME)
   bool shouldUseMetalResidentMarginalProbabilities(
       std::size_t probabilityCount) const {
+    // At q19 and above, the marginal kernel's outcome-by-threadgroup scratch
+    // allocation and readback cost more than a resident full probability fill
+    // followed by host folding on Apple Silicon, even for small outcome sets.
+    if (state.size() >= (1ULL << 19))
+      return false;
+
     const auto groupCount =
         (state.size() + mklq::marginalProbabilityThreadsPerThreadgroup - 1) /
         mklq::marginalProbabilityThreadsPerThreadgroup;

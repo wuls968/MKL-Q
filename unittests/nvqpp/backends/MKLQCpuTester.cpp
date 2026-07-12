@@ -7,6 +7,7 @@
  ******************************************************************************/
 
 #include "MklqCpuCircuitSimulator.cpp"
+#include "MKLQSamplingPhaseProfile.h"
 
 #include "CUDAQTestUtils.h"
 #include "common/ExecutionContext.h"
@@ -19,6 +20,7 @@
 #include <complex>
 #include <functional>
 #include <gtest/gtest.h>
+#include <numeric>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -172,6 +174,18 @@ public:
     return sampleExpectationReductions;
   }
 
+  double sampleProbabilityFillSecondsForTest() const {
+    return sampleProbabilityFillSeconds;
+  }
+
+  double sampleDrawAndCountSecondsForTest() const {
+    return sampleDrawAndCountSeconds;
+  }
+
+  double sampleExpectationReductionSecondsForTest() const {
+    return sampleExpectationReductionSeconds;
+  }
+
   std::size_t countsOnlyNamedRegisterRemapsForTest() const {
     return countsOnlyNamedRegisterRemaps;
   }
@@ -237,6 +251,31 @@ public:
   }
 };
 
+static void recordSamplingPhaseProfile(
+    const mklq_test::SamplingPhaseProfileConfig &config,
+    const MklqCpuCircuitSimulatorTester &sim) {
+  ::testing::Test::RecordProperty("mklq_sampling_phase_profile", "true");
+  ::testing::Test::RecordProperty("mklq_sampling_phase_profile_target",
+                                  "mklq-cpu");
+  ::testing::Test::RecordProperty("mklq_sampling_phase_profile_qubits",
+                                  std::to_string(config.qubitCount));
+  ::testing::Test::RecordProperty(
+      "mklq_sampling_phase_profile_measured_qubits",
+      std::to_string(config.measuredQubitCount));
+  ::testing::Test::RecordProperty("mklq_sampling_phase_profile_shots",
+                                  std::to_string(config.shots));
+  ::testing::Test::RecordProperty(
+      "mklq_sampling_phase_profile_probability_fill_seconds",
+      mklq_test::formatPhaseSeconds(sim.sampleProbabilityFillSecondsForTest()));
+  ::testing::Test::RecordProperty(
+      "mklq_sampling_phase_profile_draw_and_count_seconds",
+      mklq_test::formatPhaseSeconds(sim.sampleDrawAndCountSecondsForTest()));
+  ::testing::Test::RecordProperty(
+      "mklq_sampling_phase_profile_expectation_reduction_seconds",
+      mklq_test::formatPhaseSeconds(
+          sim.sampleExpectationReductionSecondsForTest()));
+}
+
 static void expectRuntimeErrorContains(std::function<void()> action,
                                        std::string_view expected) {
   try {
@@ -252,6 +291,33 @@ static void expectNear(std::complex<double> actual,
                        std::complex<double> expected) {
   EXPECT_NEAR(actual.real(), expected.real(), 1.0e-12);
   EXPECT_NEAR(actual.imag(), expected.imag(), 1.0e-12);
+}
+
+CUDAQ_TEST(MKLQCpuTester, SamplingPhaseProfileEmitsNativeTimingForExternalProbe) {
+  const auto config = mklq_test::samplingPhaseProfileConfigFromEnvironment();
+  if (!config)
+    GTEST_SKIP() << "set MKLQ_ENABLE_SAMPLING_PHASE_PROFILE=1 to profile";
+
+  const auto dimension = 1ULL << config->qubitCount;
+  const auto amplitude = 1.0 / std::sqrt(static_cast<double>(dimension));
+  std::vector<std::complex<double>> state(
+      dimension, std::complex<double>{amplitude, 0.0});
+  std::vector<std::size_t> measuredQubits(config->measuredQubitCount);
+  std::iota(measuredQubits.begin(), measuredQubits.end(), 0);
+
+  MklqCpuCircuitSimulatorTester sim;
+  sim.setStateForTest(std::move(state));
+  const auto counts = sim.sampleQubitsWithoutSequentialDataForTest(
+      measuredQubits, config->shots);
+
+  std::size_t totalShots = 0;
+  for (const auto &[bits, count] : counts.counts)
+    totalShots += count;
+  EXPECT_EQ(totalShots, static_cast<std::size_t>(config->shots));
+  EXPECT_GT(sim.sampleProbabilityFillSecondsForTest(), 0.0);
+  EXPECT_GT(sim.sampleDrawAndCountSecondsForTest(), 0.0);
+  EXPECT_GT(sim.sampleExpectationReductionSecondsForTest(), 0.0);
+  recordSamplingPhaseProfile(*config, sim);
 }
 
 static std::vector<std::complex<double>>
