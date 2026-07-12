@@ -698,6 +698,8 @@ struct MetalStateVectorExecutor::Impl {
   std::size_t threeQubitApplications = 0;
   std::size_t fourQubitApplications = 0;
   std::size_t probabilityFillApplications = 0;
+  double residentProbabilityFillDispatchSeconds = 0.0;
+  double residentProbabilityFillHostConversionSeconds = 0.0;
   std::size_t marginalProbabilityApplications = 0;
   std::size_t measurementProbabilityApplications = 0;
   std::size_t measurementProbabilityReductionApplications = 0;
@@ -2095,6 +2097,7 @@ bool MetalStateVectorExecutor::fillResidentFullRegisterProbabilities(
       return false;
     }
 
+    const auto dispatchStart = std::chrono::steady_clock::now();
     id<MTLCommandBuffer> commandBuffer = [impl->commandQueue commandBuffer];
     id<MTLComputeCommandEncoder> encoder =
         [commandBuffer computeCommandEncoder];
@@ -2127,11 +2130,20 @@ bool MetalStateVectorExecutor::fillResidentFullRegisterProbabilities(
       [probabilitiesBuffer release];
       return false;
     }
+    impl->residentProbabilityFillDispatchSeconds +=
+        std::chrono::duration<double>(std::chrono::steady_clock::now() -
+                                      dispatchStart)
+            .count();
 
+    const auto conversionStart = std::chrono::steady_clock::now();
     auto *updatedProbabilities =
         reinterpret_cast<float *>([probabilitiesBuffer contents]);
     for (std::size_t index = 0; index < impl->residentStateSize; ++index)
       probabilities[index] = static_cast<double>(updatedProbabilities[index]);
+    impl->residentProbabilityFillHostConversionSeconds +=
+        std::chrono::duration<double>(std::chrono::steady_clock::now() -
+                                      conversionStart)
+            .count();
 
     [probabilitiesBuffer release];
   }
@@ -3015,6 +3027,15 @@ std::size_t MetalStateVectorExecutor::fourQubitGateApplications() const {
 
 std::size_t MetalStateVectorExecutor::probabilityFillApplications() const {
   return impl ? impl->probabilityFillApplications : 0;
+}
+
+double MetalStateVectorExecutor::residentProbabilityFillDispatchSeconds() const {
+  return impl ? impl->residentProbabilityFillDispatchSeconds : 0.0;
+}
+
+double
+MetalStateVectorExecutor::residentProbabilityFillHostConversionSeconds() const {
+  return impl ? impl->residentProbabilityFillHostConversionSeconds : 0.0;
 }
 
 std::size_t MetalStateVectorExecutor::marginalProbabilityApplications() const {

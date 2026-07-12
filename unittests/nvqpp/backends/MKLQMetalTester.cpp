@@ -117,6 +117,22 @@ public:
 #endif
   }
 
+  double residentProbabilityFillDispatchSecondsForTest() const {
+#if defined(MKLQ_ENABLE_METAL_RUNTIME)
+    return metalExecutor.residentProbabilityFillDispatchSeconds();
+#else
+    return 0.0;
+#endif
+  }
+
+  double residentProbabilityFillHostConversionSecondsForTest() const {
+#if defined(MKLQ_ENABLE_METAL_RUNTIME)
+    return metalExecutor.residentProbabilityFillHostConversionSeconds();
+#else
+    return 0.0;
+#endif
+  }
+
   std::size_t measurementProbabilityApplicationsForTest() const {
 #if defined(MKLQ_ENABLE_METAL_RUNTIME)
     return metalExecutor.measurementProbabilityApplications();
@@ -274,6 +290,10 @@ public:
     return sampleProbabilityFillSeconds;
   }
 
+  double sampleProbabilityHostFoldSecondsForTest() const {
+    return sampleProbabilityHostFoldSeconds;
+  }
+
   double sampleDrawAndCountSecondsForTest() const {
     return sampleDrawAndCountSeconds;
   }
@@ -381,6 +401,17 @@ static void recordSamplingPhaseProfile(
   ::testing::Test::RecordProperty(
       "mklq_sampling_phase_profile_probability_fill_seconds",
       mklq_test::formatPhaseSeconds(sim.sampleProbabilityFillSecondsForTest()));
+  ::testing::Test::RecordProperty(
+      "mklq_sampling_phase_profile_host_fold_seconds",
+      mklq_test::formatPhaseSeconds(sim.sampleProbabilityHostFoldSecondsForTest()));
+  ::testing::Test::RecordProperty(
+      "mklq_sampling_phase_profile_metal_probability_dispatch_seconds",
+      mklq_test::formatPhaseSeconds(
+          sim.residentProbabilityFillDispatchSecondsForTest()));
+  ::testing::Test::RecordProperty(
+      "mklq_sampling_phase_profile_metal_probability_host_conversion_seconds",
+      mklq_test::formatPhaseSeconds(
+          sim.residentProbabilityFillHostConversionSecondsForTest()));
   ::testing::Test::RecordProperty(
       "mklq_sampling_phase_profile_draw_and_count_seconds",
       mklq_test::formatPhaseSeconds(sim.sampleDrawAndCountSecondsForTest()));

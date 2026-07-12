@@ -33,6 +33,9 @@ def _profile_xml(module, target="mklq-metal", skipped=False):
         "mklq_sampling_phase_profile_probability_fill_seconds": "0.0042",
         "mklq_sampling_phase_profile_draw_and_count_seconds": "0.0008",
         "mklq_sampling_phase_profile_expectation_reduction_seconds": "0.0001",
+        "mklq_sampling_phase_profile_host_fold_seconds": "0.0005",
+        "mklq_sampling_phase_profile_metal_probability_dispatch_seconds": "0.002",
+        "mklq_sampling_phase_profile_metal_probability_host_conversion_seconds": "0.001",
         "mklq_sampling_phase_profile_metal_probability_fill_applications": "1",
         "mklq_sampling_phase_profile_metal_marginal_probability_applications": "0",
         "mklq_sampling_phase_profile_metal_generated_count_accumulations": "1",
@@ -57,6 +60,9 @@ def test_parse_profile_xml_reads_native_phase_properties(tmp_path):
     assert profile["measured_qubits"] == 12
     assert profile["shots"] == 65536
     assert profile["phase_seconds"]["probability_fill_seconds"] == 0.0042
+    assert profile["subphase_seconds"]["host_fold_seconds"] == 0.0005
+    assert profile["subphase_seconds"][
+        "metal_probability_dispatch_seconds"] == 0.002
     assert profile["metal_probability_fill_applications"] == 1
     assert profile["metal_marginal_probability_applications"] == 0
     assert profile["metal_generated_count_accumulations"] == 1
