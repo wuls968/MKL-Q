@@ -13,6 +13,9 @@ else()
 endif()
 
 add_library(cudaq-py-utils SHARED LinkedLibraryHolder.cpp)
+if(CUDAQ_MKLQ_PACKAGE_ONLY)
+  target_compile_definitions(cudaq-py-utils PRIVATE CUDAQ_MKLQ_PACKAGE_ONLY)
+endif()
 target_link_libraries(cudaq-py-utils PRIVATE 
   nvqir 
   cudaq 

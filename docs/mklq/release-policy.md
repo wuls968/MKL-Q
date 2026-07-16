@@ -1,173 +1,75 @@
-# MKL-Q Release Policy
+# MKL-Q Package Release Policy
 
-MKL-Q is currently a source-only public CUDA-Q-compatible fork. This policy
-defines what is allowed now, what is forbidden now, and what must be true before
-future tags, GitHub Releases, wheels, PyPI packages, installers, or signed
-artifacts are considered.
+MKL-Q publishes a Python runtime distribution named `mklq` for macOS ARM64.
+The public Python import remains `cudaq` for CUDA-Q compatibility, so `mklq`
+must be installed in an isolated virtual environment and must never be
+presented as an NVIDIA CUDA-Q distribution.
 
-## Current Policy
+The source-only phase is historical evidence for earlier MKL-Q commits; it is
+not the release policy for `mklq-v0.1.0`.
 
-The current public branch is source-only:
+## v0.1.0 Scope
 
-- No public version tags.
-- No GitHub Releases.
-- No PyPI packages.
-- No wheels.
-- No binary installers.
-- No Homebrew formula.
-- No signed release artifacts.
-- No release tarballs beyond GitHub's automatic source archive for the branch.
+- Release tag format: `mklq-vX.Y.Z`; the first final tag is `mklq-v0.1.0`.
+- Python distribution: `mklq`, supporting Python `>=3.11,<3.15` on macOS
+  ARM64 only.
+- Stable target: `mklq-cpu`.
+- Experimental target: `mklq-metal`; it is not default-ready, fully
+  Metal-native, or release-certified.
+- Wheel contents: Python runtime plus the `mklq-cpu` and `mklq-metal` target
+  libraries/configurations. The wheel does not provide `nvq++`.
+- Release assets: wheels, `SHA256SUMS`, GitHub artifact provenance, and
+  GitHub's source archive for the release tag.
 
-Use commit SHAs and the tracked source tree as the public reference. Do not
-describe a commit as an MKL-Q release unless this policy has been updated and
-the release gates below have passed.
+## Publication Sequence
 
-Documentation-only release-candidate labels such as
-`source-only-rc-v0.1` are allowed only when they point to the tracked
-source-only candidate entry point in
-[`source-only-rc-v0.1.md`](source-only-rc-v0.1.md). They are not release tags,
-GitHub Releases, binary artifacts, package versions, or release certification.
+1. Build `0.1.0rc1` from the release commit for Python 3.11–3.14 on trusted
+   macOS ARM64 runners. Each interpreter is provisioned by the runner image,
+   verified as native arm64 (not Rosetta), and builds its own wheel, manifest,
+   `lipo -archs` check, and fresh-environment smoke test.
+2. Publish all RC wheels through the protected `testpypi` environment. For
+   each Python version, download and reinstall the exact version from the
+   TestPyPI index in a clean virtual environment; verify the downloaded SHA256
+   against the build manifest, `cudaq.__version__`, the exact two-target set,
+   the CPU/experimental-Metal smoke tests, and the release tag commit SHA.
+3. Create `mklq-v0.1.0` on the same verified commit, build `0.1.0`, and
+   publish through the protected `pypi` environment. Repeat the clean PyPI
+   index installation, checksum, target-set, smoke, and tag-SHA checks.
+4. Create the GitHub prerelease/release only after the applicable index
+   verification, checksum generation, and provenance attestation succeed.
 
-Draft source-only tag notes such as `mklq-v0.1.0-source` are allowed only as
-preflight documentation when they point to tracked notes such as
-[`release-notes-v0.1.0-source.md`](release-notes-v0.1.0-source.md), keep
-`CHANGELOG.md` source-only, and pass
-`python3 benchmarks/mklq/run_source_release_tag_audit.py --docs-only`. They do
-not authorize creating a tag. The full tag audit must pass on clean `main`
-after a reviewed release decision and before any tag is created.
+PyPI and TestPyPI must use Trusted Publishing. No API token, Developer ID,
+notarization credential, or release signing secret may be committed to this
+repository or injected into local scripts.
 
-## Allowed Now
+## Required Gates
 
-These actions are allowed during the source-only phase:
+Before an RC or final release, all of the following must pass for the exact
+tagged commit:
 
-- Publish source commits to `main`.
-- Keep `wuls968/MKL-Q` as a fork of `NVIDIA/cuda-quantum`.
-- Publish source documentation under `docs/mklq/`.
-- Publish sanitized benchmark summaries under `benchmarks/mklq/reports/`.
-- Publish source-only release-candidate notes under `docs/mklq/` when they
-  preserve the no-tag, no-package, no-binary, non-certification boundary.
-- Publish draft source-only tag notes and changelog entries when they preserve
-  the no-tag, no-release, no-package, no-binary, non-certification boundary.
-- Run the lightweight public hygiene workflow.
-- Use local ignored JSON under `benchmarks/mklq/results/` for development
-  evidence.
+- `python3 benchmarks/mklq/run_package_release_audit.py --version <version>`;
+- `python3 benchmarks/mklq/run_public_healthcheck.py --full --require-clean`;
+- the manual Apple Silicon correctness workflow with `run_full_gate=confirm`;
+- a fresh virtual-environment installation and `mklq-cpu` Bell smoke test;
+- an experimental `mklq-metal` smoke test with no claim beyond that scope;
+- wheel inspection, `delocate` dependency repair, `SHA256SUMS`, native-arm64
+  `lipo -archs` verification, and artifact provenance verification;
+- a clean index-specific post-publication reinstall that verifies the exact
+  distribution version, downloaded wheel SHA256, MKL-Q target set, and tag
+  commit SHA.
 
-## Forbidden Now
+## Explicit Non-goals
 
-Do not do these without a reviewed release plan:
+- No Linux or Windows wheel.
+- No `nvq++` or C++ toolchain in the Python wheel.
+- No `.pkg`, `.dmg`, Homebrew formula, or unsigned native installer.
+- No native installer until a Developer ID signing identity and notarization
+  profile are available and independently validated.
+- No cross-machine performance certification or broad Metal release claim.
 
-- Create or push release tags.
-- Create GitHub Releases.
-- Upload wheels, installers, archives, checksums, or signing artifacts.
-- Publish to PyPI.
-- Publish a Homebrew formula or other package-manager recipe.
-- Claim binary compatibility or cross-machine performance certification.
-- Make `mklq-metal` the default target.
-- Describe `mklq-metal` as full Metal-native or release-ready.
+## Incident Handling
 
-## Release Branch Or Tag Criteria
-
-Before creating a release branch or tag, all of these must be true:
-
-- `docs/mklq/public-release-checklist.md` is complete.
-- `docs/mklq/upstream-sync.md` has been followed if upstream was synced.
-- `docs/mklq/testing-matrix.md` covers the release gate and any new target
-  behavior.
-- `docs/mklq/release-notes-v0.1.0-source.md` and `CHANGELOG.md` describe the
-  exact source-only scope without implying artifacts or package publication.
-- `python3 benchmarks/mklq/run_source_release_tag_audit.py` passes for the
-  exact clean `main` commit and proposed MKL-Q-specific tag name.
-- `MKL-Q Apple Silicon correctness` has a successful manual
-  `workflow_dispatch` run with `run_full_gate=confirm` for the exact commit;
-  the automatic `main` push `Dispatch guard` is not sufficient for source tag
-  preflight.
-- `python3 benchmarks/mklq/run_correctness_gate.py --install-prefix
-  "${HOME}/.cudaq-mklq" --build-dir build-python` passes on Apple Silicon.
-- `cmake --build build-python --target install -j 6` passes for the intended
-  install prefix.
-- GitHub `MKL-Q public hygiene` passes for the exact commit.
-- `git status --short --branch` is clean before collecting release evidence.
-- No raw benchmark JSON, build output, caches, `.DS_Store`, local signing
-  objects, private paths, tokens, or secrets are tracked.
-- Any performance claim is backed by sanitized benchmark summaries and states
-  machine scope.
-- `mklq-metal` support language remains experimental unless a separate Metal
-  release-readiness plan has passed.
-
-If tags are introduced later, use an MKL-Q-specific tag namespace such as
-`mklq-vX.Y.Z` so tags cannot be confused with upstream CUDA-Q tags.
-
-## GitHub Release Entry Criteria
-
-A GitHub Release may only be considered after the release branch or tag criteria
-pass and a release plan also defines:
-
-- release notes;
-- supported platforms;
-- exact source commit and tag;
-- validation commands and results;
-- known limitations;
-- artifact list, if any;
-- checksum and signing policy, if artifacts exist;
-- rollback or yanking procedure;
-- license and NOTICE review.
-
-Do not attach local build products or ad-hoc artifacts to GitHub Releases.
-
-## Wheel And PyPI Entry Criteria
-
-Wheels or PyPI packages require a separate packaging plan. At minimum, that plan
-must define:
-
-- package name and ownership;
-- whether the public Python namespace remains `cudaq`;
-- Python version support;
-- macOS ARM64 build environment;
-- reproducible build commands;
-- isolated install smoke tests in a fresh virtual environment;
-- `nvq++` packaging behavior;
-- dynamic library layout and signing behavior;
-- dependency and license audit;
-- uninstall and upgrade behavior;
-- security contact and yanking process.
-
-Do not publish a package that could be mistaken for an official NVIDIA CUDA-Q
-package. Do not publish MKL-Q packaging artifacts until this policy is updated
-with the accepted plan.
-
-## Binary Artifact Hygiene
-
-The public tree must not track release artifacts during the source-only phase,
-including:
-
-- `dist/`
-- `wheelhouse/`
-- `*.whl`
-- `*.dmg`
-- `*.pkg`
-- `*.zip`
-- `*.tar.gz`
-- signed local objects;
-- local notarization or signing logs.
-
-The public hygiene workflow should reject these if they become tracked.
-
-## Stop Conditions
-
-Stop release or publication work if any of these are true:
-
-- The repository is dirty and the change was not intentionally reviewed.
-- `origin/main` does not match the intended release commit.
-- GitHub Actions is failing or still unknown for the intended commit.
-- The release would publish raw local benchmark payloads.
-- The release would publish generated build products or local signing artifacts.
-- Documentation claims support that the testing matrix does not prove.
-- `mklq-metal` is presented as default-ready without a passed Metal
-  release-readiness plan.
-- The package or release could be confused with official upstream CUDA-Q.
-
-## Future Policy Updates
-
-When MKL-Q is ready for real release artifacts, update this file in the same
-change as the release plan. That update should be reviewed before any tag,
-GitHub Release, wheel, PyPI package, installer, or signed artifact is created.
+Use GitHub private vulnerability reporting for security issues. If a published
+wheel must be withdrawn, mark the GitHub Release as draft or yanked and yank
+the PyPI version; publish the repair as a new `.postN` version. Never delete
+or overwrite a published PyPI file.

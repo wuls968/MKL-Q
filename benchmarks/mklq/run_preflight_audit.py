@@ -14,6 +14,7 @@ import re
 import subprocess
 import sys
 import time
+import tomllib
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -27,6 +28,7 @@ DEFAULT_REPO = "wuls968/MKL-Q"
 EXPECTED_ORIGIN = "https://github.com/wuls968/MKL-Q.git"
 EXPECTED_UPSTREAM = "https://github.com/NVIDIA/cuda-quantum.git"
 REQUIRED_STATUS_CHECK = "Source-only repository checks"
+PACKAGE_REQUIRED_STATUS_CHECK = "MKL-Q repository checks"
 LOCK_NAMES = ("index.lock", "HEAD.lock", "config.lock", "packed-refs.lock",
               "shallow.lock")
 LOCK_RECHECK_DELAY_SECONDS = 0.25
@@ -51,6 +53,19 @@ class PreflightConfig:
 
 def repo_root() -> Path:
     return Path(__file__).resolve().parents[2]
+
+
+def is_package_release(root: Path) -> bool:
+    try:
+        with (root / "pyproject.toml").open("rb") as handle:
+            return tomllib.load(handle).get("project", {}).get("name") == "mklq"
+    except (FileNotFoundError, tomllib.TOMLDecodeError):
+        return False
+
+
+def required_status_check_for(root: Path) -> str:
+    return PACKAGE_REQUIRED_STATUS_CHECK if is_package_release(
+        root) else REQUIRED_STATUS_CHECK
 
 
 def output_default(stamp: str) -> Path:
@@ -314,10 +329,11 @@ def check_branch_protection(config: PreflightConfig) -> dict[str, Any]:
     required = protection.get("required_status_checks") or {}
     contexts = set(required.get("contexts") or [])
     checks = {check.get("context") for check in required.get("checks") or []}
+    required_status_check = required_status_check_for(config.repo_root)
     failures: list[str] = []
     if branch.get("protected") is not True:
         failures.append("branch is not protected")
-    if REQUIRED_STATUS_CHECK not in contexts and REQUIRED_STATUS_CHECK not in checks:
+    if required_status_check not in contexts and required_status_check not in checks:
         failures.append("required status check is missing")
     if required.get("strict") is not True:
         failures.append("required status checks are not strict")
@@ -332,10 +348,28 @@ def check_branch_protection(config: PreflightConfig) -> dict[str, Any]:
         "repo": config.repo,
         "branch": branch,
         "protection": protection,
-        "required_status_check": REQUIRED_STATUS_CHECK,
+        "required_status_check": required_status_check,
     }
     return failed("branch_protection", "; ".join(failures),
                   details) if failures else passed("branch_protection", details)
+
+
+def check_security_reporting(config: PreflightConfig) -> dict[str, Any]:
+    """Require the package-release vulnerability reporting entry point."""
+    if not is_package_release(config.repo_root):
+        return passed("security_reporting", {"skipped": True})
+    path = config.repo_root / "SECURITY.md"
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace").lower()
+    except FileNotFoundError:
+        return failed("security_reporting", "SECURITY.md is missing")
+    required = "private vulnerability reporting"
+    details = {"path": "SECURITY.md", "required_phrase": required}
+    return (passed("security_reporting", details)
+            if required in text else failed(
+                "security_reporting",
+                "SECURITY.md does not require private vulnerability reporting",
+                details))
 
 
 def build_report(config: PreflightConfig) -> dict[str, Any]:
@@ -348,6 +382,8 @@ def build_report(config: PreflightConfig) -> dict[str, Any]:
         check_ignored_local_artifacts(config),
         check_branch_protection(config),
     ]
+    if is_package_release(config.repo_root):
+        checks.append(check_security_reporting(config))
     return {
         "schema_version": SCHEMA_VERSION,
         "generated_at": generated_at,

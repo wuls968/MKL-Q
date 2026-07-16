@@ -70,11 +70,16 @@ if (CMAKE_COMPILER_IS_GNUCXX
   target_compile_options(${LIBRARY_NAME} PUBLIC $<$<COMPILE_LANGUAGE:CXX>:--param=evrp-mode=legacy>)
 endif()
 
-# We can only build the RestClient support if we have OpenSSL
-if(OPENSSL_FOUND)
+# RestClient.cpp provides no-REST stubs when CUDAQ_RESTCLIENT_AVAILABLE is not
+# defined. Keep those ABI symbols in the Python runtime while avoiding CPR and
+# remote-service dependencies for package-only MKL-Q wheels.
+target_sources(${LIBRARY_NAME} PRIVATE RestClient.cpp)
+
+# RestClient is a remote-service feature. Package-only MKL-Q wheels explicitly
+# disable REST and must not link CPR just because OpenSSL happens to be present.
+if(OPENSSL_FOUND AND CUDAQ_ENABLE_REST)
   message(STATUS "OpenSSL Found, building REST Client.")
 
-  target_sources(${LIBRARY_NAME} PRIVATE RestClient.cpp)
   # --start-group is a GNU ld flag for circular dependencies; Apple's ld doesn't support it
   if(APPLE)
     target_link_libraries(${LIBRARY_NAME} PRIVATE cpr::cpr ZLIB::ZLIB)

@@ -50,7 +50,9 @@
 #include "utils/LinkedLibraryHolder.h"
 #include "utils/OpaqueArguments.h"
 #include "cudaq/Support/Version.h"
+#if !defined(CUDAQ_MKLQ_PACKAGE_ONLY)
 #include "cudaq/platform/orca/orca_qpu.h"
+#endif
 #include "cudaq/runtime/logger/logger.h"
 #include "mlir/Bindings/Python/NanobindAdaptors.h"
 #include "mlir/CAPI/Pass.h"
@@ -150,10 +152,17 @@ NB_MODULE(_quakeDialects, m) {
   cudaqRuntime.def("num_available_gpus", &num_available_gpus,
                    "The number of available GPUs detected on the system.");
 
+#if defined(CUDAQ_MKLQ_PACKAGE_ONLY)
+  // The mklq distribution metadata and Python API must expose the identical
+  // PEP 440 value. The upstream CUDA-Q provenance string is intentionally
+  // retained for non-package-only builds below.
+  cudaqRuntime.attr("__version__") = getVersion();
+#else
   std::stringstream ss;
   ss << "CUDA-Q Version " << getVersion() << " (" << getFullRepositoryVersion()
      << ")";
   cudaqRuntime.attr("__version__") = ss.str();
+#endif
 
   auto mpiSubmodule = cudaqRuntime.def_submodule("mpi");
   mpiSubmodule.def(
@@ -305,6 +314,7 @@ Using ``mpi4py``:
 When using ``mpi4py``, keep the communicator object alive while CUDA-Q uses it.)doc",
       nanobind::arg("commPtr"));
 
+#if !defined(CUDAQ_MKLQ_PACKAGE_ONLY)
   auto orcaSubmodule = cudaqRuntime.def_submodule("orca");
   orcaSubmodule.def(
       "sample",
@@ -385,6 +395,7 @@ When using ``mpi4py``, keep the communicator object alive while CUDA-Q uses it.)
       },
       "Release a qudit of given id.", nanobind::arg("level"),
       nanobind::arg("id"));
+#endif
   cudaqRuntime.def("cloneModule",
                    [](MlirModule mod) { return wrap(unwrap(mod).clone()); });
   cudaqRuntime.def(

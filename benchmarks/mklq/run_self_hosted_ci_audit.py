@@ -13,6 +13,7 @@ import json
 import re
 import subprocess
 import sys
+import tomllib
 from dataclasses import dataclass
 from datetime import date, datetime, timezone
 from pathlib import Path
@@ -25,6 +26,7 @@ DOC_PATH = Path("docs/mklq/apple-silicon-ci.md")
 LIGHTWEIGHT_WORKFLOW = ".github/workflows/mklq-public-hygiene.yml"
 APPLE_SILICON_WORKFLOW = ".github/workflows/mklq-apple-silicon-ci.yml"
 EXPECTED_WORKFLOWS = sorted((LIGHTWEIGHT_WORKFLOW, APPLE_SILICON_WORKFLOW))
+PACKAGE_RELEASE_WORKFLOW = ".github/workflows/mklq-package-release.yml"
 REQUIRED_RUNNER_LABELS = ("self-hosted", "macOS", "ARM64",
                           "mklq-apple-silicon")
 
@@ -95,6 +97,8 @@ REQUIRED_TOKENS = (
     "no wheels",
     "not enable",
 )
+PACKAGE_REQUIRED_TOKENS = tuple(
+    token for token in REQUIRED_TOKENS if token != "source-only")
 
 LIGHTWEIGHT_WORKFLOW_FORBIDDEN_LINES = (
     "runs-on: self-hosted",
@@ -198,6 +202,24 @@ class AuditConfig:
 
 def repo_root() -> Path:
     return Path(__file__).resolve().parents[2]
+
+
+def is_package_release(root: Path) -> bool:
+    try:
+        with (root / "pyproject.toml").open("rb") as handle:
+            return tomllib.load(handle).get("project", {}).get("name") == "mklq"
+    except (FileNotFoundError, tomllib.TOMLDecodeError):
+        return False
+
+
+def expected_workflows_for(root: Path) -> list[str]:
+    if is_package_release(root):
+        return sorted((*EXPECTED_WORKFLOWS, PACKAGE_RELEASE_WORKFLOW))
+    return EXPECTED_WORKFLOWS
+
+
+def required_tokens_for(root: Path) -> tuple[str, ...]:
+    return PACKAGE_REQUIRED_TOKENS if is_package_release(root) else REQUIRED_TOKENS
 
 
 def output_default(stamp: str) -> Path:
@@ -323,10 +345,11 @@ def check_doc_sections(config: AuditConfig, text: str) -> dict[str, Any]:
 
 
 def check_doc_tokens(config: AuditConfig, text: str) -> dict[str, Any]:
-    missing = missing_tokens(text, REQUIRED_TOKENS)
+    required = required_tokens_for(config.repo_root)
+    missing = missing_tokens(text, required)
     details = {
         "path": DOC_PATH.as_posix(),
-        "required": list(REQUIRED_TOKENS),
+        "required": list(required),
         "missing": missing,
     }
     return failed("doc_tokens", "required self-hosted CI boundary text missing",
@@ -337,8 +360,9 @@ def check_workflow_boundary(config: AuditConfig) -> dict[str, Any]:
     workflows = command_output(config.repo_root,
                                ["git", "ls-files",
                                 ".github/workflows"]).splitlines()
-    unexpected = [path for path in workflows if path not in EXPECTED_WORKFLOWS]
-    missing = [path for path in EXPECTED_WORKFLOWS if path not in workflows]
+    expected = expected_workflows_for(config.repo_root)
+    unexpected = [path for path in workflows if path not in expected]
+    missing = [path for path in expected if path not in workflows]
 
     lightweight_path = config.repo_root / LIGHTWEIGHT_WORKFLOW
     lightweight_forbidden: list[dict[str, Any]] = []
@@ -360,7 +384,7 @@ def check_workflow_boundary(config: AuditConfig) -> dict[str, Any]:
 
     details = {
         "workflows": workflows,
-        "expected_workflows": EXPECTED_WORKFLOWS,
+        "expected_workflows": expected,
         "unexpected_workflows": unexpected,
         "missing_workflows": missing,
         "lightweight_workflow": LIGHTWEIGHT_WORKFLOW,

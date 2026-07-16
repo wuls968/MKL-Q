@@ -11,7 +11,7 @@ check before `main` advances, including maintainer-owned changes.
 
 The public `main` branch should be protected with:
 
-- required status check: `Source-only repository checks`;
+- required status check: `MKL-Q repository checks`;
 - strict status checks, so pull requests are tested against current `main`;
 - administrator enforcement enabled, so maintainers use the same required
   status check path as external contributors;
@@ -20,9 +20,10 @@ The public `main` branch should be protected with:
 - pull request reviews not required by policy yet;
 - branch restrictions not required by policy yet.
 
-This is a source-only repository hygiene gate. It does not build CUDA-Q, run the
-Apple Silicon correctness gate, certify Metal behavior, or validate release
-artifacts.
+This is a package-release-aware repository hygiene gate. It does not build
+CUDA-Q, run the Apple Silicon correctness gate, certify Metal behavior, or
+replace the tag-specific wheel, checksum, provenance, and Trusted Publishing
+validation in the manual package release workflow.
 
 ## Applying The Policy
 
@@ -48,7 +49,7 @@ gh api repos/wuls968/MKL-Q/branches/main/protection --jq '{
 ## Maintainer Recovery Boundary
 
 Administrator enforcement is intentionally enabled. Routine work should land
-through a branch or pull request after the `Source-only repository checks` job
+through a branch or pull request after the `MKL-Q repository checks` job
 passes for the proposed commit.
 
 If a pushed commit or branch protection change blocks recovery, use the GitHub

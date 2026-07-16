@@ -208,6 +208,26 @@ elseif (CUDAQ_ENABLE_MKLQ_BACKEND AND NOT CUDAQ_MKLQ_APPLE_SILICON_TARGET)
     "architecture. Effective target architecture(s): "
     "'${_cudaq_mklq_target_architectures}'.")
 endif()
+option(CUDAQ_MKLQ_PACKAGE_ONLY
+  "Build a wheel runtime with only the MKL-Q simulator targets." OFF)
+if(CUDAQ_MKLQ_PACKAGE_ONLY AND NOT CUDAQ_ENABLE_MKLQ_BACKEND)
+  message(FATAL_ERROR
+    "CUDAQ_MKLQ_PACKAGE_ONLY=ON requires CUDAQ_ENABLE_MKLQ_BACKEND=ON.")
+endif()
+if(CUDAQ_MKLQ_PACKAGE_ONLY)
+  if(NOT DEFINED ENV{MKLQ_VERSION})
+    message(FATAL_ERROR
+      "CUDAQ_MKLQ_PACKAGE_ONLY=ON requires ENV{MKLQ_VERSION}.")
+  elseif("$ENV{MKLQ_VERSION}" STREQUAL "")
+    message(FATAL_ERROR
+      "CUDAQ_MKLQ_PACKAGE_ONLY=ON requires ENV{MKLQ_VERSION}.")
+  endif()
+  set(MKLQ_RELEASE_VERSION "$ENV{MKLQ_VERSION}")
+  if (NOT MKLQ_RELEASE_VERSION MATCHES "^[0-9]+\\.[0-9]+\\.[0-9]+((a|b|rc)[0-9]+)?(\\.post[0-9]+)?$")
+    message(FATAL_ERROR
+      "MKLQ_VERSION must be a release PEP 440 version such as 0.1.0 or 0.1.0rc1")
+  endif()
+endif()
 unset(_cudaq_mklq_target_architectures)
 
 # =============================================================================
@@ -298,6 +318,28 @@ option(CUDAQ_DISABLE_CPP_FRONTEND "Build without the CUDA-Q C++ Clang-based Fron
 option(CUDAQ_ENABLE_CC "Enable CUDA-Q code coverage generation." OFF)
 option(CUDAQ_REQUIRE_OPENMP "Fail the build if OpenMP is not found." OFF)
 option(CUDAQ_ENABLE_SANITIZERS "Enable Address Sanitizer (ASan) and Undefined Behavior Sanitizer (UBSan)." OFF)
+
+if(CUDAQ_MKLQ_PACKAGE_ONLY)
+  # The release wheel is a local MKL-Q runtime, not a general CUDA-Q SDK.
+  # This follows the generic option declarations so forced cache entries
+  # cannot be overwritten by a later option() default.
+  set(CUDAQ_ENABLE_ALL_BACKEND OFF CACHE BOOL "" FORCE)
+  set(CUDAQ_ENABLE_REST OFF CACHE BOOL "" FORCE)
+  # The Python extension always exposes its optimizer bindings, so their
+  # implementation libraries remain part of the Python runtime contract.
+  set(CUDAQ_ENABLE_NLOPT ON CACHE BOOL "" FORCE)
+  set(CUDAQ_ENABLE_ENSMALLEN ON CACHE BOOL "" FORCE)
+  set(CUDAQ_SKIP_MPI ON CACHE BOOL "" FORCE)
+  set(CUDAQ_DISABLE_CPP_FRONTEND ON CACHE BOOL "" FORCE)
+  set(CUDAQ_DISABLE_TOOLS ON CACHE BOOL "" FORCE)
+  set(CUDAQ_EXTERNAL_PROJECTS "" CACHE STRING "" FORCE)
+  foreach(_cudaq_non_mklq_backend
+      BRAKET ANYON IONQ IQM OQC PASQAL QCI TII QUANTUM_MACHINES SCALEWAY QBRAID)
+    set(CUDAQ_ENABLE_${_cudaq_non_mklq_backend}_BACKEND OFF CACHE BOOL "" FORCE)
+  endforeach()
+  set(CUDAQ_ENABLE_PASQAL_QRMI_CONNECTOR OFF CACHE BOOL "" FORCE)
+  unset(_cudaq_non_mklq_backend)
+endif()
 
 # Sub-projects that can be enabled independently, in the style of
 # LLVM_ENABLE_PROJECTS. Accepts a semicolon-separated list.
@@ -758,9 +800,11 @@ add_custom_target(cudaq-doc)
 
 # Version
 # ==============================================================================
-if (DEFINED ENV{CUDA_QUANTUM_VERSION})
-  # The version was defined by the user (likely a bot performing the build), so
-  # use the value provided as is.
+# Package release automation owns the public MKL-Q version explicitly.
+if(CUDAQ_MKLQ_PACKAGE_ONLY)
+  set(CUDA_QUANTUM_VERSION "${MKLQ_RELEASE_VERSION}")
+elseif (DEFINED ENV{CUDA_QUANTUM_VERSION})
+  # Retain the upstream override for non-release developer builds.
   set(CUDA_QUANTUM_VERSION "$ENV{CUDA_QUANTUM_VERSION}")
 else()
   # Otherwise, create a version based on the nearest tag in the git repo.
@@ -861,15 +905,17 @@ if (OPENSSL_FOUND AND CUDAQ_ENABLE_REST)
 endif()
 
 # QPP simulator
-if (NOT CUDAQ_DISABLE_RUNTIME)
-  add_subdirectory(tpls/qpp EXCLUDE_FROM_ALL)
-  # Required workaround to add libqpp as SYSTEM. This will prevent it from
-  # generating warnings, which we treat as errors.
-  get_target_property(LIBQPP_INCLUDE libqpp INTERFACE_INCLUDE_DIRECTORIES)
-  set_target_properties(libqpp
-    PROPERTIES
-      INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${LIBQPP_INCLUDE}")
-  add_openmp_interface_definitions(libqpp)
+if (NOT CUDAQ_MKLQ_PACKAGE_ONLY)
+  if (NOT CUDAQ_DISABLE_RUNTIME)
+    add_subdirectory(tpls/qpp EXCLUDE_FROM_ALL)
+    # Required workaround to add libqpp as SYSTEM. This will prevent it from
+    # generating warnings, which we treat as errors.
+    get_target_property(LIBQPP_INCLUDE libqpp INTERFACE_INCLUDE_DIRECTORIES)
+    set_target_properties(libqpp
+      PROPERTIES
+        INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${LIBQPP_INCLUDE}")
+    add_openmp_interface_definitions(libqpp)
+  endif()
 endif()
 
 # Check for CUDA Support

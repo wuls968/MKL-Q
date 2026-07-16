@@ -15,8 +15,11 @@ from typing import Dict, List, Sequence, Tuple
 
 import numpy
 
+from ._mklq_distribution import ensure_mklq_distribution_ownership
 from ._metadata import cuda_major
 from ._packages import get_library_path
+
+ensure_mklq_distribution_ownership()
 
 # Set the multiprocessing start method to `forkserver` if not already set
 if multiprocessing.get_start_method(allow_none=True) is None:
@@ -287,7 +290,8 @@ ComplexMatrix = cudaq_runtime.ComplexMatrix
 testing = cudaq_runtime.testing
 
 # target-specific
-orca = cudaq_runtime.orca
+if hasattr(cudaq_runtime, "orca"):
+    orca = cudaq_runtime.orca
 
 # ============================================================================ #
 # Utility Functions

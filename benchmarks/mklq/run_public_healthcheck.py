@@ -16,6 +16,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import tomllib
 from dataclasses import dataclass, replace
 from datetime import date, datetime, timezone
 from pathlib import Path
@@ -31,6 +32,11 @@ TRACKED_ARTIFACT_PATTERN = re.compile(
     r"^(dist|wheelhouse)/|\.(whl|dmg|pkg|zip)$|\.tar\.gz$")
 EXPECTED_WORKFLOWS = [
     ".github/workflows/mklq-apple-silicon-ci.yml",
+    ".github/workflows/mklq-public-hygiene.yml",
+]
+PACKAGE_RELEASE_WORKFLOWS = [
+    ".github/workflows/mklq-apple-silicon-ci.yml",
+    ".github/workflows/mklq-package-release.yml",
     ".github/workflows/mklq-public-hygiene.yml",
 ]
 
@@ -129,6 +135,8 @@ BENCHMARK_HELPERS = (
     "benchmarks/mklq/run_metal_runtime_counter_probe.py",
     "benchmarks/mklq/run_sampling_phase_profile_probe.py",
     "benchmarks/mklq/run_preflight_audit.py",
+    "benchmarks/mklq/package_release.py",
+    "benchmarks/mklq/run_package_release_audit.py",
     "benchmarks/mklq/run_public_release_checklist_audit.py",
     "benchmarks/mklq/run_source_release_tag_audit.py",
     "benchmarks/mklq/run_public_readiness_audit.py",
@@ -355,7 +363,8 @@ def run_git_repository_check(config: HealthcheckConfig) -> dict[str, Any]:
     failures: list[str] = []
     if shallow.strip() != "false":
         failures.append("repository is shallow")
-    if workflows != EXPECTED_WORKFLOWS:
+    expected_workflows = expected_workflows_for(config.repo_root)
+    if workflows != expected_workflows:
         failures.append("unexpected tracked GitHub workflow set")
     if config.require_clean:
         dirty_lines = [line for line in status.splitlines() if not line.startswith("##")]
@@ -373,6 +382,7 @@ def run_git_repository_check(config: HealthcheckConfig) -> dict[str, Any]:
         "remotes": remotes,
         "is_shallow": shallow.strip(),
         "workflows": workflows,
+        "expected_workflows": expected_workflows,
     }
     return failed("; ".join(failures), details) if failures else passed(details)
 
@@ -614,6 +624,49 @@ def public_metadata_requirements() -> list[tuple[str, str]]:
     ]
 
 
+def is_package_release(root: Path) -> bool:
+    try:
+        with (root / "pyproject.toml").open("rb") as handle:
+            project = tomllib.load(handle).get("project", {})
+    except (FileNotFoundError, tomllib.TOMLDecodeError):
+        return False
+    return project.get("name") == "mklq"
+
+
+def expected_workflows_for(root: Path) -> list[str]:
+    return PACKAGE_RELEASE_WORKFLOWS if is_package_release(root) else EXPECTED_WORKFLOWS
+
+
+def package_public_metadata_requirements() -> list[tuple[str, str]]:
+    return [
+        ("README.md", "python -m pip install mklq"),
+        ("README.md", "release-notes-v0.1.0.md"),
+        ("README.md", "run_package_release_audit.py"),
+        ("README.md", "mklq-metal"),
+        ("pyproject.toml", 'name = "mklq"'),
+        ("pyproject.toml", 'requires-python = ">=3.11,<3.15"'),
+        ("python/README.md.in", "macOS ARM64"),
+        ("python/README.md.in", "pip install mklq"),
+        ("docs/mklq/release-policy.md", "TestPyPI"),
+        ("docs/mklq/release-policy.md", "mklq-metal"),
+        ("docs/mklq/release-notes-v0.1.0.md", "mklq-v0.1.0"),
+        ("docs/mklq/public-release-checklist.md", "run_package_release_audit.py"),
+        ("docs/mklq/public-readiness.md", "MKL-Q repository checks"),
+        ("SECURITY.md", "private vulnerability reporting"),
+        (".github/workflows/mklq-public-hygiene.yml",
+         "name: MKL-Q repository checks"),
+        (".github/workflows/mklq-package-release.yml", "workflow_dispatch"),
+        (".github/workflows/mklq-package-release.yml", "testpypi"),
+        (".github/workflows/mklq-package-release.yml", "pypi"),
+        (".github/branch-protection-main.json", "MKL-Q repository checks"),
+    ]
+
+
+def public_metadata_requirements_for(root: Path) -> list[tuple[str, str]]:
+    return (package_public_metadata_requirements()
+            if is_package_release(root) else public_metadata_requirements())
+
+
 def banned_tokens() -> list[str]:
     return [
         "cuda-quantum" + "@nvidia.com",
@@ -653,7 +706,7 @@ def normalize_whitespace(text: str) -> str:
 
 def run_public_metadata_check(config: HealthcheckConfig) -> dict[str, Any]:
     missing: list[str] = []
-    for relative_path, token in public_metadata_requirements():
+    for relative_path, token in public_metadata_requirements_for(config.repo_root):
         path = config.repo_root / relative_path
         if not path.exists():
             missing.append(f"{relative_path}: file is missing")
@@ -695,6 +748,24 @@ def run_public_claim_boundary_check(config: HealthcheckConfig) -> dict[str, Any]
 
 def run_public_release_checklist_audit(
         config: HealthcheckConfig) -> dict[str, Any]:
+    if is_package_release(config.repo_root):
+        script = config.repo_root / "benchmarks" / "mklq" / (
+            "run_package_release_audit.py")
+        command = [
+            config.python_executable,
+            str(script),
+            "--repo-root",
+            str(config.repo_root),
+            "--version",
+            "0.1.0",
+            "--docs-only",
+            "--output",
+            str(config.repo_root / "benchmarks" / "mklq" / "results" /
+                f"package-release-audit-{config.stamp}.json"),
+        ]
+        result = run_command(config, command)
+        return (passed(result) if result["returncode"] == 0 else
+                failed("package release audit failed", result))
     script = config.repo_root / "benchmarks" / "mklq" / (
         "run_public_release_checklist_audit.py")
     command = [
@@ -713,6 +784,8 @@ def run_public_release_checklist_audit(
 
 
 def run_source_release_tag_audit(config: HealthcheckConfig) -> dict[str, Any]:
+    if is_package_release(config.repo_root):
+        return passed({"skipped": "source-only audit is historical; package audit runs separately"})
     script = config.repo_root / "benchmarks" / "mklq" / (
         "run_source_release_tag_audit.py")
     command = [
@@ -1507,6 +1580,8 @@ def public_snapshot_step_counts(config: HealthcheckConfig) -> dict[str, int]:
 
 def run_healthcheck_snapshot_docs_check(
         config: HealthcheckConfig) -> dict[str, Any]:
+    if is_package_release(config.repo_root):
+        return passed({"skipped": "package release policy does not use source-only snapshots"})
     counts = public_snapshot_step_counts(config)
     default_count = counts["default"]
     full_count = counts["full"]
@@ -1775,7 +1850,7 @@ def build_steps(config: HealthcheckConfig) -> list[Step]:
              "Audit public release checklist coverage.",
              run_public_release_checklist_audit),
         Step("source_release_tag_audit",
-             "Audit planned source-only tag docs and boundaries.",
+             "Confirm the historical source-only audit is not used for package releases.",
              run_source_release_tag_audit),
         Step("upstream_sync_audit",
              "Dry-run audit upstream sync topology and risk classification.",

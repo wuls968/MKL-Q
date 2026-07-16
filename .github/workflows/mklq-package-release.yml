@@ -1,0 +1,380 @@
+name: MKL-Q package release
+
+on:
+  workflow_dispatch:
+    inputs:
+      phase:
+        description: Publish an RC to TestPyPI or a verified final wheel to PyPI.
+        required: true
+        type: choice
+        options: [testpypi, pypi]
+      version:
+        description: PEP 440 version without a leading v.
+        required: true
+        type: string
+      tag:
+        description: Existing MKL-Q tag that points at origin/main.
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag }}
+          fetch-depth: 0
+      - name: Validate release identity and package contract
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          expected_tag="mklq-v${{ inputs.version }}"
+          test "${{ inputs.tag }}" = "${expected_tag}"
+          case "${{ inputs.phase }}" in
+            testpypi)
+              [[ "${{ inputs.version }}" =~ (a|b|rc)[0-9]+$ ]]
+              ;;
+            pypi)
+              if [[ "${{ inputs.version }}" =~ (a|b|rc)[0-9]+$ ]]; then
+                echo "PyPI publication requires a final or post-release version." >&2
+                exit 1
+              fi
+              ;;
+          esac
+          git fetch origin main --tags
+          test "$(git rev-parse HEAD)" = "$(git rev-parse "${{ inputs.tag }}^{commit}")"
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)"
+          if [[ "${{ inputs.phase }}" = "pypi" && "${{ inputs.version }}" != *.post* ]]; then
+            rc_tag="mklq-v${{ inputs.version }}rc1"
+            test "$(git rev-parse HEAD)" = "$(git rev-parse "${rc_tag}^{commit}")"
+          fi
+          python3 benchmarks/mklq/package_release.py validate-version "${{ inputs.version }}"
+          python3 benchmarks/mklq/run_package_release_audit.py \
+            --version "${{ inputs.version }}" --docs-only
+          test "$(gh api "repos/${{ github.repository }}" \
+            --jq '.security_and_analysis.private_vulnerability_reporting.status // empty')" = "enabled"
+          full_gate_run="$(gh run list --repo "${{ github.repository }}" \
+            --workflow "MKL-Q Apple Silicon correctness" \
+            --commit "$(git rev-parse HEAD)" --status completed --limit 20 \
+            --json databaseId,headSha,conclusion,event | \
+            python3 -c 'import json, sys; sha = sys.argv[1]; runs = json.load(sys.stdin); print(next(str(run["databaseId"]) for run in runs if run.get("headSha") == sha and run.get("conclusion") == "success" and run.get("event") == "workflow_dispatch"))' "$(git rev-parse HEAD)")"
+          gh run view "${full_gate_run}" --repo "${{ github.repository }}" --json jobs | \
+            python3 -c 'import json, sys; jobs = json.load(sys.stdin)["jobs"]; assert any(job.get("name") == "Manual Apple Silicon correctness gate" and job.get("conclusion") == "success" for job in jobs)'
+
+  build:
+    needs: preflight
+    runs-on: [self-hosted, macOS, ARM64, mklq-apple-silicon]
+    environment:
+      name: ${{ inputs.phase }}
+    env:
+      MKLQ_ASSET_ROOT: ${{ runner.temp }}/mklq-release-assets-${{ inputs.version }}-py${{ matrix.python }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - python: "3.11"
+            python_path: /opt/homebrew/opt/python@3.11/bin/python3.11
+          - python: "3.12"
+            python_path: /opt/homebrew/opt/python@3.12/bin/python3.12
+          - python: "3.13"
+            python_path: /opt/homebrew/opt/python@3.13/bin/python3.13
+          - python: "3.14"
+            python_path: /opt/homebrew/opt/python@3.14/bin/python3.14
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag }}
+          submodules: recursive
+      - name: Verify trusted runner Python provisioning
+        id: interpreter
+        shell: bash
+        env:
+          EXPECTED_PYTHON: ${{ matrix.python }}
+          RUNNER_PYTHON: ${{ matrix.python_path }}
+        run: |
+          set -euo pipefail
+          test "$(uname -s)" = "Darwin"
+          test "$(uname -m)" = "arm64"
+          test -x "${RUNNER_PYTHON}"
+          actual_version="$("${RUNNER_PYTHON}" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
+          test "${actual_version}" = "${EXPECTED_PYTHON}"
+          python_machine="$("${RUNNER_PYTHON}" -c 'import platform; print(platform.machine())')"
+          python_platform="$("${RUNNER_PYTHON}" -c 'import sysconfig; print(sysconfig.get_platform())')"
+          test "${python_machine}" = "arm64"
+          [[ "${python_platform}" == *arm64* ]]
+          build_venv="${RUNNER_TEMP}/mklq-release-build-py${EXPECTED_PYTHON}"
+          rm -rf "${build_venv}"
+          "${RUNNER_PYTHON}" -m venv "${build_venv}"
+          "${build_venv}/bin/python" -m pip install --upgrade pip build delocate
+          echo "python=${build_venv}/bin/python" >> "${GITHUB_OUTPUT}"
+      - name: Build, inspect, and verify the macOS ARM64 wheel
+        shell: bash
+        env:
+          MKLQ_VERSION: ${{ inputs.version }}
+          PYTHON: ${{ steps.interpreter.outputs.python }}
+        run: |
+          set -euo pipefail
+          export PATH="$(dirname "${PYTHON}"):${PATH}"
+          asset_root="${MKLQ_ASSET_ROOT}"
+          rm -rf "${asset_root}"
+          bash scripts/build_wheel.sh -m -o "${asset_root}"
+          mkdir -p "${asset_root}/pypi"
+          mv "${asset_root}"/mklq-*.whl "${asset_root}/pypi/"
+          (cd "${asset_root}/pypi" && shasum -a 256 *.whl > ../SHA256SUMS)
+          (cd "${asset_root}" && shasum -a 256 -c SHA256SUMS)
+          "${PYTHON}" benchmarks/mklq/package_release.py inspect-wheel \
+            "${asset_root}"/pypi/mklq-*.whl \
+            --expected-version "${MKLQ_VERSION}" \
+            --output "${asset_root}/wheel-manifest-py${{ matrix.python }}.json"
+          inspect_dir="$(mktemp -d)"
+          trap 'rm -rf "${inspect_dir}"' EXIT
+          unzip -q "${asset_root}"/pypi/mklq-*.whl -d "${inspect_dir}"
+          : > "${asset_root}/otool-L.txt"
+          while IFS= read -r -d '' native_file; do
+            lipo_archs="$(lipo -archs "${native_file}")"
+            if [ "${lipo_archs}" != "arm64" ]; then
+              echo "Wheel native file is not arm64-only: ${native_file} (${lipo_archs})" >&2
+              exit 1
+            fi
+            otool -L "${native_file}" >> "${asset_root}/otool-L.txt"
+          done < <(find "${inspect_dir}" -type f \( -name '*.dylib' -o -name '*.so' \) -print0)
+          if rg -n '/(Users|private|opt/homebrew)/' "${asset_root}/otool-L.txt"; then
+            echo "Wheel contains a local absolute Mach-O dependency." >&2
+            exit 1
+          fi
+          git diff --exit-code
+          test -z "$(git status --porcelain --untracked-files=all)"
+      - name: Smoke test the offline wheel in a fresh virtual environment
+        shell: bash
+        env:
+          MKLQ_VERSION: ${{ inputs.version }}
+          PYTHON: ${{ steps.interpreter.outputs.python }}
+        run: |
+          set -euo pipefail
+          asset_root="${MKLQ_ASSET_ROOT}"
+          smoke_root="$(mktemp -d)"
+          trap 'rm -rf "${smoke_root}"' EXIT
+          "${PYTHON}" -m venv "${smoke_root}/venv"
+          "${smoke_root}/venv/bin/python" -m pip download --only-binary=:all: \
+            --dest "${smoke_root}/wheelhouse" astpretty numpy scipy requests
+          "${smoke_root}/venv/bin/python" -m pip install --no-index \
+            --find-links "${smoke_root}/wheelhouse" \
+            --find-links "${asset_root}/pypi" "mklq==${MKLQ_VERSION}"
+          "${smoke_root}/venv/bin/python" -m pip check
+          smoke_script="${smoke_root}/mklq_smoke.py"
+          cat > "${smoke_script}" <<'PY'
+          import os
+          from importlib import metadata
+          import cudaq
+
+          expected_version = os.environ["MKLQ_VERSION"]
+          assert metadata.version("mklq") == expected_version
+          assert cudaq.__version__ == expected_version
+          assert {target.name for target in cudaq.get_targets()} == {
+              "mklq-cpu", "mklq-metal"}
+
+          @cudaq.kernel
+          def bell():
+              q = cudaq.qvector(2)
+              h(q[0])
+              x.ctrl(q[0], q[1])
+              mz(q)
+
+          cudaq.set_target("mklq-cpu")
+          assert sum(cudaq.sample(bell, shots_count=32).values()) == 32
+          cudaq.set_target("mklq-metal")
+          assert sum(cudaq.sample(bell, shots_count=32).values()) == 32
+          PY
+          "${smoke_root}/venv/bin/python" "${smoke_script}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mklq-${{ inputs.version }}-py${{ matrix.python }}-macos-arm64
+          path: ${{ env.MKLQ_ASSET_ROOT }}/
+          if-no-files-found: error
+      - uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: ${{ env.MKLQ_ASSET_ROOT }}/pypi/*.whl
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.phase }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: mklq-${{ inputs.version }}-py*-macos-arm64
+          path: release-assets/downloads
+          merge-multiple: false
+      - name: Aggregate verified wheel assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release-assets/pypi release-assets/manifests
+          find release-assets/downloads -type f -name 'mklq-*.whl' \
+            -exec cp {} release-assets/pypi/ \;
+          find release-assets/downloads -type f -name 'wheel-manifest-*.json' \
+            -exec cp {} release-assets/manifests/ \;
+          test "$(find release-assets/pypi -maxdepth 1 -name 'mklq-*.whl' | wc -l | tr -d ' ')" = "4"
+          test "$(find release-assets/manifests -maxdepth 1 -name 'wheel-manifest-*.json' | wc -l | tr -d ' ')" = "4"
+          (cd release-assets/pypi && shasum -a 256 *.whl > ../SHA256SUMS)
+          (cd release-assets && shasum -a 256 -c SHA256SUMS)
+      - name: Publish RC to TestPyPI
+        if: ${{ inputs.phase == 'testpypi' }}
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: release-assets/pypi
+          repository-url: https://test.pypi.org/legacy/
+      - name: Publish final wheel to PyPI
+        if: ${{ inputs.phase == 'pypi' }}
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: release-assets/pypi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mklq-${{ inputs.version }}-release-assets
+          path: release-assets/
+          if-no-files-found: error
+
+  verify-published:
+    needs: publish
+    runs-on: [self-hosted, macOS, ARM64, mklq-apple-silicon]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - python: "3.11"
+            python_path: /opt/homebrew/opt/python@3.11/bin/python3.11
+          - python: "3.12"
+            python_path: /opt/homebrew/opt/python@3.12/bin/python3.12
+          - python: "3.13"
+            python_path: /opt/homebrew/opt/python@3.13/bin/python3.13
+          - python: "3.14"
+            python_path: /opt/homebrew/opt/python@3.14/bin/python3.14
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag }}
+          fetch-depth: 0
+      - name: Verify trusted runner Python provisioning
+        id: interpreter
+        shell: bash
+        env:
+          EXPECTED_PYTHON: ${{ matrix.python }}
+          RUNNER_PYTHON: ${{ matrix.python_path }}
+        run: |
+          set -euo pipefail
+          test "$(uname -s)" = "Darwin"
+          test "$(uname -m)" = "arm64"
+          test -x "${RUNNER_PYTHON}"
+          actual_version="$("${RUNNER_PYTHON}" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
+          test "${actual_version}" = "${EXPECTED_PYTHON}"
+          python_machine="$("${RUNNER_PYTHON}" -c 'import platform; print(platform.machine())')"
+          python_platform="$("${RUNNER_PYTHON}" -c 'import sysconfig; print(sysconfig.get_platform())')"
+          test "${python_machine}" = "arm64"
+          [[ "${python_platform}" == *arm64* ]]
+          verify_venv="${RUNNER_TEMP}/mklq-release-verify-py${EXPECTED_PYTHON}"
+          rm -rf "${verify_venv}"
+          "${RUNNER_PYTHON}" -m venv "${verify_venv}"
+          echo "python=${verify_venv}/bin/python" >> "${GITHUB_OUTPUT}"
+      - uses: actions/download-artifact@v4
+        with:
+          name: mklq-${{ inputs.version }}-release-assets
+          path: release-assets
+      - name: Reinstall and validate the published package
+        shell: bash
+        env:
+          MKLQ_VERSION: ${{ inputs.version }}
+          PYTHON: ${{ steps.interpreter.outputs.python }}
+        run: |
+          set -euo pipefail
+          git fetch origin "${{ inputs.tag }}"
+          tag_sha="$(git rev-parse "${{ inputs.tag }}^{commit}")"
+          remote_tag_sha="$(git ls-remote origin "refs/tags/${{ inputs.tag }}" "refs/tags/${{ inputs.tag }}^{}" | awk 'END {print $1}')"
+          test "${tag_sha}" = "$(git rev-parse HEAD)"
+          test -n "${remote_tag_sha}"
+          test "${tag_sha}" = "${remote_tag_sha}"
+          case "${{ inputs.phase }}" in
+            testpypi)
+              index_args=(--index-url https://test.pypi.org/simple --extra-index-url https://pypi.org/simple)
+              ;;
+            pypi)
+              index_args=(--index-url https://pypi.org/simple)
+              ;;
+          esac
+          download_root="$(mktemp -d)"
+          trap 'rm -rf "${download_root}"' EXIT
+          "${PYTHON}" -m pip download --no-deps --only-binary=:all: --no-cache-dir \
+            "${index_args[@]}" --dest "${download_root}" "mklq==${MKLQ_VERSION}"
+          downloaded_wheel="$(find "${download_root}" -maxdepth 1 -name 'mklq-*.whl' -print -quit)"
+          test -n "${downloaded_wheel}"
+          expected_sha="$(awk -v filename="$(basename "${downloaded_wheel}")" '$2 == filename {print $1}' release-assets/SHA256SUMS)"
+          test -n "${expected_sha}"
+          test "$(shasum -a 256 "${downloaded_wheel}" | awk '{print $1}')" = "${expected_sha}"
+          "${PYTHON}" -m pip install --no-cache-dir --only-binary=:all: \
+            "${index_args[@]}" "mklq==${MKLQ_VERSION}"
+          "${PYTHON}" -m pip check
+          smoke_script="${download_root}/mklq_smoke.py"
+          cat > "${smoke_script}" <<'PY'
+          import os
+          from importlib import metadata
+          import cudaq
+
+          expected_version = os.environ["MKLQ_VERSION"]
+          assert metadata.version("mklq") == expected_version
+          assert cudaq.__version__ == expected_version
+          assert {target.name for target in cudaq.get_targets()} == {
+              "mklq-cpu", "mklq-metal"}
+
+          @cudaq.kernel
+          def bell():
+              q = cudaq.qvector(2)
+              h(q[0])
+              x.ctrl(q[0], q[1])
+              mz(q)
+
+          cudaq.set_target("mklq-cpu")
+          assert sum(cudaq.sample(bell, shots_count=32).values()) == 32
+          cudaq.set_target("mklq-metal")
+          assert sum(cudaq.sample(bell, shots_count=32).values()) == 32
+          PY
+          "${PYTHON}" "${smoke_script}"
+
+  release:
+    needs: verify-published
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.phase }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: mklq-${{ inputs.version }}-release-assets
+          path: release-assets
+      - name: Create GitHub release
+        if: ${{ inputs.phase == 'pypi' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release create "${{ inputs.tag }}" release-assets/pypi/*.whl \
+            release-assets/SHA256SUMS release-assets/manifests/*.json \
+            --repo "${{ github.repository }}" --verify-tag --generate-notes
+      - name: Create GitHub prerelease
+        if: ${{ inputs.phase == 'testpypi' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release create "${{ inputs.tag }}" release-assets/pypi/*.whl \
+            release-assets/SHA256SUMS release-assets/manifests/*.json \
+            --repo "${{ github.repository }}" --verify-tag --prerelease --generate-notes

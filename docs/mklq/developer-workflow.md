@@ -169,8 +169,7 @@ Before pushing a public branch, run:
 
 ```bash
 python3 benchmarks/mklq/run_preflight_audit.py
-python3 benchmarks/mklq/run_public_release_checklist_audit.py
-python3 benchmarks/mklq/run_source_release_tag_audit.py --docs-only
+python3 benchmarks/mklq/run_package_release_audit.py --version 0.1.0 --docs-only
 python3 benchmarks/mklq/run_self_hosted_ci_audit.py
 python3 benchmarks/mklq/run_public_healthcheck.py
 git diff --check
@@ -205,8 +204,8 @@ python3 -m py_compile \
   benchmarks/mklq/run_cpu_gate_counter_probe.py \
   benchmarks/mklq/run_metal_runtime_counter_probe.py \
   benchmarks/mklq/run_preflight_audit.py \
-  benchmarks/mklq/run_public_release_checklist_audit.py \
-  benchmarks/mklq/run_source_release_tag_audit.py \
+  benchmarks/mklq/package_release.py \
+  benchmarks/mklq/run_package_release_audit.py \
   benchmarks/mklq/run_public_readiness_audit.py \
   benchmarks/mklq/run_public_healthcheck.py \
   benchmarks/mklq/run_self_hosted_ci_audit.py \
@@ -234,6 +233,7 @@ Expected workflow state:
 
 ```text
 .github/workflows/mklq-apple-silicon-ci.yml
+.github/workflows/mklq-package-release.yml
 .github/workflows/mklq-public-hygiene.yml
 ```
 
@@ -250,20 +250,21 @@ Run the full public release checklist before public release-style milestones:
 docs/mklq/public-release-checklist.md
 ```
 
-For planned source-only tag notes, run the docs-only tag audit on PR branches:
+For package-release metadata and documentation, run the package audit on PR
+branches:
 
 ```bash
-python3 benchmarks/mklq/run_source_release_tag_audit.py --docs-only
+python3 benchmarks/mklq/run_package_release_audit.py --version 0.1.0 --docs-only
 ```
 
-Run the full tag preflight audit only from clean `main` that matches
-`origin/main`, after the latest public hygiene workflow has succeeded and a
-maintainer has explicitly dispatched `MKL-Q Apple Silicon correctness` with
-`run_full_gate=confirm` for that exact commit:
+Run the full package audit only from clean `main` that matches `origin/main`:
 
 ```bash
-python3 benchmarks/mklq/run_source_release_tag_audit.py
+python3 benchmarks/mklq/run_package_release_audit.py --version 0.1.0
 ```
+
+The historical source-only tag audit remains available only for interpreting
+pre-package evidence; it is not a current release gate.
 
 ## Commit And Push
 
