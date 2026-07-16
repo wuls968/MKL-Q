@@ -27,15 +27,12 @@ target_include_directories(${LIBRARY_NAME}
 
 set_property(GLOBAL APPEND PROPERTY CUDAQ_RUNTIME_LIBS ${LIBRARY_NAME})
 
-# The general build keeps the qpp backend as its private default dependency.
-# The release wheel intentionally contains only the MKL-Q simulators and
-# links the MKL-Q CPU plugin after it has been declared below.
+# Simulator plugins are selected through installed target configurations; they
+# are not part of nvqir's exported link interface. The release wheel builds
+# its MKL-Q CPU plugin explicitly after it has been declared below.
 target_link_libraries(${LIBRARY_NAME}
   PUBLIC cudaq-common cudaq-operator dl fmt::fmt-header-only
   PRIVATE cudaq-logger)
-if(NOT CUDAQ_MKLQ_PACKAGE_ONLY)
-  target_link_libraries(${LIBRARY_NAME} PRIVATE nvqir-qpp)
-endif()
 
 install(TARGETS ${LIBRARY_NAME} 
         EXPORT nvqir-targets 

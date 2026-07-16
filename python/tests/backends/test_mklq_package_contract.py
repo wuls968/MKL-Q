@@ -180,6 +180,14 @@ def test_cmake_can_build_an_mklq_only_python_runtime_wheel():
     assert "add_dependencies(nvqir nvqir-mklq_cpu)" in nvqir_cmake
 
 
+def test_general_nvqir_export_does_not_link_the_unexported_qpp_plugin():
+    nvqir_cmake = (REPO_ROOT / "runtime" / "nvqir" /
+                   "CMakeLists.txt").read_text(encoding="utf-8")
+
+    assert "target_link_libraries(${LIBRARY_NAME} PRIVATE nvqir-qpp)" not in nvqir_cmake
+    assert "add_subdirectory(qpp)" in nvqir_cmake
+
+
 def test_package_only_holder_defaults_to_mklq_cpu_via_compile_definition():
     holder = (REPO_ROOT / "python" / "utils" / "LinkedLibraryHolder.cpp").read_text(
         encoding="utf-8")
