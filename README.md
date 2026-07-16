@@ -5,8 +5,25 @@ performance for macOS ARM64. It keeps the CUDA-Q C++ and Python public API
 surface, including the `cudaq` Python namespace and the `nvq++` compiler, while
 adding MKL-Q targets for Apple Silicon development.
 
-This repository is source-only for the first public version. It does not publish
-PyPI wheels, binary packages, or GitHub releases yet.
+MKL-Q v0.1.0 prepares a macOS ARM64 Python distribution named `mklq`. It keeps
+the `cudaq` import namespace for API compatibility, but the wheel contains only
+the Python runtime and MKL-Q target assets; it does not contain `nvq++`.
+
+## Python package
+
+Install `mklq` into a new virtual environment. Do not co-install it with
+NVIDIA `cudaq` or `cuda-quantum*` packages because they share the `cudaq`
+namespace.
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install mklq
+```
+
+The v0.1.0 wheel supports macOS ARM64 and Python 3.11–3.14. It excludes
+`nvq++`, installers, Linux/Windows wheels, and any stable Metal support claim.
 
 ## Targets
 
@@ -124,18 +141,15 @@ The test and benchmark coverage map is tracked in
 [`docs/mklq/testing-matrix.md`](docs/mklq/testing-matrix.md).
 The upstream CUDA-Q sync procedure is tracked in
 [`docs/mklq/upstream-sync.md`](docs/mklq/upstream-sync.md).
-The source-only release policy and future release entry criteria are tracked in
-[`docs/mklq/release-policy.md`](docs/mklq/release-policy.md).
-The current source-only v0.1 release-candidate entry point is tracked in
-[`docs/mklq/source-only-rc-v0.1.md`](docs/mklq/source-only-rc-v0.1.md).
-The planned source-only v0.1.0 tag draft is tracked in
-[`docs/mklq/release-notes-v0.1.0-source.md`](docs/mklq/release-notes-v0.1.0-source.md),
-with milestone history in [`CHANGELOG.md`](CHANGELOG.md). This is tag
-preflight material only; no tag, GitHub Release, wheel, PyPI package,
-installer, or signed artifact has been created.
+The package release policy and required gates are tracked in
+[`docs/mklq/release-policy.md`](docs/mklq/release-policy.md). The v0.1.0
+package notes are in
+[`docs/mklq/release-notes-v0.1.0.md`](docs/mklq/release-notes-v0.1.0.md), with
+milestone history in [`CHANGELOG.md`](CHANGELOG.md). The earlier source-only
+documents remain historical provenance only.
 The public support boundary and current non-goals are listed in
 [`docs/mklq/known-limitations.md`](docs/mklq/known-limitations.md).
-The source-only public release checklist is tracked in
+The package release checklist is tracked in
 [`docs/mklq/public-release-checklist.md`](docs/mklq/public-release-checklist.md).
 Contributor and fork maintenance workflow notes are tracked in
 [`docs/mklq/developer-workflow.md`](docs/mklq/developer-workflow.md).
@@ -217,17 +231,17 @@ checks, use:
 python3 benchmarks/mklq/run_public_healthcheck.py --full --require-clean
 ```
 
-To audit the public GitHub fork metadata, branch protection, latest hygiene
-workflow, and source-only tag/release boundary, run:
+To audit the public GitHub fork metadata, branch protection, and latest hygiene
+workflow, run:
 
 ```bash
 python3 benchmarks/mklq/run_public_readiness_audit.py
 ```
 
-To audit the planned `mklq-v0.1.0-source` tag draft without creating a tag, run:
+To audit the v0.1.0 package release contract, run:
 
 ```bash
-python3 benchmarks/mklq/run_source_release_tag_audit.py
+python3 benchmarks/mklq/run_package_release_audit.py --version 0.1.0 --docs-only
 ```
 
 ## Reporting Issues

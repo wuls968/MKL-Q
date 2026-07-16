@@ -2,7 +2,7 @@
 
 This runbook is for maintainers of the public MKL-Q fork. It describes routine
 repository operations, issue and pull request triage, validation choices, and
-stop conditions for the current source-only project.
+stop conditions for the current package-release project.
 
 Use this page with:
 
@@ -26,7 +26,8 @@ Use this page with:
 - Keep `mklq-cpu` as the stable local correctness target.
 - Keep `mklq-metal` experimental unless a reviewed readiness plan changes that
   status.
-- Keep the first public version source-only.
+- Keep the package-release project scoped to the documented macOS ARM64 Python
+  wheel, with no native installer or broader platform claim.
 - Prefer small, auditable changes over broad rewrites.
 - Do not commit build output, raw local benchmark JSON, caches, signing objects,
   tokens, secrets, or machine-specific credentials.
@@ -165,7 +166,7 @@ change touches shared behavior.
 ## PR-first Maintainer Flow
 
 Use a branch and pull request for maintainer-owned batches. The current branch
-protection policy enforces `Source-only repository checks` for administrators,
+protection policy enforces `MKL-Q repository checks` for administrators,
 so routine `main` updates should merge only after the GitHub hygiene job passes
 for the proposed commit.
 
@@ -239,10 +240,11 @@ runtime, target config, Python bindings, or tests changed.
 
 ## Release And Artifact Requests
 
-The default answer is no for release artifacts in the current source-only phase.
+Release artifacts are permitted only through the protected package workflow.
 Before creating any tag, GitHub Release, wheel, PyPI package, installer,
 Homebrew formula, checksum file, or signed artifact, follow
-[`release-policy.md`](release-policy.md).
+[`release-policy.md`](release-policy.md) and the version-specific package
+release checklist.
 
 Stop immediately if a release plan would:
 

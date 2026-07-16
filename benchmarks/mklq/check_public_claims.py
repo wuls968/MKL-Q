@@ -66,7 +66,7 @@ NEGATION_HINTS = (
 )
 
 REQUIRED_PUBLIC_CLAIMS = (
-    RequiredClaim("README.md", "source-only"),
+    RequiredClaim("README.md", "Python distribution named `mklq`"),
     RequiredClaim("README.md", "experimental Apple GPU target"),
     RequiredClaim("docs/mklq/architecture.md", "not a full Metal-native"),
     RequiredClaim("docs/mklq/architecture.md",
@@ -78,7 +78,7 @@ REQUIRED_PUBLIC_CLAIMS = (
     RequiredClaim("docs/mklq/validation.md", "not a release certification"),
     RequiredClaim("docs/mklq/validation.md",
                   "cross-machine performance certification"),
-    RequiredClaim("docs/mklq/release-policy.md", "source-only"),
+    RequiredClaim("docs/mklq/release-policy.md", "source-only phase is historical"),
     RequiredClaim("docs/mklq/public-readiness.md",
                   "not a release certification"),
     RequiredClaim("docs/mklq/benchmark-evidence.md",
@@ -147,12 +147,25 @@ def is_negated_claim(line: str, phrase: str) -> bool:
     return any(hint in context for hint in NEGATION_HINTS)
 
 
+def is_does_not_prove_table_row(lines: list[str], line_index: int) -> bool:
+    """Recognize a Markdown table column whose header bounds all its rows."""
+    for previous in reversed(lines[:line_index]):
+        if not previous.strip():
+            return False
+        if previous.lstrip().startswith("|") and "does not prove" in normalize_text(
+                previous):
+            return True
+    return False
+
+
 def check_text(path_label: str, text: str) -> list[str]:
     failures: list[str] = []
     lines = text.splitlines()
     for line_number, line in enumerate(lines, start=1):
         normalized = normalize_text(line)
         if not normalized:
+            continue
+        if is_does_not_prove_table_row(lines, line_number - 1):
             continue
         for phrase in FORBIDDEN_PUBLIC_CLAIMS:
             if normalize_text(phrase) not in normalized:

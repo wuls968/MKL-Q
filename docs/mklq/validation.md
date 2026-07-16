@@ -1,5 +1,14 @@
 # MKL-Q Validation
 
+## Historical source-only evidence
+
+The dated snapshots below record the pre-package source-only phase. They remain
+useful evidence for earlier commits, but they are not the current release
+policy. For `mklq-v0.1.0`, use
+[`release-policy.md`](release-policy.md),
+[`public-release-checklist.md`](public-release-checklist.md), and
+`run_package_release_audit.py` instead.
+
 This page records the current local validation gate for the MKL-Q public
 bootstrap. It is not a release certification and does not replace clean CI.
 See [`known-limitations.md`](known-limitations.md) for the current support
@@ -75,7 +84,7 @@ and the public readiness audit passed with 13/13 checks in
 `/tmp/mklq-public-readiness-audit-2026-07-08-7d623c08-after-manual-gate.json`.
 This is source-only live evidence for the named commit, not a tag, GitHub
 Release, package, binary artifact, or release certification.
-The current public healthcheck plan adds a source-only tag draft audit. The
+The historical public healthcheck plan added a source-only tag draft audit. The
 default repository hygiene gate count is now 32/32 steps, and the expanded full
 gate has passed with 36/36 steps.
 The clean CPU benchmark summary was refreshed separately against

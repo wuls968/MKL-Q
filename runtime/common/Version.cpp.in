@@ -12,7 +12,7 @@ namespace cudaq {
 
 static constexpr const char version[] = "@CUDA_QUANTUM_VERSION@";
 static constexpr const char fullRepositoryVersion[] =
-    "https://github.com/NVIDIA/cuda-quantum @CUDA_QUANTUM_COMMIT_SHA@";
+    "https://github.com/wuls968/MKL-Q @CUDA_QUANTUM_COMMIT_SHA@";
 
 const char *getVersion() { return version; }
 

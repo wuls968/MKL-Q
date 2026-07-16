@@ -14,6 +14,7 @@ import re
 import subprocess
 import sys
 import time
+import tomllib
 from dataclasses import dataclass
 from datetime import date, datetime, timezone
 from pathlib import Path
@@ -27,6 +28,7 @@ DEFAULT_REPO = "wuls968/MKL-Q"
 DEFAULT_WORKFLOW = "MKL-Q public hygiene"
 APPLE_WORKFLOW = "MKL-Q Apple Silicon correctness"
 REQUIRED_STATUS_CHECK = "Source-only repository checks"
+PACKAGE_REQUIRED_STATUS_CHECK = "MKL-Q repository checks"
 EXPECTED_DESCRIPTION = (
     "CUDA-Q-compatible Apple Silicon simulator fork with MKL-Q targets")
 EXPECTED_TOPICS = {
@@ -45,6 +47,9 @@ EXPECTED_WORKFLOWS = [
     ".github/workflows/mklq-apple-silicon-ci.yml",
     ".github/workflows/mklq-public-hygiene.yml",
 ]
+PACKAGE_RELEASE_WORKFLOW = ".github/workflows/mklq-package-release.yml"
+PACKAGE_EXPECTED_WORKFLOWS = sorted((*EXPECTED_WORKFLOWS,
+                                     PACKAGE_RELEASE_WORKFLOW))
 TRACKED_ARTIFACT_PATTERN = re.compile(
     r"(^|/)(__pycache__|\.pytest_cache)(/|$)|"
     r"\.pyc$|\.DS_Store$|^build(-python)?/|"
@@ -80,6 +85,28 @@ PUBLIC_READINESS_REQUIRED_PHRASES = [
         "`mklq-metal` is experimental and must not be described as default-ready",
     ),
 ]
+PACKAGE_PUBLIC_READINESS_REQUIRED_PHRASES = [
+    ("package_contract", "release-ready repository contract"),
+    ("does_not_certify", "not a release certification"),
+    ("package_audit", "run_package_release_audit.py"),
+    ("latest_hygiene", "`MKL-Q repository checks`"),
+    (
+        "latest_apple_workflow",
+        "`MKL-Q Apple Silicon correctness`",
+    ),
+    (
+        "branch_protection_reference",
+        "branch-protection-main.json",
+    ),
+    ("trusted_publishing", "Trusted Publishing"),
+    (
+        "metal_experimental",
+        "`mklq-metal`, which is not default-ready or fully Metal-native",
+    ),
+    ("historical_source_only", "source-only RC documents"),
+]
+PACKAGE_RELEASE_TAG_PATTERN = re.compile(
+    r"^mklq-v\d+\.\d+\.\d+(?:(?:a|b|rc)\d+)?(?:\.post\d+)?$")
 
 
 @dataclass(frozen=True)
@@ -92,6 +119,30 @@ class AuditConfig:
 
 def repo_root() -> Path:
     return Path(__file__).resolve().parents[2]
+
+
+def is_package_release(root: Path) -> bool:
+    """Return whether the checked repository publishes the ``mklq`` wheel."""
+    try:
+        with (root / "pyproject.toml").open("rb") as handle:
+            return tomllib.load(handle).get("project", {}).get("name") == "mklq"
+    except (FileNotFoundError, tomllib.TOMLDecodeError):
+        return False
+
+
+def required_status_check_for(root: Path) -> str:
+    return PACKAGE_REQUIRED_STATUS_CHECK if is_package_release(
+        root) else REQUIRED_STATUS_CHECK
+
+
+def expected_workflows_for(root: Path) -> list[str]:
+    return PACKAGE_EXPECTED_WORKFLOWS if is_package_release(
+        root) else EXPECTED_WORKFLOWS
+
+
+def public_readiness_required_phrases_for(root: Path) -> list[tuple[str, str]]:
+    return (PACKAGE_PUBLIC_READINESS_REQUIRED_PHRASES if is_package_release(root)
+            else PUBLIC_READINESS_REQUIRED_PHRASES)
 
 
 def output_default(stamp: str) -> Path:
@@ -301,9 +352,10 @@ def check_workflows(config: AuditConfig) -> dict[str, Any]:
     workflows = command_output(config.repo_root,
                                ["git", "ls-files",
                                 ".github/workflows"]).splitlines()
-    details = {"workflows": workflows, "expected_workflows": EXPECTED_WORKFLOWS}
+    expected = expected_workflows_for(config.repo_root)
+    details = {"workflows": workflows, "expected_workflows": expected}
     return failed("github_workflows", "unexpected workflow set",
-                  details) if workflows != EXPECTED_WORKFLOWS else passed(
+                  details) if workflows != expected else passed(
                       "github_workflows", details)
 
 
@@ -450,10 +502,11 @@ def check_branch_protection(config: AuditConfig) -> dict[str, Any]:
     required = protection.get("required_status_checks") or {}
     contexts = set(required.get("contexts") or [])
     checks = {check.get("context") for check in required.get("checks") or []}
+    required_status_check = required_status_check_for(config.repo_root)
     failures: list[str] = []
     if branch.get("protected") is not True:
         failures.append("branch is not protected")
-    if REQUIRED_STATUS_CHECK not in contexts and REQUIRED_STATUS_CHECK not in checks:
+    if required_status_check not in contexts and required_status_check not in checks:
         failures.append("required status check is missing")
     if required.get("strict") is not True:
         failures.append("required status checks are not strict")
@@ -515,13 +568,15 @@ def check_public_readiness_doc(config: AuditConfig) -> dict[str, Any]:
     text = path.read_text(encoding="utf-8", errors="replace")
     normalized_text = normalize_whitespace(text)
     missing = [
-        key for key, phrase in PUBLIC_READINESS_REQUIRED_PHRASES
+        key for key, phrase in public_readiness_required_phrases_for(
+            config.repo_root)
         if normalize_whitespace(phrase) not in normalized_text
     ]
     details = {
         "path": PUBLIC_READINESS_DOC.as_posix(),
         "required_phrase_keys": [
-            key for key, _ in PUBLIC_READINESS_REQUIRED_PHRASES
+            key for key, _ in public_readiness_required_phrases_for(
+                config.repo_root)
         ],
         "missing_phrase_keys": missing,
     }
@@ -621,6 +676,41 @@ def check_no_releases(config: AuditConfig) -> dict[str, Any]:
                   details) if failures else passed("no_tags_or_releases", details)
 
 
+def check_package_release_history(config: AuditConfig) -> dict[str, Any]:
+    """Allow only the package-release tag namespace once releases exist."""
+    tags = command_output(config.repo_root,
+                          ["git", "ls-remote", "--tags", "origin", "refs/tags/*"])
+    releases = load_json(
+        command_output(config.repo_root, [
+            "gh", "release", "list", "--repo", config.repo, "--limit", "20",
+            "--json", "tagName,isDraft,isPrerelease"
+        ]), [])
+    tag_names = sorted({
+        line.rsplit("\t", 1)[-1].removeprefix("refs/tags/").removesuffix("^{}")
+        for line in tags.splitlines() if "\trefs/tags/" in line
+    })
+    invalid_tags = [tag for tag in tag_names
+                    if not PACKAGE_RELEASE_TAG_PATTERN.fullmatch(tag)]
+    release_tags = sorted(
+        str(release.get("tagName")) for release in releases
+        if isinstance(release, dict) and release.get("tagName"))
+    invalid_releases = [tag for tag in release_tags
+                        if not PACKAGE_RELEASE_TAG_PATTERN.fullmatch(tag)]
+    details = {
+        "remote_tags": tag_names,
+        "release_tags": release_tags,
+        "invalid_tags": invalid_tags,
+        "invalid_release_tags": invalid_releases,
+    }
+    failures: list[str] = []
+    if invalid_tags:
+        failures.append("non-package release tags exist")
+    if invalid_releases:
+        failures.append("non-package GitHub Releases exist")
+    return failed("package_release_history", "; ".join(failures), details) if failures else passed(
+        "package_release_history", details)
+
+
 def summarize(checks: list[dict[str, Any]]) -> dict[str, Any]:
     passed_count = sum(1 for check in checks if check["status"] == "passed")
     failed_count = sum(1 for check in checks if check["status"] == "failed")
@@ -645,7 +735,8 @@ def build_report(config: AuditConfig) -> dict[str, Any]:
         check_public_readiness_doc(config),
         check_latest_public_hygiene(config),
         check_latest_apple_workflow(config),
-        check_no_releases(config),
+        (check_package_release_history(config) if is_package_release(config.repo_root)
+         else check_no_releases(config)),
     ]
     return {
         "schema_version": SCHEMA_VERSION,

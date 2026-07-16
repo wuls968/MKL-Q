@@ -7,14 +7,14 @@
 # ============================================================================ #
 
 [project]
-name = "cuda-quantum-cu13"
+name = "mklq"
 dynamic = ["version"]
-keywords = [ "cudaq", "cuda-quantum", "cuda", "quantum", "quantum computing", "nvidia", "high-performance computing" ]
-description="Python bindings for the CUDA-Q toolkit for heterogeneous quantum-classical workflows."
-authors = [{name = "NVIDIA Corporation & Affiliates"}]
-maintainers = [{name = "NVIDIA Corporation & Affiliates"}]
+keywords = [ "mklq", "cudaq", "apple-silicon", "metal", "quantum", "quantum computing" ]
+description="MKL-Q Python runtime for CUDA-Q-compatible Apple Silicon simulation."
+authors = [{name = "MKL-Q contributors"}]
+maintainers = [{name = "MKL-Q contributors"}]
 readme = { file="python/README.md.in", content-type = "text/markdown"}
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.15"
 license = "Apache-2.0"
 license-files = ["LICENSE", "NOTICE", "CITATION.cff"]
 dependencies = [
@@ -22,18 +22,6 @@ dependencies = [
   'numpy >= 1.24',
   'scipy >= 1.10.1',
   'requests >= 2.32.3',
-  # CUDA dependencies - excluded on macOS (CPU-only support)
-  'custatevec-cu13 ~= 1.14.0; sys_platform != "darwin"',
-  'cutensornet-cu13 ~= 2.13.0; sys_platform != "darwin"',
-  'cudensitymat-cu13 ~= 0.6.0; sys_platform != "darwin"',
-  'nvidia-cublas ~= 13.0; sys_platform != "darwin"',
-  'nvidia-curand ~= 10.4; sys_platform != "darwin"',
-  'nvidia-cusparse ~= 12.6; sys_platform != "darwin"',
-  'nvidia-cuda-runtime ~= 13.0; sys_platform != "darwin"',
-  'nvidia-cusolver ~= 12.0; sys_platform != "darwin"',
-  'nvidia-cuda-nvrtc ~= 13.0; sys_platform != "darwin"',
-  'cupy-cuda13x ~= 13.6.0; sys_platform != "darwin" and python_version < "3.14"',
-  'cupy-cuda13x >= 14.0.0; sys_platform != "darwin" and python_version >= "3.14"',
 ]
 classifiers = [
     'Intended Audience :: Science/Research',
@@ -44,18 +32,16 @@ classifiers = [
     'Programming Language :: Python :: 3.12',
     'Programming Language :: Python :: 3.13',
     'Programming Language :: Python :: 3.14',
-    "Environment :: GPU :: NVIDIA CUDA",
-    "Environment :: GPU :: NVIDIA CUDA :: 12",
-    "Environment :: GPU :: NVIDIA CUDA :: 13",
+    'Operating System :: MacOS :: MacOS X',
     'Topic :: Software Development',
     'Topic :: Scientific/Engineering',
 ]
 
 [project.urls]
-Homepage = "https://developer.nvidia.com/cuda-q"
-Documentation = "https://nvidia.github.io/cuda-quantum"
-Repository = "https://github.com/NVIDIA/cuda-quantum"
-Releases = "https://nvidia.github.io/cuda-quantum/latest/releases.html"
+Homepage = "https://github.com/wuls968/MKL-Q"
+Documentation = "https://github.com/wuls968/MKL-Q/tree/main/docs/mklq"
+Repository = "https://github.com/wuls968/MKL-Q"
+Releases = "https://github.com/wuls968/MKL-Q/releases"
 
 # We must use h5py<3.11 because 3.11 doesn't include aarch64 Linux wheels.
 # https://github.com/h5py/h5py/issues/2408

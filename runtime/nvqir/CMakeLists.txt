@@ -27,32 +27,44 @@ target_include_directories(${LIBRARY_NAME}
 
 set_property(GLOBAL APPEND PROPERTY CUDAQ_RUNTIME_LIBS ${LIBRARY_NAME})
 
-# Private link to nvqir-qpp, it will always be here, 
-# and by keeping it private, others can specify the
-# backend library later on
+# The general build keeps the qpp backend as its private default dependency.
+# The release wheel intentionally contains only the MKL-Q simulators and
+# links the MKL-Q CPU plugin after it has been declared below.
 target_link_libraries(${LIBRARY_NAME}
   PUBLIC cudaq-common cudaq-operator dl fmt::fmt-header-only
-  PRIVATE cudaq-logger
-)
+  PRIVATE cudaq-logger)
+if(NOT CUDAQ_MKLQ_PACKAGE_ONLY)
+  target_link_libraries(${LIBRARY_NAME} PRIVATE nvqir-qpp)
+endif()
 
 install(TARGETS ${LIBRARY_NAME} 
         EXPORT nvqir-targets 
         LIBRARY DESTINATION lib
         INCLUDES DESTINATION include/nvqir)
 
-add_subdirectory(qpp)
+if (NOT CUDAQ_MKLQ_PACKAGE_ONLY)
+  add_subdirectory(qpp)
+endif()
 if(CUDAQ_ENABLE_MKLQ_BACKEND AND CUDAQ_MKLQ_APPLE_SILICON_TARGET)
   add_subdirectory(mklq)
+  if(CUDAQ_MKLQ_PACKAGE_ONLY)
+    # Target plugins are loaded from the installed target configuration. Build
+    # the default CPU plugin with nvqir, but do not make it part of nvqir's
+    # exported link interface.
+    add_dependencies(nvqir nvqir-mklq_cpu)
+  endif()
 endif()
-add_subdirectory(stim)
+if (NOT CUDAQ_MKLQ_PACKAGE_ONLY)
+  add_subdirectory(stim)
+endif()
 
-if (cuStateVec_FOUND)
+if (NOT CUDAQ_MKLQ_PACKAGE_ONLY AND cuStateVec_FOUND)
   add_subdirectory(custatevec)
 endif()
-if (cuTensorNet_FOUND)
+if (NOT CUDAQ_MKLQ_PACKAGE_ONLY AND cuTensorNet_FOUND)
   add_subdirectory(cutensornet)
 endif()
-if (cuDensityMat_FOUND)
+if (NOT CUDAQ_MKLQ_PACKAGE_ONLY AND cuDensityMat_FOUND)
   add_subdirectory(cudensitymat)
 endif()
 

@@ -7,9 +7,9 @@ release certification. This page is not release certification.
 ## Scope
 
 The public `main` branch keeps required GitHub Actions lightweight. The required
-`MKL-Q public hygiene` workflow checks source-only repository hygiene, public
-metadata, public claim boundaries, benchmark summary parsing, and helper script
-syntax. It does not build CUDA-Q and does not run Apple Silicon backend
+`MKL-Q repository checks` workflow checks package-aware repository hygiene,
+public metadata, public claim boundaries, benchmark summary parsing, and helper
+script syntax. It does not build CUDA-Q and does not run Apple Silicon backend
 correctness tests.
 
 The `.github/workflows/mklq-apple-silicon-ci.yml` workflow covers local
@@ -18,7 +18,7 @@ private macOS ARM64 runner. The full self-hosted job is available only through
 `workflow_dispatch`, defaults `run_full_gate` to `skip`, and runs the full gate
 only when a maintainer explicitly starts it with `run_full_gate=confirm`.
 
-It must remain source-only: no tags, no GitHub Releases, no wheels, no
+It must remain correctness-only: no tags, no GitHub Releases, no wheels, no
 installers, and no signed artifacts are produced by this job.
 
 ## Runner Requirements
@@ -37,7 +37,14 @@ The runner must provide:
 
 - Apple Silicon hardware with a working Metal runtime.
 - A supported macOS ARM64 developer environment.
-- CMake, Ninja, Python 3, a compiler toolchain, and CUDA-Q build prerequisites.
+- CMake, Ninja, a compiler toolchain, and CUDA-Q build prerequisites.
+- For package-release jobs, native ARM64 interpreters at
+  `/opt/homebrew/opt/python@3.11/bin/python3.11`,
+  `/opt/homebrew/opt/python@3.12/bin/python3.12`,
+  `/opt/homebrew/opt/python@3.13/bin/python3.13`, and
+  `/opt/homebrew/opt/python@3.14/bin/python3.14`. The release workflow checks
+  each interpreter's version, `platform.machine()`, and
+  `sysconfig.get_platform()`; an x86_64/Rosetta interpreter is a hard failure.
 - Enough local disk space for `build-python` and the install prefix.
 - No persistent credentials, tokens, private keys, or `.env` files in the
   checkout, build directory, install prefix, or log output.
@@ -49,6 +56,7 @@ The reviewed workflow set is:
 ```text
 .github/workflows/mklq-public-hygiene.yml
 .github/workflows/mklq-apple-silicon-ci.yml
+.github/workflows/mklq-package-release.yml
 ```
 
 Do not add pull-request triggers to the Apple Silicon workflow until a reviewed

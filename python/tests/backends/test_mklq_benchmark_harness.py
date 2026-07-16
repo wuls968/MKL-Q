@@ -4759,16 +4759,16 @@ def test_mklq_public_healthcheck_requires_release_checklist_audit_metadata():
             "selected counter tests once per report") in requirements
 
 
-def test_mklq_public_hygiene_workflow_runs_release_checklist_audit():
+def test_mklq_public_hygiene_workflow_runs_package_release_audit():
     workflow = Path(".github/workflows/mklq-public-hygiene.yml").read_text(
         encoding="utf-8")
 
-    assert "Audit public release checklist" in workflow
-    assert "python3 benchmarks/mklq/run_public_release_checklist_audit.py" in (
-        workflow)
+    assert "Audit package release contract" in workflow
+    assert ("python3 benchmarks/mklq/run_package_release_audit.py "
+            "--version 0.1.0 --docs-only" in workflow)
     assert workflow.index("Check public claim boundaries") < workflow.index(
-        "Audit public release checklist")
-    assert workflow.index("Audit public release checklist") < workflow.index(
+        "Audit package release contract")
+    assert workflow.index("Audit package release contract") < workflow.index(
         "Parse benchmark summaries")
 
 
@@ -4785,7 +4785,7 @@ def test_mklq_public_hygiene_workflow_runs_self_hosted_ci_audit():
     requirements = set(module.public_metadata_requirements())
     assert ("benchmarks/mklq/README.md",
             "Self-hosted Apple Silicon CI Audit") in requirements
-    assert workflow.index("Audit public release checklist") < workflow.index(
+    assert workflow.index("Audit package release contract") < workflow.index(
         "Audit self-hosted Apple Silicon CI readiness")
     assert workflow.index(
         "Audit self-hosted Apple Silicon CI readiness") < workflow.index(

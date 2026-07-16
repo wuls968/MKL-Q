@@ -51,6 +51,12 @@ static constexpr const char NVQIR_SIMULATION_BACKEND[] =
 static constexpr const char IS_FP64_SIMULATION[] =
     "CUDAQ_SIMULATION_SCALAR_FP64";
 
+#if defined(CUDAQ_MKLQ_PACKAGE_ONLY)
+static constexpr const char DEFAULT_TARGET[] = "mklq-cpu";
+#else
+static constexpr const char DEFAULT_TARGET[] = "qpp-cpu";
+#endif
+
 int num_available_gpus();
 
 void parseRuntimeTarget(const std::filesystem::path &cudaqLibPath,
@@ -272,9 +278,9 @@ LinkedLibraryHolder::LinkedLibraryHolder() : availablePlatforms{"default"} {
   if (envSim)
     cachedDefaultSimulatorEnv = envSim;
 
-  // Default to qpp-cpu. The full target resolution (GPU detection, simulator
+  // The full target resolution (GPU detection, simulator
   // loading) is deferred to first use via the NVQIR callback or getTarget().
-  defaultTarget = "qpp-cpu";
+  defaultTarget = DEFAULT_TARGET;
   currentTarget = defaultTarget;
   activeHolder = this;
   __nvqir__setSimulatorInitCallback(lazyInitSimulator);
@@ -344,7 +350,7 @@ LinkedLibraryHolder::getPlatform(const std::string &platformName) {
 /// CUDA driver init via `num_available_gpus()` for GPU detection.
 std::string LinkedLibraryHolder::resolveDefaultTarget() {
   ScopedTraceWithContext("resolveDefaultTarget");
-  std::string resolved = "qpp-cpu";
+  std::string resolved = DEFAULT_TARGET;
 
   if (num_available_gpus() > 0) {
     auto iter = targets.find("nvidia");
@@ -380,11 +386,11 @@ void LinkedLibraryHolder::resetTarget() {
   try {
     setTarget(defaultTarget);
   } catch (const std::runtime_error &e) {
-    if (defaultTarget != "qpp-cpu") {
+    if (defaultTarget != DEFAULT_TARGET) {
       CUDAQ_INFO("Failed to activate default target '{}': {}. "
-                 "Falling back to qpp-cpu.",
-                 defaultTarget, e.what());
-      defaultTarget = "qpp-cpu";
+                 "Falling back to {}.",
+                 defaultTarget, e.what(), DEFAULT_TARGET);
+      defaultTarget = DEFAULT_TARGET;
       currentTarget = defaultTarget;
       setTarget(defaultTarget);
     } else {

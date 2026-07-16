@@ -1,351 +1,49 @@
-# MKL-Q Public Release Checklist
+# MKL-Q v0.1.0 Public Release Checklist
 
-This checklist is for preparing the public `main` branch of MKL-Q. It describes
-the current source-only release-readiness gate; it is not a wheel, PyPI, binary,
-or GitHub Release procedure.
+## Release identity
 
-## Scope
+- [ ] `git status --short --branch` is clean.
+- [ ] Release commit is merged into protected `main`.
+- [ ] RC tag is `mklq-v0.1.0rc1`; final tag is `mklq-v0.1.0` on the same
+  verified commit.
+- [ ] `pyproject.toml` identifies `mklq`, not NVIDIA `cudaq`.
+- [ ] PyPI and TestPyPI Trusted Publishing are configured for
+  `.github/workflows/mklq-package-release.yml` and protected `testpypi`/`pypi`
+  environments.
+- [ ] The trusted Apple Silicon runner explicitly provisions native-arm64
+  Python 3.11, 3.12, 3.13, and 3.14 interpreters; no Rosetta Python is used.
 
-- [ ] Keep the repository as an upstream-compatible fork of NVIDIA CUDA-Q.
-- [ ] Keep the first public version source-only.
-- [ ] Do not create tags, GitHub Releases, wheels, PyPI packages, installers,
-  or signed artifacts as part of this checklist.
-- [ ] `docs/mklq/release-policy.md` confirms the current branch is source-only
-  and has no release artifacts.
-- [ ] Keep the public API surface compatible with CUDA-Q: Python users import
-  `cudaq`, and C++ users compile with `nvq++`.
-- [ ] Keep `mklq-cpu` as the stable local target and `mklq-metal` as an
-  experimental mixed-path target.
+## Artifact scope
 
-## Git And Remotes
+- [ ] Build one macOS ARM64 wheel for each supported Python 3.11–3.14 runtime.
+- [ ] Inspect each wheel with `package_release.py`; it contains the CPU and
+  experimental Metal target assets, no unsafe path, and no `nvq++` promise.
+- [ ] Run `delocate`, verify every wheel dylib/native extension with
+  `lipo -archs`, create `SHA256SUMS`, and create GitHub provenance.
+- [ ] Do not attach `.pkg`, `.dmg`, unsigned installer, or raw benchmark data.
 
-Run:
+## Validation
 
-```bash
-git status --short --branch
-git remote -v
-git rev-parse --is-shallow-repository
-python3 benchmarks/mklq/run_upstream_sync_audit.py
-git log --oneline -5
-```
+- [ ] `python3 benchmarks/mklq/run_package_release_audit.py --version 0.1.0`
+  passes.
+- [ ] `python3 benchmarks/mklq/run_public_healthcheck.py --full --require-clean`
+  passes for the exact release commit.
+- [ ] A manual `run_full_gate=confirm` Apple Silicon workflow succeeded for the
+  same commit.
+- [ ] A fresh offline wheel install passes `pip check`, `import cudaq`, and a
+  `mklq-cpu` Bell smoke test.
+- [ ] `mklq-metal` passes only its experimental smoke test; no broader release
+  or performance claim is added.
 
-Expected:
+## Publication and rollback
 
-- [ ] `main` is clean before collecting clean evidence.
-- [ ] `origin` points to the public MKL-Q fork.
-- [ ] `upstream` points to `https://github.com/NVIDIA/cuda-quantum.git`.
-- [ ] The repository is not shallow before public publication.
-- [ ] The latest commits are MKL-Q commits on top of upstream CUDA-Q history.
-- [ ] If upstream CUDA-Q was synced, `docs/mklq/upstream-sync.md` was followed
-  and the sync gates are recorded in the change summary.
-- [ ] If the release depends on latest upstream state, also run
-  `python3 benchmarks/mklq/run_upstream_sync_audit.py --check-remote` after
-  `git fetch upstream main`.
-
-## Public Metadata
-
-Check:
-
-- [ ] `README.md` identifies MKL-Q as a CUDA-Q-compatible Apple Silicon fork.
-- [ ] `README.md` says the first public version is source-only.
-- [ ] `CITATION.cff`, `Contributing.md`, `SECURITY.md`, `LICENSE`, and
-  `NOTICE` do not misdirect users to NVIDIA-only project contacts or workflows.
-- [ ] `docs/mklq/known-limitations.md` is linked from the README and explains
-  the current support boundary.
-- [ ] `docs/mklq/validation.md` is linked from the README and records the
-  current local validation evidence and its non-certification boundary.
-- [ ] `docs/mklq/testing-matrix.md` is linked from the README and explains
-  which local gates prove which target/backend behavior.
-- [ ] `docs/mklq/apple-silicon-ci.md` is linked from the README and explains
-  the self-hosted Apple Silicon CI activation boundary.
-- [ ] `docs/mklq/source-only-rc-v0.1.md` is linked from the README and records
-  the current source-only v0.1 release-candidate boundary without creating a
-  tag, GitHub Release, wheel, PyPI package, installer, or signed artifact.
-- [ ] `docs/mklq/release-notes-v0.1.0-source.md` and `CHANGELOG.md` are linked
-  from the README and describe the planned `mklq-v0.1.0-source` source-only tag
-  without creating the tag or implying any GitHub Release, wheel, PyPI package,
-  installer, or signed artifact.
-- [ ] `docs/mklq/developer-workflow.md` is linked from the README and records
-  the current local development, public hygiene, and PR workflow.
-- [ ] `docs/mklq/release-policy.md` is linked from the README and explains
-  current source-only release boundaries.
-- [ ] `docs/mklq/maintainer-runbook.md` is linked from the README and explains
-  maintainer triage, validation, and recovery boundaries.
-- [ ] `docs/mklq/issue-labels.md` is linked from the README and matches
-  `.github/labels.yml`.
-- [ ] `docs/mklq/branch-protection.md` is linked from the README and matches
-  `.github/branch-protection-main.json`.
-- [ ] `docs/mklq/public-readiness.md` is linked from the README and records the
-  current public repository readiness snapshot.
-- [ ] `docs/mklq/cpu-gate-counters.md` is linked from the README and records
-  bounded CPU gate fast-path counter evidence.
-- [ ] `docs/mklq/upstream-sync.md` is linked from the README and records the
-  current upstream sync procedure and dry-run audit command.
-- [ ] GitHub About metadata describes MKL-Q, uses Apache-2.0, and avoids stale
-  NVIDIA workflow or badge links.
-- [ ] GitHub Issues are enabled for the tracked issue forms, unused Projects
-  and Wiki surfaces are disabled, and the repository homepage is empty until
-  MKL-Q publishes its own documentation site.
-
-## Tree Hygiene
-
-Run:
-
-```bash
-python3 benchmarks/mklq/run_preflight_audit.py --require-clean
-python3 benchmarks/mklq/run_self_hosted_ci_audit.py
-git status --ignored --short
-git ls-files .github | sort
-git diff --check
-```
-
-Expected:
-
-- [ ] No tracked `build/`, `build-python/`, `__pycache__/`, `.pytest_cache/`,
-  `.DS_Store`, local signing objects, or raw `benchmarks/mklq/results/*.json`.
-- [ ] No tracked `dist/`, `wheelhouse/`, wheel, installer, signed artifact, or
-  release archive files.
-- [ ] No `docs/superpowers/` or agent-internal paths are tracked.
-- [ ] `.github/workflows/` contains only intentionally reviewed MKL-Q
-  workflows: `mklq-public-hygiene.yml` for required public hygiene and
-  `mklq-apple-silicon-ci.yml` for the Apple Silicon push guard plus manual
-  self-hosted full checks.
-- [ ] `.github/workflows/mklq-apple-silicon-ci.yml` is present and reviewed as
-  the self-hosted Apple Silicon workflow with a lightweight push guard.
-- [ ] `mklq-apple-silicon-ci.yml` keeps the full self-hosted gate behind
-  `workflow_dispatch`, keeps `run_full_gate` default skip, uses
-  `permissions: contents: read`, and has no pull-request, release, upload, or
-  secret-dependent path.
-- [ ] Any non-dispatch `main` push run uses only the lightweight `Dispatch
-  guard` job and does not consume the self-hosted Apple Silicon runner.
-- [ ] The `public_report_references` preflight check passes: every concrete
-  `benchmarks/mklq/reports/*.json` path referenced by public docs or workflows
-  exists and is tracked, and no public docs or workflows reference untracked
-  report files. Template paths such as `YYYY-MM-DD` or glob examples do not
-  count as concrete evidence.
-- [ ] `git diff --check` has no whitespace errors.
-
-## Local Build Gate
-
-Run on Apple Silicon macOS:
-
-```bash
-cmake --build build-python --target install -j 6
-python3 benchmarks/mklq/repair_macos_install_signatures.py \
-  --install-prefix "${HOME}/.cudaq-mklq"
-```
-
-Expected:
-
-- [ ] The install prefix is the intended local prefix, usually
-  `${HOME}/.cudaq-mklq`.
-- [ ] Build and install complete without errors.
-- [ ] On macOS, local install-prefix dylibs, Python extension loadables, and
-  `bin/` Mach-O executables have refreshed ad-hoc signatures before Python
-  import and installed `nvq++` smoke gates run. This is not release artifact
-  signing.
-- [ ] The installed Python path and `nvq++` path match the next gate.
-
-## Correctness Gate
-
-Run:
-
-```bash
-python3 benchmarks/mklq/run_correctness_gate.py \
-  --install-prefix "${HOME}/.cudaq-mklq" \
-  --build-dir build-python
-```
-
-Expected:
-
-- [ ] Python target fixtures pass for `mklq-cpu` and the limited experimental
-  `mklq-metal` fixture suite.
-- [ ] `nvq++` smoke tests pass for `mklq-cpu` and `mklq-metal`.
-- [ ] TargetConfig `ctest` selection passes.
-- [ ] The generated JSON is stored under ignored `benchmarks/mklq/results/` or
-  another local path, not committed as public evidence.
-
-## Benchmark Evidence
-
-Run only after the correctness gate is green:
-
-```bash
-python3 benchmarks/mklq/run_clean_cpu_benchmark.py \
-  --pythonpath "${HOME}/.cudaq-mklq" \
-  --stamp YYYY-MM-DD
-```
-
-Expected:
-
-- [ ] Clean benchmark evidence is collected only from a clean worktree.
-- [ ] Raw local JSON remains ignored under `benchmarks/mklq/results/`.
-- [ ] Sanitized summaries are written under `benchmarks/mklq/reports/`.
-- [ ] `docs/mklq/benchmark-evidence.md` is regenerated.
-- [ ] Each summary is interpreted through its `evidence_kind` and
-  `interpretation` fields; no local result is treated as cross-machine
-  performance certification.
-
-## Public Hygiene Gate
-
-Run the same classes of checks as `.github/workflows/mklq-public-hygiene.yml`:
-
-```bash
-python3 benchmarks/mklq/run_preflight_audit.py --require-clean
-python3 benchmarks/mklq/run_public_release_checklist_audit.py
-python3 benchmarks/mklq/run_source_release_tag_audit.py --docs-only
-python3 benchmarks/mklq/run_public_readiness_audit.py
-python3 benchmarks/mklq/run_self_hosted_ci_audit.py
-python3 benchmarks/mklq/run_public_healthcheck.py
-```
-
-For pre-publication local evidence that also rebuilds and reruns backend
-correctness:
-
-```bash
-python3 benchmarks/mklq/run_public_healthcheck.py --full --require-clean
-python3 benchmarks/mklq/run_self_hosted_ci_audit.py --check-runners --repo wuls968/MKL-Q
-```
-
-The underlying lightweight checks include:
-
-```bash
-git diff --check
-python3 benchmarks/mklq/run_public_release_checklist_audit.py
-python3 benchmarks/mklq/run_self_hosted_ci_audit.py
-python3 benchmarks/mklq/check_performance_evidence.py
-python3 benchmarks/mklq/check_metal_evidence.py
-python3 benchmarks/mklq/check_metal_sampling_boundary_evidence.py
-python3 benchmarks/mklq/check_metal_uniform_sampling_evidence.py
-python3 benchmarks/mklq/check_public_claims.py
-python3 benchmarks/mklq/check_sampling_profile_evidence.py
-python3 benchmarks/mklq/check_cpu_gate_counter_docs.py
-python3 benchmarks/mklq/check_cpu_sampling_counter_docs.py
-python3 benchmarks/mklq/check_metal_runtime_counter_docs.py
-python3 -m py_compile \
-  benchmarks/mklq/bench_mklq_targets.py \
-  benchmarks/mklq/bench_probability_kernels.py \
-  benchmarks/mklq/check_cpu_gate_counter_docs.py \
-  benchmarks/mklq/check_cpu_sampling_counter_docs.py \
-  benchmarks/mklq/check_metal_evidence.py \
-  benchmarks/mklq/check_metal_sampling_boundary_evidence.py \
-  benchmarks/mklq/check_metal_uniform_sampling_evidence.py \
-  benchmarks/mklq/check_metal_runtime_counter_docs.py \
-  benchmarks/mklq/check_performance_evidence.py \
-  benchmarks/mklq/check_public_claims.py \
-  benchmarks/mklq/check_sampling_profile_evidence.py \
-  benchmarks/mklq/make_summary.py \
-  benchmarks/mklq/repair_macos_install_signatures.py \
-  benchmarks/mklq/run_clean_cpu_benchmark.py \
-  benchmarks/mklq/run_cpu_scaling_benchmark.py \
-  benchmarks/mklq/run_sampling_scaling_benchmark.py \
-  benchmarks/mklq/run_correctness_gate.py \
-  benchmarks/mklq/run_cpu_gate_counter_probe.py \
-  benchmarks/mklq/run_cpu_sampling_counter_probe.py \
-  benchmarks/mklq/run_metal_runtime_counter_probe.py \
-  benchmarks/mklq/run_preflight_audit.py \
-  benchmarks/mklq/run_public_release_checklist_audit.py \
-  benchmarks/mklq/run_source_release_tag_audit.py \
-  benchmarks/mklq/run_public_readiness_audit.py \
-  benchmarks/mklq/run_public_healthcheck.py \
-  benchmarks/mklq/run_self_hosted_ci_audit.py \
-  benchmarks/mklq/summarize_cpu_gate_counters.py \
-  benchmarks/mklq/summarize_cpu_sampling_counters.py \
-  benchmarks/mklq/summarize_metal_runtime_counters.py \
-  benchmarks/mklq/summarize_reports.py \
-  examples/mklq/python/bell.py \
-  examples/mklq/python/clifford_chain.py \
-  examples/mklq/python/ghz.py \
-  examples/mklq/python/parametric.py \
-  examples/mklq/python/phase_kickback.py \
-  examples/mklq/verify_examples.py
-```
-
-Expected:
-
-- [ ] Public metadata keywords are present.
-- [ ] `docs/mklq/source-only-rc-v0.1.md` is present and keeps the
-  release-candidate label source-only, non-tagged, non-packaged, and
-  non-certifying.
-- [ ] `run_public_release_checklist_audit.py` passes and confirms this
-  checklist still references the required source-only release gates.
-- [ ] `run_source_release_tag_audit.py --docs-only` passes for PR/public
-  hygiene checks, and the full `run_source_release_tag_audit.py` passes on
-  clean `main` after a successful manual `workflow_dispatch`
-  `run_full_gate=confirm` Apple Silicon full gate for the exact commit, before
-  any decision to create `mklq-v0.1.0-source`.
-- [ ] `run_self_hosted_ci_audit.py` passes and confirms the Apple Silicon CI
-  workflow keeps only the lightweight push guard automatic while the
-  self-hosted full job remains manual, read-only, source-only, and disabled by
-  default.
-- [ ] Before any `run_full_gate=confirm` dispatch is cited as evidence,
-  `python3 benchmarks/mklq/run_self_hosted_ci_audit.py --check-runners --repo
-  wuls968/MKL-Q` passes and confirms the live `actions/runners` inventory has
-  an online runner with `self-hosted`, `macOS`, `ARM64`, and
-  `mklq-apple-silicon` labels.
-- [ ] Public example files exist under `examples/mklq/`.
-- [ ] Banned upstream workflow/contact tokens are absent from public metadata
-  and `.github`.
-- [ ] Sanitized benchmark summaries parse as JSON.
-- [ ] `check_performance_evidence.py` passes for tracked clean CPU summaries.
-- [ ] `check_metal_evidence.py` passes for tracked experimental Metal
-      summaries.
-- [ ] `check_metal_sampling_boundary_evidence.py` passes for tracked
-      experimental Metal stochastic sampling boundary summaries.
-- [ ] `check_metal_uniform_sampling_evidence.py` passes for tracked
-      experimental Metal uniform partial-register sampling summaries.
-- [ ] CPU gate fast-path, CPU sampling/probability, and Metal runtime counter
-  docs guards pass for the tracked bounded reports.
-- [ ] Counter docs explain that aggregate counts are summed across tracked
-  reports, so repeated daily probes count the same selected counter tests once
-  per report.
-- [ ] The `public_report_references` preflight check confirms public docs and
-  workflows do not reference untracked report files.
-- [ ] `run_preflight_audit.py --require-clean` passes before final publication
-  or before describing the branch as public-ready.
-- [ ] Public benchmark helper and Python example scripts compile.
-- [ ] `run_public_healthcheck.py` passes in default mode.
-- [ ] `run_public_healthcheck.py --full --require-clean` passes before
-  describing the commit as public-ready.
-
-## Push And GitHub Verification
-
-After local gates pass:
-
-```bash
-git push -u origin HEAD
-gh pr create --repo wuls968/MKL-Q --base main --head "$(git branch --show-current)"
-gh pr checks --repo wuls968/MKL-Q --watch
-gh pr merge --repo wuls968/MKL-Q --squash --delete-branch
-git switch main
-git pull --ff-only origin main
-git ls-remote origin refs/heads/main
-gh repo view wuls968/MKL-Q --json nameWithOwner,isFork,parent,defaultBranchRef,url
-gh run list --repo wuls968/MKL-Q --branch main --limit 5
-python3 benchmarks/mklq/run_public_readiness_audit.py
-```
-
-Expected:
-
-- [ ] Remote `main` equals local `HEAD`.
-- [ ] `wuls968/MKL-Q` remains a fork of `NVIDIA/cuda-quantum`.
-- [ ] The default branch is `main`.
-- [ ] Only intended MKL-Q automatic workflows run; the Apple Silicon workflow
-  runs only the lightweight push guard unless explicitly dispatched by a
-  maintainer.
-- [ ] The latest MKL-Q public hygiene workflow completes with `success`.
-- [ ] `main` branch protection is enabled and requires
-  `Source-only repository checks`.
-- [ ] `main` branch protection enforces the required check for administrators.
-- [ ] `run_public_readiness_audit.py` passes for the pushed commit.
-- [ ] `docs/mklq/public-readiness.md` is current for the pushed commit.
-
-## Stop Conditions
-
-Do not publish or describe the branch as ready if any of these are true:
-
-- [ ] The worktree is dirty and the change was not intentionally reviewed.
-- [ ] Raw local benchmark payloads, generated files, build products, or
-  private artifacts are tracked.
-- [ ] `mklq-metal` is described as full Metal-native or default-ready.
-- [ ] Local benchmark evidence is described as release certification.
-- [ ] The GitHub Actions run for the pushed commit is failing or still unknown.
+- [ ] Publish `0.1.0rc1` to TestPyPI and repeat fresh-environment smoke tests.
+- [ ] For every Python wheel, reinstall `0.1.0rc1` from TestPyPI in a clean
+  venv; verify the index-downloaded SHA256, `cudaq.__version__`, target set,
+  CPU/experimental-Metal smoke, and tag SHA.
+- [ ] Publish `0.1.0` to PyPI only after RC evidence is accepted.
+- [ ] For every Python wheel, repeat the clean PyPI-index version/SHA/target
+  set/smoke/tag-SHA verification before creating the GitHub Release.
+- [ ] Create the GitHub prerelease/release from the same workflow and tag.
+- [ ] If a defect is found, yank the PyPI version and GitHub release; publish a
+  corrected `.postN` artifact instead of replacing files.

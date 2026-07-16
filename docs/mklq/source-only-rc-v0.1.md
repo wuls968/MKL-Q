@@ -1,8 +1,8 @@
-# MKL-Q Source-Only RC v0.1
+# Historical: MKL-Q Source-Only RC v0.1
 
-This page is the source-only release-candidate entry point for MKL-Q v0.1. It
-is a documentation label for the current public source posture, not a Git tag,
-GitHub Release, wheel, PyPI package, installer, or signed artifact.
+This page records the source-only release-candidate entry point that preceded
+the v0.1.0 package policy. It is historical evidence, not the current release
+policy or a live publication status.
 
 ## Status
 

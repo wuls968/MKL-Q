@@ -87,6 +87,24 @@ else()
   )
 endif()
 
+# These sources implement remote and photonics APIs. The MKL-Q distribution
+# intentionally exposes neither surface and must not retain their code or DSO
+# dependencies in the Python extension.
+set(_cudaq_python_remote_extension_sources
+  ../../runtime/cudaq/platform/orca/OrcaExecutor.cpp
+  ../../runtime/cudaq/platform/orca/OrcaQPU.cpp
+  ../../runtime/cudaq/platform/orca/OrcaRemoteRESTQPU.cpp
+  ../../runtime/cudaq/platform/orca/OrcaServerHelper.cpp
+  ../../runtime/cudaq/platform/pasqal/PasqalRemoteRESTQPU.cpp
+  ../../runtime/cudaq/platform/pasqal/PasqalServerHelper.cpp
+  ../../runtime/cudaq/platform/quera/QuEraRemoteRESTQPU.cpp
+  ../../runtime/cudaq/platform/fermioniq/FermioniqQPU.cpp
+  ../../runtime/cudaq/platform/default/rest/RemoteRESTQPU.cpp
+)
+if(CUDAQ_MKLQ_PACKAGE_ONLY)
+  set(_cudaq_python_remote_extension_sources "")
+endif()
+
 declare_mlir_python_extension(CUDAQuantumPythonSources.Extension
   MODULE_NAME _quakeDialects
   ADD_TO_PARENT CUDAQuantumPythonSources
@@ -135,15 +153,7 @@ declare_mlir_python_extension(CUDAQuantumPythonSources.Extension
     ../runtime/mlir/py_register_dialects.cpp
     ../utils/LinkedLibraryHolder.cpp
     ../../runtime/common/CodeGenConfig.cpp
-    ../../runtime/cudaq/platform/orca/OrcaExecutor.cpp
-    ../../runtime/cudaq/platform/orca/OrcaQPU.cpp
-    ../../runtime/cudaq/platform/orca/OrcaRemoteRESTQPU.cpp
-    ../../runtime/cudaq/platform/orca/OrcaServerHelper.cpp
-    ../../runtime/cudaq/platform/pasqal/PasqalRemoteRESTQPU.cpp
-    ../../runtime/cudaq/platform/pasqal/PasqalServerHelper.cpp
-    ../../runtime/cudaq/platform/quera/QuEraRemoteRESTQPU.cpp
-    ../../runtime/cudaq/platform/fermioniq/FermioniqQPU.cpp
-    ../../runtime/cudaq/platform/default/rest/RemoteRESTQPU.cpp
+    ${_cudaq_python_remote_extension_sources}
     ../../runtime/cudaq/platform/default/python/QPU.cpp
     ${_quakeDialects_mlir_runtime_sources}
     ../../runtime/internal/compiler/RuntimePyMLIR.cpp
@@ -171,13 +181,18 @@ target_include_directories(CUDAQuantumPythonSources.Extension INTERFACE
     ${CMAKE_SOURCE_DIR}/runtime
     ${CMAKE_SOURCE_DIR}/runtime/internal/compiler/include
 )
-target_link_libraries(CUDAQuantumPythonSources.Extension INTERFACE 
+set(_cudaq_python_runtime_link_libs
     cudaq 
     cudaq-logger 
     cudaq-common 
     cudaq-em-default
-    cudaq-em-photonics
     fmt::fmt-header-only
+)
+if (NOT CUDAQ_MKLQ_PACKAGE_ONLY)
+  list(APPEND _cudaq_python_runtime_link_libs cudaq-em-photonics)
+endif()
+target_link_libraries(CUDAQuantumPythonSources.Extension INTERFACE
+    ${_cudaq_python_runtime_link_libs}
 )
 
 ################################################################################

@@ -1,8 +1,9 @@
-# MKL-Q v0.1.0 Source-Only Release Notes
+# Historical: MKL-Q v0.1.0 Source-Only Release Notes
 
-These notes describe the planned `mklq-v0.1.0-source` source-only tag. The tag
-has not been created. This page is not a GitHub Release, wheel, PyPI package,
-installer, signed artifact, checksum manifest, or binary distribution.
+These notes preserve the pre-package `mklq-v0.1.0-source` proposal. They are
+historical evidence only; the active package policy and release notes are
+[`release-policy.md`](release-policy.md) and
+[`release-notes-v0.1.0.md`](release-notes-v0.1.0.md).
 
 ## Status
 

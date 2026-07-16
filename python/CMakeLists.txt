@@ -6,6 +6,12 @@
 # the terms of the Apache License 2.0 which accompanies this distribution.     #
 # ============================================================================ #
 
+if(CUDAQ_MKLQ_PACKAGE_ONLY)
+  # LinkedLibraryHolder is compiled both as a utility DSO and into the Python
+  # extension. Keep its package-only default target consistent in both.
+  add_compile_definitions(CUDAQ_MKLQ_PACKAGE_ONLY)
+endif()
+
 add_subdirectory(utils)
 
 # [RFC]:
@@ -77,7 +83,9 @@ add_dependencies(CUDAQPythonStaging
   CUDAQPythonPackageStaging CUDAQPythonTestStaging)
 add_dependencies(CUDAQuantumPythonModules CUDAQPythonStaging)
 
-add_subdirectory(runtime/cudaq/domains/plugins)
+if (NOT CUDAQ_MKLQ_PACKAGE_ONLY)
+  add_subdirectory(runtime/cudaq/domains/plugins)
+endif()
 
 if (NOT SKBUILD)
   install(DIRECTORY cudaq DESTINATION .)

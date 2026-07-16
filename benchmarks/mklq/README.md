@@ -397,54 +397,44 @@ planned Git additions for the `public_report_references` check. This does not
 modify the Git index and is not a replacement for the normal clean preflight
 before publishing.
 
-## Public Release Checklist Audit
+## Package Release Audit
 
-Use the release checklist audit when public release instructions, source-only
-boundaries, or maintenance gates change:
+Use the package release audit when public release instructions, package
+metadata, or maintenance gates change:
 
 ```bash
-python3 benchmarks/mklq/run_public_release_checklist_audit.py
+python3 benchmarks/mklq/run_package_release_audit.py --version 0.1.0 --docs-only
 ```
 
-The audit checks that `docs/mklq/public-release-checklist.md` still contains
-the required source-only sections, the public hygiene and full local gate
-commands, referenced docs/scripts, preflight public report-reference boundary,
-and stop conditions. It also checks that `docs/mklq/developer-workflow.md`
-keeps the current public hygiene command set, counter aggregate-count boundary,
-and `public_report_references` warning. It writes ignored JSON under
-`benchmarks/mklq/results/`. It does not run builds, benchmarks, GitHub Actions,
-or backend correctness tests.
+The audit checks `mklq` package metadata, the release policy, versioned release
+notes, `SECURITY.md`, and the manual Trusted Publishing/provenance workflow.
+It does not run builds, benchmarks, GitHub Actions, or backend correctness
+tests.
 
-## Source Release Tag Audit
+## Historical Source-only Tag Audit
 
-Use the source release tag audit before changing planned source-only tag notes
-or checking the planned `mklq-v0.1.0-source` boundary:
+Use the package release audit before changing package-release metadata or
+checking the `mklq-v0.1.0` documentation contract:
 
 ```bash
-python3 benchmarks/mklq/run_source_release_tag_audit.py --docs-only
+python3 benchmarks/mklq/run_package_release_audit.py --version 0.1.0 --docs-only
 ```
 
 The docs-only mode is safe for PR branches and public hygiene jobs. It checks
-the candidate tag naming convention, `CHANGELOG.md`,
-`docs/mklq/release-notes-v0.1.0-source.md`, release policy, public checklist,
-README links, and tracked artifact hygiene without querying live GitHub run
-state.
+the `mklq` metadata, versioned package release notes, release policy,
+`SECURITY.md`, and the manual Trusted Publishing/provenance workflow contract
+without querying live GitHub run state.
 
-Run the full mode only from clean `main` after pushing:
+Run the full package audit only from clean `main` after pushing:
 
 ```bash
-python3 benchmarks/mklq/run_source_release_tag_audit.py
+python3 benchmarks/mklq/run_package_release_audit.py --version 0.1.0
 ```
 
-Full mode additionally verifies `HEAD == origin/main`, confirms the candidate
-tag does not exist locally or on `origin`, checks that no GitHub Releases exist,
-requires the latest public hygiene workflow to succeed for the exact commit,
-and requires a successful manual `workflow_dispatch` run of
-`MKL-Q Apple Silicon correctness` for the exact commit with the
-`Manual Apple Silicon correctness gate` job present and successful. The
-automatic `main` push `Dispatch guard` does not satisfy this source tag
-preflight. The audit never creates tags, GitHub Releases, packages, or
-artifacts.
+The release workflow performs the tag-to-`origin/main`, full-gate, wheel,
+checksum, provenance, and trusted-publication checks. The historical source-only
+tag audit remains available only for interpreting pre-package
+evidence; it is not a current release gate.
 
 ## Upstream Sync Audit
 
@@ -466,8 +456,8 @@ decision.
 ## Self-hosted Apple Silicon CI Audit
 
 Use the self-hosted Apple Silicon CI audit when changing
-`docs/mklq/apple-silicon-ci.md`, GitHub workflow boundaries, or source-only
-public release wording:
+`docs/mklq/apple-silicon-ci.md`, GitHub workflow boundaries, or package-release
+wording:
 
 ```bash
 python3 benchmarks/mklq/run_self_hosted_ci_audit.py
@@ -475,7 +465,7 @@ python3 benchmarks/mklq/run_self_hosted_ci_audit.py
 
 The audit checks that the Apple Silicon CI readiness plan names the expected
 self-hosted macOS ARM64 runner labels, validation commands, security boundary,
-activation checklist, and source-only no-release behavior. It also confirms the
+activation checklist, and correctness-only no-release behavior. It also confirms the
 tracked Apple Silicon workflow keeps only the lightweight `main` push
 `Dispatch guard` automatic while the full self-hosted job remains manual,
 read-only, default-off, free of pull-request, secret, release, or upload paths.
@@ -533,8 +523,8 @@ The readiness audit is intended for a clean local `main` that matches
 template set, issue-template labels, live GitHub label metadata, live branch
 protection drift against `.github/branch-protection-main.json`, public claim
 boundaries, latest public hygiene workflow success, latest Apple Silicon
-workflow success for the pushed commit, and the source-only no-tags/no-releases
-boundary. It does not run backend correctness tests or refresh benchmark
+workflow success for the pushed commit, and the `mklq-v*` package-release tag
+namespace. It does not run backend correctness tests or refresh benchmark
 evidence.
 
 `--full` adds the install-prefix build, local macOS install-prefix signature
@@ -552,16 +542,16 @@ python3 benchmarks/mklq/run_public_healthcheck.py \
 ## Public Claim Boundary Guard
 
 Use the static claim-boundary guard when a change touches public README or
-`docs/mklq` wording about source-only status, Metal readiness, release status,
-or performance evidence:
+`docs/mklq` wording about the `mklq` distribution, Metal readiness, release
+status, or performance evidence:
 
 ```bash
 python3 benchmarks/mklq/check_public_claims.py
 ```
 
 The guard does not run benchmarks. It scans public Markdown for required
-source-only, experimental Metal, non-release, and non-cross-machine wording,
-and rejects non-negated claims such as release-ready Metal support, full
+`mklq` distribution, experimental Metal, non-release, and non-cross-machine
+wording, and rejects non-negated claims such as release-ready Metal support, full
 Metal-native execution, release certification, or cross-machine performance
 certification.
 
