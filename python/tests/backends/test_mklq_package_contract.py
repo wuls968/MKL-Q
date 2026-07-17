@@ -819,7 +819,9 @@ def test_package_release_workflow_uploads_only_wheels_to_pypi():
     assert "packages-dir: release-assets/pypi" in workflow
     assert "subject-path: ${{ env.MKLQ_ASSET_ROOT }}/pypi/*.whl" in workflow
     assert '$(git rev-parse origin/main)' in workflow
-    assert "private_vulnerability_reporting.status" in workflow
+    assert 'repos/${{ github.repository }}/private-vulnerability-reporting' in workflow
+    assert "--jq '.enabled'" in workflow
+    assert "private_vulnerability_reporting.status" not in workflow
     assert "gh run list" in workflow
     assert "shasum -a 256 -c SHA256SUMS" in workflow
     assert "otool -L" in workflow

@@ -59,8 +59,8 @@ jobs:
           python3 benchmarks/mklq/package_release.py validate-version "${{ inputs.version }}"
           python3 benchmarks/mklq/run_package_release_audit.py \
             --version "${{ inputs.version }}" --docs-only
-          test "$(gh api "repos/${{ github.repository }}" \
-            --jq '.security_and_analysis.private_vulnerability_reporting.status // empty')" = "enabled"
+          test "$(gh api "repos/${{ github.repository }}/private-vulnerability-reporting" \
+            --jq '.enabled')" = "true"
           full_gate_run="$(gh run list --repo "${{ github.repository }}" \
             --workflow "MKL-Q Apple Silicon correctness" \
             --commit "$(git rev-parse HEAD)" --status completed --limit 20 \
