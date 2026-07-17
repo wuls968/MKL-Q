@@ -132,7 +132,7 @@ jobs:
           mkdir -p "${asset_root}/pypi"
           mv "${asset_root}"/mklq-*.whl "${asset_root}/pypi/"
           (cd "${asset_root}/pypi" && shasum -a 256 *.whl > ../SHA256SUMS)
-          (cd "${asset_root}" && shasum -a 256 -c SHA256SUMS)
+          (cd "${asset_root}/pypi" && shasum -a 256 -c ../SHA256SUMS)
           "${PYTHON}" benchmarks/mklq/package_release.py inspect-wheel \
             "${asset_root}"/pypi/mklq-*.whl \
             --expected-version "${MKLQ_VERSION}" \
@@ -147,7 +147,7 @@ jobs:
               echo "Wheel native file is not arm64-only: ${native_file} (${lipo_archs})" >&2
               exit 1
             fi
-            otool -L "${native_file}" >> "${asset_root}/otool-L.txt"
+            otool -L "${native_file}" | sed '1d' >> "${asset_root}/otool-L.txt"
           done < <(find "${inspect_dir}" -type f \( -name '*.dylib' -o -name '*.so' \) -print0)
           if rg -n '/(Users|private|opt/homebrew)/' "${asset_root}/otool-L.txt"; then
             echo "Wheel contains a local absolute Mach-O dependency." >&2
@@ -229,7 +229,7 @@ jobs:
           test "$(find release-assets/pypi -maxdepth 1 -name 'mklq-*.whl' | wc -l | tr -d ' ')" = "4"
           test "$(find release-assets/manifests -maxdepth 1 -name 'wheel-manifest-*.json' | wc -l | tr -d ' ')" = "4"
           (cd release-assets/pypi && shasum -a 256 *.whl > ../SHA256SUMS)
-          (cd release-assets && shasum -a 256 -c SHA256SUMS)
+          (cd release-assets/pypi && shasum -a 256 -c ../SHA256SUMS)
       - name: Publish RC to TestPyPI
         if: ${{ inputs.phase == 'testpypi' }}
         uses: pypa/gh-action-pypi-publish@release/v1
