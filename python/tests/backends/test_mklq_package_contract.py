@@ -823,8 +823,13 @@ def test_package_release_workflow_uploads_only_wheels_to_pypi():
     assert "--jq '.enabled'" in workflow
     assert "private_vulnerability_reporting.status" not in workflow
     assert "gh run list" in workflow
-    assert "shasum -a 256 -c SHA256SUMS" in workflow
+    assert "shasum -a 256 -c ../SHA256SUMS" in workflow
+    assert '(cd "${asset_root}/pypi" && shasum -a 256 -c ../SHA256SUMS)' in workflow
+    assert "(cd release-assets/pypi && shasum -a 256 -c ../SHA256SUMS)" in workflow
+    assert '(cd "${asset_root}" && shasum -a 256 -c SHA256SUMS)' not in workflow
+    assert "(cd release-assets && shasum -a 256 -c SHA256SUMS)" not in workflow
     assert "otool -L" in workflow
+    assert "otool -L \"${native_file}\" | sed '1d' >> \"${asset_root}/otool-L.txt\"" in workflow
     assert "lipo -archs" in workflow
     assert "pip check" in workflow
     assert "strategy:" in workflow
