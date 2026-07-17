@@ -703,7 +703,7 @@ def test_package_release_audit_accepts_the_v010_release_contract(tmp_path):
         "Reinstall and validate the published package\n"
         "https://test.pypi.org/simple\nhttps://pypi.org/simple\n"
         "mklq-v${{ inputs.version }}rc1\n"
-        "MKLQ_ASSET_ROOT: ${{ runner.temp }}\n"
+        "MKLQ_ASSET_ROOT=${RUNNER_TEMP}/mklq-release-assets-\n"
         "git status --porcelain --untracked-files=all\n",
         encoding="utf-8",
     )
@@ -787,7 +787,7 @@ def test_package_release_audit_requires_rc_lineage_and_external_build_assets(
 
     assert workflow_check["status"] == "failed"
     assert "mklq-v${{ inputs.version }}rc1" in workflow_check["details"]["missing"]
-    assert "MKLQ_ASSET_ROOT: ${{ runner.temp }}" in workflow_check[
+    assert "MKLQ_ASSET_ROOT=${RUNNER_TEMP}/mklq-release-assets-" in workflow_check[
         "details"]["missing"]
 
 
@@ -806,7 +806,8 @@ def test_package_release_workflow_uploads_only_wheels_to_pypi():
     workflow = (REPO_ROOT / ".github" / "workflows" /
                 "mklq-package-release.yml").read_text(encoding="utf-8")
 
-    assert "MKLQ_ASSET_ROOT: ${{ runner.temp }}/mklq-release-assets-" in workflow
+    assert 'echo "MKLQ_ASSET_ROOT=${RUNNER_TEMP}/mklq-release-assets-' in workflow
+    assert "MKLQ_ASSET_ROOT: ${{ runner.temp }}" not in workflow
     assert 'asset_root="${MKLQ_ASSET_ROOT}"' in workflow
     assert 'bash scripts/build_wheel.sh -m -o "${asset_root}"' in workflow
     assert "git diff --exit-code" in workflow

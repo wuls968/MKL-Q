@@ -74,8 +74,6 @@ jobs:
     runs-on: [self-hosted, macOS, ARM64, mklq-apple-silicon]
     environment:
       name: ${{ inputs.phase }}
-    env:
-      MKLQ_ASSET_ROOT: ${{ runner.temp }}/mklq-release-assets-${{ inputs.version }}-py${{ matrix.python }}
     strategy:
       fail-fast: false
       matrix:
@@ -93,6 +91,11 @@ jobs:
         with:
           ref: ${{ inputs.tag }}
           submodules: recursive
+      - name: Define release asset directory
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "MKLQ_ASSET_ROOT=${RUNNER_TEMP}/mklq-release-assets-${{ inputs.version }}-py${{ matrix.python }}" >> "${GITHUB_ENV}"
       - name: Verify trusted runner Python provisioning
         id: interpreter
         shell: bash
