@@ -105,7 +105,7 @@ def build_report(root: Path, *, version: str, docs_only: bool) -> dict[str, Any]
              "Reinstall and validate the published package",
              "https://test.pypi.org/simple", "https://pypi.org/simple",
              "mklq-v${{ inputs.version }}rc1",
-             "MKLQ_ASSET_ROOT: ${{ runner.temp }}",
+             "MKLQ_ASSET_ROOT=${RUNNER_TEMP}/mklq-release-assets-",
              "git status --porcelain --untracked-files=all"),
         ),
     ]
